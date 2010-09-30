@@ -1,4 +1,4 @@
-srmtp <- function(graph, pvalues, verbose=FALSE) {
+gMCP <- function(graph, pvalues, verbose=FALSE) {
 	if (length(pvalues)!=length(nodes(graph))) {
 		stop("Length of pvalues must equal number of nodes.")
 	}
@@ -11,7 +11,7 @@ srmtp <- function(graph, pvalues, verbose=FALSE) {
 		graph <- rejectNode(graph, node, verbose)
 		sequence <- c(sequence, graph)
 	}	
-	return(new("srmtpResult", graphs=sequence, pvalues=pvalues))
+	return(new("gMCPResult", graphs=sequence, pvalues=pvalues))
 }
 
 
@@ -39,7 +39,7 @@ adjPValues <- function(graph, pvalues, verbose=FALSE) {
 		J <- J[J!=node]
 		sequence <- c(sequence, graph)
 	}	
-	return(new("srmtpResult", graphs=sequence, pvalues=pvalues, adjPValues=adjPValues))
+	return(new("gMCPResult", graphs=sequence, pvalues=pvalues, adjPValues=adjPValues))
 }
 
 rejectNode <- function(graph, node, verbose=FALSE) {
@@ -56,18 +56,24 @@ rejectNode <- function(graph, node, verbose=FALSE) {
 	edgesOut <- edgeWeights(graph, node)[[node]]
 	if (verbose) cat(paste("There are ",length(edgesIn)," incoming and ",length(edgesOut)," outgoing edges.\n",sep=""))
 	
+	keepAlpha <- TRUE
+	
 	graph2 <- graph
 	if (all(TRUE == all.equal(edgesOut, rep(0, length(edgesOut))))) {
 		if (verbose) cat("Alpha is passed via epsilon-edges.\n")
 		for (to in nodes(graph)[nodes(graph)!=node]) {	
 			numberOfEpsilonEdges <- sum(TRUE == all.equal(edgesOut, rep(0, length(edgesOut))))
-			nodeData(graph2, to, "alpha") <- nodeData(graph, to, "alpha")[[to]] + nodeData(graph, node, "alpha")[[node]] / numberOfEpsilonEdges				
+			if (existsEdge(graph, node, to)) {
+				nodeData(graph2, to, "alpha") <- nodeData(graph, to, "alpha")[[to]] + nodeData(graph, node, "alpha")[[node]] / numberOfEpsilonEdges
+				keepAlpha <- FALSE
+			}
 		}		
 	} else {
 		if (verbose) cat("Alpha is passed via non-epsilon-edges.\n")
 		for (to in nodes(graph)[nodes(graph)!=node]) {				
 			nodeData(graph2, to, "alpha") <- nodeData(graph, to, "alpha")[[to]] + getWeight(graph,node,to) * nodeData(graph, node, "alpha")[[node]]				
 		}	
+		keepAlpha <- FALSE
 	}
 	for (to in nodes(graph)[nodes(graph)!=node]) {						
 		for (from in nodes(graph)[nodes(graph)!=node]) {
@@ -80,7 +86,7 @@ rejectNode <- function(graph, node, verbose=FALSE) {
 				} else {
 					if (!is.nan(w) & w>0) {
 						graph2 <- addEdge(from, to, graph2, w)
-					} else if (existsEdge(graph,from,to) || (existsEdge(graph,from,node)&&existsEdge(graph,node,to))) {
+					} else if (existsEdge(graph,from,to) || (existsEdge(graph,from,node) && existsEdge(graph,node,to))) {
 						graph2 <- addEdge(from, to, graph2, 0)
 					}
 				}								
@@ -97,7 +103,9 @@ rejectNode <- function(graph, node, verbose=FALSE) {
 	for (from in names(edgesIn)) {
 		graph <- removeEdge(from, node, graph)
 	}
-	nodeData(graph, node, "alpha") <- 0
+	if (!keepAlpha) {
+		nodeData(graph, node, "alpha") <- 0
+	}
 	nodeData(graph, node, "rejected") <- TRUE	
 	return(graph)
 }

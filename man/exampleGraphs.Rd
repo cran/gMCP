@@ -1,4 +1,4 @@
-\name{createBonferroniHolmGraph}
+\name{Example Graphs}
 \alias{createBonferroniHolmGraph}
 \alias{createGraphFromBretzEtAl}
 \alias{createGraphForParallelGatekeeping}
@@ -8,7 +8,7 @@
 	Functions that create different example graphs
 }
 \description{ 
-	Functions that creates example graphs, e.g. graphs that represents a Bonferroni-Holm adjustment.
+	Functions that creates example graphs, e.g. graphs that represents a Bonferroni-Holm adjustment, parallel gatekeeping or special procedures from selected papers.
 	
 	We are providing functions and not the resulting graphs directly because this way you have additional examples:
 	You can look at the function body with \code{\link{body}} and see how the graph is built.
@@ -29,24 +29,24 @@
   }
 }
 \details{
-  \itemize{
-	\item{createBonferroniHolmGraph}{
+  \describe{
+	\item{\code{createBonferroniHolmGraph}}{
 		Returns a graph that represents a Bonferroni-Holm adjustment.
-		The result is a complete graph, the alpha is split equally between all hypotheses and each edge weight is \eqn{\frac{1}{n-1}}{1/(n-1)}.
+		The result is a complete graph, where the alpha is split equally between all hypotheses and each edge weight is \eqn{\frac{1}{n-1}}{1/(n-1)}.
 	}
-	\item{createGraphFromBretzEtAl}{
+	\item{\code{createGraphFromBretzEtAl}}{
 		Example graph from Bretz et al. See references (Bretz et al. 2009).
 	}
-	\item{createGraphForParallelGatekeeping}{
+	\item{\code{createGraphForParallelGatekeeping}}{
 		Example graph for parallel gatekeeping. See references (Dmitrienko et al. 2003).
 	}
-	\item{createGraphForImprovedParallelGatekeeping}{
+	\item{\code{createGraphForImprovedParallelGatekeeping}}{
 		Example graph for improved parallel gatekeeping. See references (Hommel et al. 2007).
 	}
   }	
 }
 \value{
-	A graph of class \code{\link{graphSRMTP}} that represents a sequentially rejective multiple test procedure.
+	A graph of class \code{\link{graphMCP}} that represents a sequentially rejective multiple test procedure.
 }
 \references{
 Bonferroni, C. E.: Il calcolo delle assicurazioni su gruppi di teste. In Studi in Onore del Professore Salvatore Ortu Carboni. Rome: Italy, pp. 13-60, 1935.
@@ -74,7 +74,7 @@ library(Rgraphviz)
 renderGraph(layoutGraph(g))
 }
 
-srmtp(g, pvalues=c(0.1, 0.2, 0.4, 0.4, 0.7))
+gMCP(g, pvalues=c(0.1, 0.2, 0.4, 0.4, 0.7))
 
 }
 \keyword{ misc }

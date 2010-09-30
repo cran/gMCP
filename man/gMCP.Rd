@@ -1,5 +1,5 @@
-\name{srmtp}
-\alias{srmtp}
+\name{gMCP}
+\alias{gMCP}
 \alias{adjPValues}
 
 \title{
@@ -9,25 +9,25 @@
 	Performs a sequentially rejective multiple test procedure on a graph given unadjusted p-values.
 }
 \usage{
-	srmtp(graph, pvalues, verbose=FALSE)
+	gMCP(graph, pvalues, verbose=FALSE)
 	adjPValues(graph, pvalues, verbose=FALSE)
 }
 
 \arguments{
   \item{graph}{
-	A graph of class \code{\link{graphSRMTP}}.
+	A graph of class \code{\link{graphMCP}}.
   }
   \item{pvalues}{
   	A numeric vector specifying the p-values for the sequentially rejective MTP.
   } 
-  \item{verbose}{logical scalar.  If \code{TRUE} verbose output is generated during
+  \item{verbose}{Logical scalar.  If \code{TRUE} verbose output is generated during
           sequentially rejection steps.}  
 }
 \details{
 	For details see the given references.
 }
 \value{
-An object of class \code{srmtpResult}, more specifically a list with elements
+An object of class \code{gMCPResult}, more specifically a list with elements
 \item{graphs }{ list of graphs}				
 \item{pvalues }{ p-values}
 \item{adjPValues }{ adjusted p-values}
@@ -45,13 +45,13 @@ Kornelius Rohmeyer \email{rohmeyer@small-projects.de}
 %% ~Make other sections like Warning with \section{Warning }{....} ~
 
 \seealso{
-\code{\link{graphSRMTP}}
+\code{\link{graphMCP}}
 }
 \examples{
 
 g <- createBonferroniHolmGraph(5)
 
-srmtp(g, pvalues=c(0.01, 0.02, 0.04, 0.04, 0.7))
+gMCP(g, pvalues=c(0.01, 0.02, 0.04, 0.04, 0.7))
 
 
 }
