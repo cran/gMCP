@@ -4,7 +4,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 
-import org.af.commons.errorhandling.ErrorDialog;
 import org.af.commons.errorhandling.ErrorHandler;
 import org.af.commons.logging.ApplicationLog;
 import org.af.commons.logging.LoggingSystem;
@@ -43,7 +42,7 @@ public class RControl {
 					System.getProperty("eclipse") == null && !debug,
 					System.getProperty("eclipse") != null || debug,
 					new ApplicationLog());
-			ErrorHandler.init("rohmeyer@small-projects.de", "http://www.algorithm-forge.com/report/bugreport.php", true, true, ErrorDialog.class);
+			ErrorHandler.init("rohmeyer@small-projects.de", "http://www.algorithm-forge.com/report/bugreport.php", true, true, ErrorDialogSGTK.class);
 
 		}
 		Rengine rengine = Rengine.getMainEngine();
@@ -63,8 +62,9 @@ public class RControl {
 				//rcs.eval(".setenv(\"JAVAGD_CLASS_NAME\"=\"org/mutoss/gui/JavaGD\")");
 				//rcs.eval("require(JavaGD)");					
 				rcs.eval("require(gMCP)");
-				rcs.eval("graph <- createGraphFromBretzEtAl()");
+				//rcs.eval("graph <- createGraphFromBretzEtAl()");
 				//rcs.eval("graph <- createBonferroniHolmGraph(5)");
+				//rcs.eval("graph <- createGraphForImprovedParallelGatekeeping()");
 			}
 		} catch (REngineException e) {
 			ErrorHandler.getInstance().makeErrDialog("Error creating RCallServicesREngine!", e);

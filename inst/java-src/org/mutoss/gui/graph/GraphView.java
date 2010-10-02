@@ -29,10 +29,10 @@ public class GraphView extends JPanel implements ActionListener {
 	public NetzListe nl;
 	VS vs = new VS();
 
-	private AbstractGraphControl control;
+	private ControlMGraph control;
 	public static final String STATUSBAR_DEFAULT = "Place new nodes and edges or start the test procedure";
 
-	public GraphView(AbstractGraphControl abstractGraphControl) {
+	public GraphView(ControlMGraph abstractGraphControl) {
 		//super("Graph");
 		this.control = abstractGraphControl;
 		statusBar = new JLabel(STATUSBAR_DEFAULT);
@@ -141,6 +141,7 @@ public class GraphView extends JPanel implements ActionListener {
 											.getResource("/org/mutoss/gui/graph/images/StartTesting.png"))));
 			toolPanel.add(buttonStart);
 			buttonStart.addActionListener(this);
+			buttonStart.setEnabled(false);
 			buttonStart.setToolTipText("start testing");
 			
 			buttonSave = new JButton(
@@ -247,9 +248,12 @@ public class GraphView extends JPanel implements ActionListener {
 		if (!getNL().testingStarted) return;
 		getNL().stopTesting();
 		getNL().reset();
-		getNL().loadGraph();
+		//control.getPView().removeAllPanels();
+		getNL().loadGraph();				
 		control.getPView().restorePValues();
-		control.getPView().setTesting(false);		
+		control.getPView().setTesting(false);
+		control.getPView().revalidate();
+		control.getPView().repaint();
 		buttonNewVertex.setEnabled(true);
 		buttonNewEdge.setEnabled(true);
 		try {
@@ -258,20 +262,6 @@ public class GraphView extends JPanel implements ActionListener {
 		} catch (IOException ex) {
 			ErrorHandler.getInstance().makeErrDialog(ex.getMessage(), ex);
 		}
-	}
-	
-	public void WriteLaTeXwithR() {
-		JFileChooser fc = new JFileChooser();
-		File file;
-		int returnVal = fc.showSaveDialog(control.getMainFrame());
-		if (returnVal == JFileChooser.APPROVE_OPTION) {
-			file = fc.getSelectedFile();			
-		} else {
-			return;
-		}
-		String filename = file.getAbsolutePath();
-		nl.saveGraph(".exportGraphToLaTeX", false);
-		RControl.getR().eval("gMCPReport(.exportGraphToLaTeX, file=\""+filename+"\")");
 	}
 
 	public void startTesting() {	
@@ -288,6 +278,21 @@ public class GraphView extends JPanel implements ActionListener {
 		} catch (Exception ex) {
 			ErrorHandler.getInstance().makeErrDialog(ex.getMessage(), ex);
 		} 
+	}
+	
+	
+	public void WriteLaTeXwithR() {
+		JFileChooser fc = new JFileChooser();
+		File file;
+		int returnVal = fc.showSaveDialog(control.getMainFrame());
+		if (returnVal == JFileChooser.APPROVE_OPTION) {
+			file = fc.getSelectedFile();			
+		} else {
+			return;
+		}
+		String filename = file.getAbsolutePath();
+		nl.saveGraph(".exportGraphToLaTeX", false);
+		RControl.getR().eval("gMCPReport(.exportGraphToLaTeX, file=\""+filename+"\")");
 	}
 	
 }

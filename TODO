@@ -1,5 +1,7 @@
 High priority:
 
+Medium priority:
+
 - We have the same Generics as Rgraphviz:
 library(Rgraphviz)
 getX(new("xyPoint", x=150, y=30))
@@ -7,15 +9,18 @@ This causes trouble
 - matrix2graph function
 - Check on Windows whether "\" work in ActionExportToLatex or have to be modified.
 - Look at print method for gMCPResult
-- Can we add a RUnit Test for Java imports Random Graph and then exports the same graph?
 - Warn user when sum of edge weights is bigger than 1
 - Which error does the user get, if the sum of alpha is bigger than 1 in the GUI and the console?
 - What happens if I try to create nodes with the same name? Is Node.nr used for something?
 (Saving to R returns an error: Ungültiges Objekt der Klasse "graphMCP": FALSE)
-- 
+- Update graph2latex to the much better algorithm already implemented in Java.
+- PPanels will set alpha to the truncated number.
+- Don't create global variable like .tmpGraph etc.
+- PNG export cuts perhaps edges.
 
 Additional features / low priority:
 
+- Add MenuBar
 - Cleanup Config
 - Why is the tilde in for example "F.˜Bretz" still shown in the pdf?
 - Check to which RJava version we are compatible.
@@ -23,3 +28,30 @@ Additional features / low priority:
 See also http://comments.gmane.org/gmane.comp.lang.r.general/200179
 - Edge labels should be fixed and placed by user or free and adjust to moving nodes
 - CITATION file? 
+- Can we add a RUnit Test for Java imports Random Graph and then exports the same graph?
+
+@graph-package:
+
+How do I create a graphNEL object, where there is a node that has no out-going edges?
+I thought the following will do it:
+
+hnodes <- c("H1","H2")
+edges <- vector("list", length=2)
+edges[[1]] <- list(edges=c("H2"), weights=c(1.0))
+edges[[2]] <- list(edges=character(0), weights=numeric(0))
+# or "edges[[2]] <- list()" which gives the same result.
+names(edges)<-hnodes
+g <- new("graphNEL", nodes=hnodes, edgeL=edges, "directed")
+
+But the problem is, that g@edgeData@data[[1]]$weight is now a numeric with attribute "names".
+This makes problems, for example it confuses edgeWeights: 
+
+edgeWeights(g)
+$H1
+H2.H1
+        1 
+
+$H2
+numeric(0)
+
+In my understanding this should be "H2" instead of "H2.H1" like it would be when H2 has any outgoing edges.

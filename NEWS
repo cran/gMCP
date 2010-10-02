@@ -1,3 +1,14 @@
+Version 0.3-1
+=============
+- The GUI now has a menu bar.
+- Improved capabilities for bug reporting. All information that is sent is also shown.
+- Workaround for a problem with the graph package when a node has no out-going edges.
+- Numbers are now accepted with "." and "," as decimal points
+- A newly created edge is now by default an epsilon edge.
+- Edges from one node to itself (loops) are not allowed any more.
+- Start button is only enabled, if the graph has any nodes.
+- Bug-fix regarding epsilon edges.
+
 Version 0.3-0
 =============
 - Major API changes (mostly gsrmtp replaced by gMCP - but now the API should stay relatively stable).  
@@ -10,4 +21,4 @@ Version 0.3-0
 Version 0.2-4
 =============
 - After some alpha and beta releases on r-forge this is the first version on CRAN.
-- We support: Graphs with epsilon nodes, confidence intervals, adjusted p-values.
+- We support: Graphs with epsilon edges, confidence intervals, adjusted p-values.

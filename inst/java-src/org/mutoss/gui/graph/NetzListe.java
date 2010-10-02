@@ -28,7 +28,7 @@ import org.mutoss.gui.RControl;
 public class NetzListe extends JPanel implements MouseMotionListener, MouseListener {
 
 	private static final Log logger = LogFactory.getLog(NetzListe.class);
-	AbstractGraphControl control;
+	ControlMGraph control;
 	int drag = -1;
 	protected Vector<Edge> edges = new Vector<Edge>();
 	int edrag = -1;
@@ -55,7 +55,7 @@ public class NetzListe extends JPanel implements MouseMotionListener, MouseListe
 	 *            VS Viewer Setting Objekt
 	 */
 
-	public NetzListe(JLabel statusBar, VS vs,  AbstractGraphControl abstractGraphControl) {
+	public NetzListe(JLabel statusBar, VS vs,  ControlMGraph abstractGraphControl) {
 		this.statusBar = statusBar;
 		this.vs = vs;
 		this.control = abstractGraphControl;
@@ -76,7 +76,7 @@ public class NetzListe extends JPanel implements MouseMotionListener, MouseListe
 	}
 
 	public void addDefaultNode(int x, int y) {
-		addNode(new Node(knoten.size() + 1, "HA_" + (knoten.size() + 1), x, y, vs));		
+		addNode(new Node(knoten.size() + 1, "H" + (Node.count + 1), x, y, vs));		
 	}
 
 	public void addEdge(Edge e) {
@@ -99,7 +99,7 @@ public class NetzListe extends JPanel implements MouseMotionListener, MouseListe
 	 */
 
 	public void addEdge(Node von, Node nach) {
-		addEdge(von,nach,1d);		
+		addEdge(von,nach, Double.NaN);		
 	}
 
 	/**
@@ -140,24 +140,8 @@ public class NetzListe extends JPanel implements MouseMotionListener, MouseListe
 		edges.lastElement().curve = curve;
 	}
 
-	/**
-	 * Fügt Knoten hinzu und ruft calculateSize auf.
-	 * 
-	 * @param id
-	 *            id des Knotens
-	 * @param name
-	 *            Name / Beschreibung des Knotens
-	 */
-
-	public void addNode(int id, String name,
-			int x, int y, boolean fixed) {
-		knoten.add(new Node(id, name, x, y, vs));
-		control.getPView().addPPanel(knoten.lastElement());
-		knoten.lastElement().fix = fixed;		
-		calculateSize();
-	}
-	
 	public void addNode(Node node) {
+		control.getGraphView().buttonStart.setEnabled(true);
 		knoten.add(node);
 		knoten.lastElement().fix = false;	
 		control.getPView().addPPanel(node);
@@ -320,7 +304,7 @@ public class NetzListe extends JPanel implements MouseMotionListener, MouseListe
 	public void mouseMoved(MouseEvent e) {}
 
 	public void mousePressed(MouseEvent e) {
-		logger.debug("MousePressed at ("+e.getX()+","+ e.getY()+").");
+		//logger.debug("MousePressed at ("+e.getX()+","+ e.getY()+").");
 		if (vs.newVertex) {
 			addDefaultNode((int)(e.getX() / vs.getZoom())	- Node.r, 
 						(int) (e.getY() / vs.getZoom()) - Node.r);
@@ -338,8 +322,9 @@ public class NetzListe extends JPanel implements MouseMotionListener, MouseListe
 				statusBar.setText("Select a second node to which the edge should lead.");
 			} else {
 				Node secondVertex = vertexSelected(e.getX(), e.getY());
-				if (secondVertex == null)
+				if (secondVertex == null || secondVertex == firstVertex) {
 					return;
+				}
 				addEdge(firstVertex, secondVertex);
 				vs.newEdge = false;
 				firstVertexSelected = false;
@@ -434,7 +419,7 @@ public class NetzListe extends JPanel implements MouseMotionListener, MouseListe
 	}
 
 	/**
-	 * Mal die NetzListe neu und setzt preferredSize etc.
+	 * Repaints the NetzListe and sets the preferredSize etc.
 	 */
 
 	public void refresh() {
@@ -463,6 +448,9 @@ public class NetzListe extends JPanel implements MouseMotionListener, MouseListe
 		}
 		knoten.remove(node);
 		control.getPView().removePPanel(node);
+		if (knoten.size()==0) {
+			control.getGraphView().buttonStart.setEnabled(false);
+		}
 		repaint();
 	}
 
@@ -523,6 +511,8 @@ public class NetzListe extends JPanel implements MouseMotionListener, MouseListe
 		//String s = RControl.getR().eval("paste(capture.output(dput(.gsrmtVar)), collapse=\"\")").asRChar().getData()[0];
 		//JOptionPane.showMessageDialog(null, "Exported graph as: "+s);
 		RControl.getR().evalVoid(graphName+" <- new(\"graphMCP\", nodes=.gsrmtVar$hnodes, edgeL=.gsrmtVar$edges, alpha=.gsrmtVar$alpha)");
+		//TODO remove this stupid workaround.
+		RControl.getR().evalVoid(graphName+" <- gMCP:::stupidWorkAround("+graphName+")");
 		for (int i=knoten.size()-1; i>=0; i--) {
 			Node n = knoten.get(i);
 			if (n.isRejected()) {
