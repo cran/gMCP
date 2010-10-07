@@ -17,10 +17,15 @@ License: \tab GPL (>= 2)\cr
 LazyLoad: \tab yes\cr
 }
 
-1. Creating a object of \code{\link{graphMCP}} which is a subclass of \code{\link[graph:graphNEL-class]{graphNEL}} from package \code{graph} that contains some additional information.
+The package gMCP helps with the following steps of performing a sequentially rejective multiple test procedure:
+
+1. Creating a object of \code{\link{graphMCP}} (which is a subclass of \code{\link[graph:graphNEL-class]{graphNEL}} from package \code{graph} that contains some additional information)
+that represents a sequentially rejective multiple test procedure.
 This can be done directly via the \code{\link{new}} method or a graphical user interface by calling \code{\link{graphGUI}}.
 
-2. Calling \code{\link{gMCP}} or \code{\link{graphGUI}}. This can create also LaTeX or PDF reports.
+2. Calling \code{\link{gMCP}} or \code{\link{graphGUI}}.
+
+3. Exporting the results (optional with all sequential steps) as LaTeX or PDF report.
 
 }
 \author{
@@ -37,18 +42,12 @@ Statistics in Medicine 2009 vol. 28 issue 4 page 586-604.
 \note{
 We use the following Java libraries:
 \itemize{
- \item Apache Commons Math under Apache License 2.0, \url{http://commons.apache.org/math/}, Copyright 2001-2010 The Apache Software Foundation 
- \item JGoodies Forms under BSD License, \url{http://www.jgoodies.com/freeware/forms/}, Copyright JGoodies Karsten Lentzsch  
+ \item Apache Commons Logging under the Apache License, Version 2.0, January 2004, \url{http://commons.apache.org/logging/}, Copyright 2001-2007 The Apache Software Foundation 
  \item Apache jog4j under Apache License 2.0, \url{http://logging.apache.org/log4j/}, Copyright 2007 The Apache Software Foundation 
  \item iText 2.1.4 under Lesser General Public License (LGPL), \url{http://itextpdf.com/}, Copyright by Bruno Lowagie 
  \item SwingWorker under LGPL, \url{https://swingworker.dev.java.net/}, Copyright (c) 2005 Sun Microsystems 
- \item Apache Commons Lang under the Apache License, Version 1.1, 2002, \url{http://commons.apache.org/lang/}, Copyright 2001-2008 The Apache Software Foundation 
- \item Apache Commons Logging under the Apache License, Version 2.0, January 2004, \url{http://commons.apache.org/logging/}, Copyright 2001-2007 The Apache Software Foundation 
- \item Apache Commons Validator under the Apache License, Version 2.0, January 2004, \url{http://commons.apache.org/validator/}, Copyright 2001-2006 The Apache Software Foundation
- \item Java Help under Java Help License, \url{http://java.sun.com/javase/technologies/desktop/javahelp/}, Copyright 2003-2007 Sun Microsystems 
  \item JXLayer under BSD License, \url{https://jxlayer.dev.java.net/}, Copyright 2006-2009, Alexander Potochkin 
- \item Java Mail under Java Mail License, \url{http://java.sun.com/products/javamail/downloads/index.html}, Copyright (c) 2009 Sun Microsystems, Inc. 
- \item SwingX under LGPL, \url{https://swingx.dev.java.net/}, Copyright (c) 2005-2006 Sun Microsystems, Inc. 
+ \item JGoodies Forms under BSD License, \url{http://www.jgoodies.com/freeware/forms/}, Copyright JGoodies Karsten Lentzsch  
  \item AFCommons under BSD License, \url{http://www.algorithm-forge.com/afcommons/}, Copyright (c) 2007-2010 by Kornelius Rohmeyer and Bernd Bischl
  \item JHLIR under BSD License, \url{http://jhlir.r-forge.r-project.org/}, Copyright (c) 2008-2010 by Bernd Bischl and Kornelius Rohmeyer  
  \item SGTK under BSD License, \url{http://www.algorithm-forge.com/rjavaclient/}, Copyright (c) 2007-2010 by Bernd Bischl and Kornelius Rohmeyer 

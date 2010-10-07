@@ -63,8 +63,10 @@ public class PView extends JPanel {
 		String debug = "Restoring : ";
 		if (pValues != null) {
 			for (int i=0; i<pValues.size(); i++) {
-				panels.get(i).setP(pValues.get(i));
-				debug += format.format(pValues.get(i))+"; ";
+				if (i<panels.size()) {
+					panels.get(i).setP(pValues.get(i));
+					debug += format.format(pValues.get(i))+"; ";
+				}
 			}
 		}
 		logger.debug(debug);
@@ -162,6 +164,15 @@ public class PView extends JPanel {
 			s += p+", ";
 		}
 		return s.substring(0, s.length()-2)+")";
+	}
+
+	public double getPValue(Node node) {
+		for (int i=panels.size()-1;i>=0;i--) {
+			if (panels.get(i).node==node) {
+				return panels.get(i).p;
+			}
+		}
+		throw new RuntimeException("Something happend that should never happen. Please report!");
 	}
 	
 }
