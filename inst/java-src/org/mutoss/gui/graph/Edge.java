@@ -17,7 +17,8 @@ public class Edge {
 
 	private static final Log logger = LogFactory.getLog(Edge.class);
 	public boolean curve = false;
-	DecimalFormat format = new DecimalFormat("#.###");
+	static DecimalFormat format = new DecimalFormat("#.###");
+	static DecimalFormat formatSmall = new DecimalFormat("#.###E0");
 	FontRenderContext frc = null;
 	Graphics2D g2d;
 	int k1, k2;
@@ -35,8 +36,8 @@ public class Edge {
 		x2 = nach.getX() + Node.getRadius();
 		y1 = von.getY() + Node.getRadius();
 		y2 = nach.getY() + Node.getRadius();
-		k1 = (x1+x2)/2;
-		k2 = (y1+y2)/2;
+		k1 = x1 + (x2-x1)/4; //(x1+x2)/2;
+		k2 = y1 + (y2-y1)/4; //(y1+y2)/2;
 		this.von = von;
 		this.nach = nach;
 		this.w = w;
@@ -65,8 +66,8 @@ public class Edge {
 			k1 = x1 + (int)(Math.cos(alpha*(Math.PI*2)/360)*d/2);
 			k2 = y1 - (int)(Math.sin(alpha*(Math.PI*2)/360)*d/2);
 		} else {
-			k1 = (x1+x2)/2;
-			k2 = (y1+y2)/2;				
+			k1 = x1 + (x2-x1)/4; //(x1+x2)/2;
+			k2 = y1 + (y2-y1)/4; //(y1+y2)/2;		
 		}
 	}
 	
@@ -148,7 +149,11 @@ public class Edge {
 
 	private String getWS() {		
 		if (w.toString().equals("NaN")) return "ε";
-		return format.format(w);
+		if (w<0.0009) {
+			return formatSmall.format(w);
+		} else {
+			return format.format(w);
+		}
 	}
 
 	public boolean inYou(int x, int y) {
@@ -206,18 +211,7 @@ public class Edge {
 					(float) ((k1* vs.getZoom() - rc.getWidth() / 2)), 
 					(float) ((k2* vs.getZoom() - rc.getHeight() / 2)));
 
-		} else { // Edge is a loop:
-			int r = (int) (Node.getRadius());
-			g.drawArc(
-					(int) ((x1 - 109) * vs.getZoom()),
-					(int) ((y1 - (r / 2)) * vs.getZoom()), 
-					(int) (100 * vs.getZoom()), 
-					(int) (r * vs.getZoom()), 
-					45, 270);
-			if (vs.directed) {
-				// ToDo: Kanten mit Pfeilspitze
-			}
-		}
+		} 
 	}
 
 	public void setK1(int k1) {

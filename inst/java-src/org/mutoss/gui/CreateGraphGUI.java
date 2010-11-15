@@ -4,6 +4,7 @@ import java.awt.Dimension;
 import java.awt.Toolkit;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
+import java.util.Locale;
 
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
@@ -24,6 +25,7 @@ public class CreateGraphGUI extends JFrame implements WindowListener {
 	
 	public CreateGraphGUI(String graph, boolean debug, double grid) {
 		super("Creating and modifying graphs");	
+		Locale.setDefault(Locale.ENGLISH);
 		RControl.getRControl(debug);
 		Localizer.getInstance().addResourceBundle("org.mutoss.gui.ResourceBundle");
 		Configuration.getInstance().getGeneralConfig().setGridSize((int)grid);
@@ -44,8 +46,22 @@ public class CreateGraphGUI extends JFrame implements WindowListener {
 		setVisible(true);
 	}
 	
-	public static void startGUI(String graph, boolean debug, double grid) {
-		new CreateGraphGUI(graph, debug, grid);
+	/**
+	 * The following three variables are only need at start time and ignored after that!
+	 */
+	static String graphStr;
+	static boolean debug;
+	static double grid;
+	
+	public static void startGUI(String graphStr, boolean debug, double grid) {
+		CreateGraphGUI.graphStr = graphStr;
+		CreateGraphGUI.debug = debug;
+		CreateGraphGUI.grid = grid;
+		javax.swing.SwingUtilities.invokeLater(new Runnable() {
+			public void run() {
+				new CreateGraphGUI(CreateGraphGUI.graphStr, CreateGraphGUI.debug, CreateGraphGUI.grid);
+			}
+		});		
 	}
 	
 	JLabel statusbar = new JLabel(); 

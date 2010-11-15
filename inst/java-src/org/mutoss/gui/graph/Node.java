@@ -7,7 +7,6 @@ import java.awt.Graphics2D;
 import java.awt.event.MouseEvent;
 import java.awt.font.FontRenderContext;
 import java.awt.geom.Ellipse2D;
-import java.awt.geom.Line2D;
 import java.awt.geom.Rectangle2D;
 import java.text.DecimalFormat;
 import java.util.Vector;
@@ -100,6 +99,7 @@ public class Node {
 	 *            Graphics-Objekt, auf das gemalt wird.
 	 */
 	public void paintYou(Graphics g) {
+		if (rejected && !Configuration.getInstance().getGeneralConfig().showRejected()) return;
 		Graphics2D g2d = (Graphics2D) g;
 		Rectangle2D rc;
 		g2d.setColor(getColor());
@@ -116,56 +116,20 @@ public class Node {
 				r * 2 * vs.getZoom(), 
 				r * 2 * vs.getZoom());
 		g2d.draw(e);
-		if (vs.moreInfo) {
-			Line2D l = new Line2D.Double();
-			l.setLine(x * vs.getZoom(), 
-					(y + r) * vs.getZoom(), 
-					(x + r * 2)	* vs.getZoom(), 
-					(y + r) * vs.getZoom());
-			g2d.draw(l);
-			l.setLine((x + r) * vs.getZoom(), 
-					(y + r) * vs.getZoom(), 
-					(x + r)	* vs.getZoom(), 
-					(y + r * 2) * vs.getZoom());
-			g2d.draw(l);
 
-			g2d.setFont(new Font("Arial", Font.PLAIN, (int) (8 * vs.getZoom())));
-			FontRenderContext frc = g2d.getFontRenderContext();
-			if (vs.shownr) {
-				rc = g2d.getFont().getStringBounds("" + nr, frc);
-				g2d.drawString("" + nr, 
-						(float) ((x + r) * vs.getZoom() - rc.getWidth() / 2), 
-						(float) ((y + r) * vs.getZoom() - rc.getHeight() / 2));
-			} else {
-				rc = g2d.getFont().getStringBounds(name, frc);
-				g2d.drawString("" + name, 
-						(float) ((x + r) * vs.getZoom() - rc.getWidth() / 2), 
-						(float) ((y + r) * vs.getZoom() - rc.getHeight() / 2));
-			}
-			// rc = g2d.getFont().getStringBounds("" + (start+dauer), frc);
-			// g2d.drawString(""+(start+dauer), (float)
-			// ((x+1.4*r)*vs.getZoom()-rc.getWidth()/2), (float)
-			// ((y+1.5*r)*vs.getZoom()));
-		} else {
-			g2d.setFont(new Font("Arial", Font.PLAIN, (int) (12 * vs
-							.getZoom())));
-			FontRenderContext frc = g2d.getFontRenderContext();
-			if (vs.shownr) {
-				rc = g2d.getFont().getStringBounds("" + nr, frc);
-				g2d.drawString("" + nr, 
-						(float) ((x + r) * vs.getZoom() - rc.getWidth() / 2), 
-						(float) ((y + r - 0.25*r) * vs.getZoom())); // +rc.getHeight()/2));
-			} else {
-				rc = g2d.getFont().getStringBounds(name, frc);
-				g2d.drawString(name, 
-						(float) ((x + r) * vs.getZoom() - rc.getWidth() / 2), 
-						(float) ((y + r - 0.25*r) * vs.getZoom())); // +rc.getHeight()/2));
-			}
-			rc = g2d.getFont().getStringBounds(getWS(), frc);
-			g2d.drawString(getWS(),
-					(float) ((x + r) * vs.getZoom() - rc.getWidth() / 2),
-					(float) ((y + 1.5 * r) * vs.getZoom()));
-		}
+		g2d.setFont(new Font("Arial", Font.PLAIN, (int) (12 * vs
+				.getZoom())));
+		FontRenderContext frc = g2d.getFontRenderContext();
+
+		rc = g2d.getFont().getStringBounds(name, frc);
+		g2d.drawString(name, 
+				(float) ((x + r) * vs.getZoom() - rc.getWidth() / 2), 
+				(float) ((y + r - 0.25*r) * vs.getZoom())); // +rc.getHeight()/2));
+
+		rc = g2d.getFont().getStringBounds(getWS(), frc);
+		g2d.drawString(getWS(),
+				(float) ((x + r) * vs.getZoom() - rc.getWidth() / 2),
+				(float) ((y + 1.5 * r) * vs.getZoom()));
 	}
 
 	DecimalFormat format = new DecimalFormat("#.###");

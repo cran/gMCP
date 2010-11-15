@@ -15,7 +15,7 @@ graph2latex <- function(graph, package="TikZ", scale=1, pvalues,
 			}
 			if (canBeRejected(graph, node, pvalues)) { double <- "double," }
 		}		
-		nodeLine <- paste("\\node (",node,") at (",x,"bp,",y,"bp) [draw,circle split,",double,"fill=",nodeColor,"] {$",node,"$ \\nodepart{lower} $",alpha,"$};",sep="")
+		nodeLine <- paste("\\node (",node,") at (",x,"bp,",-y,"bp) [draw,circle split,",double,"fill=",nodeColor,"] {$",node,"$ \\nodepart{lower} $",alpha,"$};",sep="")
 		tikz <- paste(tikz, nodeLine,sep="\n")			
 	}
 	# A second loop for the edges is necessary:
@@ -25,7 +25,7 @@ graph2latex <- function(graph, package="TikZ", scale=1, pvalues,
 			for (i in 1:length(edgeL)) {
 				weight <- try(edgeData(graph, names(edgeL[i]), node,"weight"), silent = TRUE)
 				to <- ifelse(class(weight)=="try-error", "auto", "bend left=15")			
-				weight <- ifelse(edgeL[i]==0, "\\epsilon", format(edgeL[i], digits=3, drop0trailing=TRUE))
+				weight <- ifelse(edgeL[i]==0, "$\\epsilon$", format(edgeL[i], digits=3, drop0trailing=TRUE))
 				edgeLine <- paste("\\draw [->,line width=1pt] (",node,") to[",to,"] node[near start,above,fill=blue!20] {",weight,"} (",names(edgeL[i]),");",sep="")
 				tikz <- paste(tikz, edgeLine,sep="\n")
 			}

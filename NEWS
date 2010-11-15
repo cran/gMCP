@@ -1,15 +1,35 @@
-Version 0.3-2
+Version 0.3-3
+=============
+- Be careful with epsilon edges (we never specified what exactly they are and how they should behave) 
+  and please wait for version 0.4 which will handle them in a completely new way and will document it.
+  Support for them is broken in this release. 
+- New example graph from Hommel et al. 2007.
+- Inserted missing $ in LaTeX code output from graph2latex.
+- Better automatic placement of edge labels.
+- Options dialog in GUI.
+- All doc files are accessible from the GUI menu.
+- The GUI Locale object is always set to English - that way there is no decimal separator confusion etc.
+- Edges with small weights are rendered better. 
+- Dialog that shows adjusted p-values with much better layout. 
+- New accompanying doc file: Description of Edges with Infinitesimal Small Epsilon Weights (unfinished).
+- graph2latex has the same vertical orientation as the GUI.
+- Option whether we want to still show already rejected nodes or not.
+- Option whether graphs should be colored or not.
+- Update in the GUI for confidence intervals to avoid a confused user.
+- Removed function adjPValues from public API - adjusted p-values are now calculated in the gMCP call.
+
+Version 0.3-2 (08-Oct-2010)
 =============
 - Renaming of parameter in simConfint: "confintF" is now "confint"
 - Updated confidence interval dialog (but still in development).
 - Confidence intervals for t- and normal distribution can be calculated based on the p-values and point estimates in most cases.
 - Reduced the package size.
 - Further improved capabilities for bug reporting.
-- We need rJava (≥ 0.8-3).
+- We need rJava in version 0.8-3 or later.
 - Vignette can be shown from inside the GUI.
 - Function "setAlpha".
 
-Version 0.3-1
+Version 0.3-1 (02-Oct-2010)
 =============
 - The GUI has a menu bar.
 - Improved capabilities for bug reporting. All information that is sent is also shown.
@@ -20,7 +40,7 @@ Version 0.3-1
 - Start button is only enabled, if the graph has any nodes.
 - Bug-fix regarding epsilon edges.
 
-Version 0.3-0
+Version 0.3-0 (01-Oct-2010)
 =============
 - Major API changes (mostly gsrmtp replaced by gMCP - but now the API should stay relatively stable).  
 - GraphGUI can now also be called directly on objects of class graphMCP, like graphGUI(rejectNode(graph, "H1")).
@@ -29,7 +49,7 @@ Version 0.3-0
 - If the graph has no nodeRenderInfo available when the GUI is called, the edges are placed in a circle.
 - Deducer support if installed and loaded.
 
-Version 0.2-4
+Version 0.2-4 (30-Sep-2010)
 =============
-- After some alpha and beta releases on r-forge this is the first version on CRAN.
+- After some alpha and beta releases on r-forge this is the first beta version on CRAN.
 - We support: Graphs with epsilon edges, confidence intervals, adjusted p-values.
