@@ -11,7 +11,7 @@ gMCP <- function(graph, pvalues, verbose=FALSE) {
 		graph <- rejectNode(graph, node, verbose)
 		sequence <- c(sequence, graph)
 	}	
-	return(new("gMCPResult", graphs=sequence, pvalues=pvalues, adjPValues=adjPValues(graph, pvalues, verbose)@adjPValues))
+	return(new("gMCPResult", graphs=sequence, pvalues=pvalues, adjPValues=adjPValues(sequence[[1]], pvalues, verbose)@adjPValues))
 }
 
 adjPValues <- function(graph, pvalues, verbose=FALSE) {
@@ -59,12 +59,32 @@ rejectNode <- function(graph, node, verbose=FALSE) {
 	
 	graph2 <- graph
 	
-	for (to in nodes(graph)[nodes(graph)!=node]) {
-		if ((getWeight(graph,node,to))>0) {
-			keepAlpha <- FALSE
-			nodeData(graph2, to, "alpha") <- nodeData(graph, to, "alpha")[[to]] + getWeight(graph,node,to) * nodeData(graph, node, "alpha")[[node]]
-		}
-	}	
+	#for (to in nodes(graph)[nodes(graph)!=node]) {
+	#	if ((getWeight(graph,node,to))>0) {
+	#		keepAlpha <- FALSE
+	#		nodeData(graph2, to, "alpha") <- nodeData(graph, to, "alpha")[[to]] + getWeight(graph,node,to) * nodeData(graph, node, "alpha")[[node]]
+	#	}
+	#}	
+	
+	## The following code will be removed in 0.4! ##
+	if (all(TRUE == all.equal(unname(edgesOut), rep(0, length(edgesOut))))) {
+		if (verbose) cat("Alpha is passed via epsilon-edges.\n")
+		for (to in nodes(graph)[nodes(graph)!=node]) {	
+			numberOfEpsilonEdges <- sum(TRUE == all.equal(unname(edgesOut), rep(0, length(edgesOut))))
+			if (existsEdge(graph, node, to)) {
+				nodeData(graph2, to, "alpha") <- nodeData(graph, to, "alpha")[[to]] + nodeData(graph, node, "alpha")[[node]] / numberOfEpsilonEdges
+				keepAlpha <- FALSE
+			}
+		}		
+	} else {
+		if (verbose) cat("Alpha is passed via non-epsilon-edges.\n")
+		for (to in nodes(graph)[nodes(graph)!=node]) {				
+			nodeData(graph2, to, "alpha") <- nodeData(graph, to, "alpha")[[to]] + getWeight(graph,node,to) * nodeData(graph, node, "alpha")[[node]]				
+		}	
+		keepAlpha <- FALSE
+	}
+	
+	#################################################
 	
 	for (to in nodes(graph)[nodes(graph)!=node]) {						
 		for (from in nodes(graph)[nodes(graph)!=node]) {

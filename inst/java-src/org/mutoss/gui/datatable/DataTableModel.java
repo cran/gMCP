@@ -24,19 +24,12 @@ public class DataTableModel extends AbstractTableModel {
         return df.getColName(col);
     }
 
-    public void setColumnName(int col, String newName) {
-        String oldName = df.getColName(col);
-    	df.setVarName(oldName, newName);
-        fireTableStructureChanged();
-    }
-
-    // we do rendering and editing ourselves anyway, so don't need this
     public Class<?> getColumnClass(int col) {
         return CellValue.class;
     }
 
     public boolean isCellEditable(int rowIndex, int col) {
-        return true;
+        return rowIndex != col;
     }
 
     public void setValueAt(Double value, int row, int col) {
@@ -45,7 +38,7 @@ public class DataTableModel extends AbstractTableModel {
     }
 
     public CellValue getValueAt(int row, int col) {
-        return new CellValue(df.getElement(row, col), df.getCol(col));
+        return new CellValue(df.getElement(row, col));
     }
     
     public void addRowCol(String name) {
@@ -66,9 +59,7 @@ public class DataTableModel extends AbstractTableModel {
     public void fireTableStructureChanged() {
     	super.fireTableStructureChanged();
     	if (rowModel!=null) rowModel.fireTableStructureChanged();
-    }
-
-    
+    }    
     
 	public void setRowModel(RowModel rowModel) {
 		this.rowModel  = rowModel;		

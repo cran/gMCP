@@ -6,11 +6,11 @@ High priority:
   - that does work already if we ignore rounding problems).
 - confidence intervals are strange...
 - Option for rounding how many digits we want to see.
-- Adjacency matrix in GUI
-- Is table sortable?
 - PPanels will set alpha to the truncated number. (Can we handle fractions?)
 - What happens if I try to create nodes with the same name? Is Node.nr used for something?
   (Saving to R returns an error: Ungültiges Objekt der Klasse "graphMCP": FALSE)
+- Edge weight from node i to node j: m[i,j] or m[j,i] - please decide.
+- Even addDefaultNode can add nodes with already existing names.
 
 
 Medium priority:
@@ -31,7 +31,6 @@ Medium priority:
 Additional features / low priority:
 ===================================
 
-- matrix2graph and graph2matrix function
 - Look at print method for gMCPResult
 - Cleanup Config
 - PNG export cuts perhaps edges.
@@ -46,6 +45,8 @@ See also http://comments.gmane.org/gmane.comp.lang.r.general/200179
 - TikZ styles for rejected / rejectable nodes
 - browseURL("http://gsrmtp.r-forge.r-project.org/")
 - LogPanel looks ugly -> bug in afcommons
+- Check for loops in matrix2graph
+- further tests
 
 @Apple - is this a problem?
 

@@ -1,4 +1,9 @@
-Version 0.3-3
+Version 0.3-4
+=============
+- New functions: graph2matrix and matrix2graph
+- Adjaceny matrix is shown and can be edited.
+
+Version 0.3-3 (15-Nov-2010)
 =============
 - Be careful with epsilon edges (we never specified what exactly they are and how they should behave) 
   and please wait for version 0.4 which will handle them in a completely new way and will document it.

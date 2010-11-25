@@ -1,16 +1,11 @@
 package org.mutoss.gui.datatable;
 
-
 import java.awt.Color;
 import java.awt.Dimension;
 
 import javax.swing.JTable;
-import javax.swing.table.TableCellRenderer;
-import javax.swing.table.TableColumn;
 
-
-//TODO selection of rows/cols and copy paste
-public class DataTable extends JXTable2 {
+public class DataTable extends JTable {
     public static final Color NUM_COLOR = Color.BLUE;
     public static final Color INT_COLOR = new Color(0, 155, 0);
     public static final Color FACTOR_COLOR = Color.RED;
@@ -32,7 +27,6 @@ public class DataTable extends JXTable2 {
         setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
 
     	setDefaultRenderer(CellValue.class, new EpsilonTableCellRenderer());
-        setTableHeaderRenderer();
     }
 
     @Override
@@ -58,33 +52,4 @@ public class DataTable extends JXTable2 {
     public String getColumnVar(int col) {
         return getModel().getColumnName(col);
     }
-
-
-    private void setTableHeaderRenderer() {
-        TableCellRenderer r = getTableHeader().getDefaultRenderer();
-        getTableHeader().setDefaultRenderer(new HeaderRenderer(r));
-    }
-
-
-    @Override
-    public void createDefaultColumnsFromModel() {
-        super.createDefaultColumnsFromModel();
-        for (int j = 0; j < getColumnCount(); j++) {
-            TableColumn aColumn = getColumn(j);
-            int i = aColumn.getModelIndex();
-            String name = getModel().getColumnName(i);
-            double[] dfCol = getModel().getDataFrame().getCol(i);
-            aColumn.setHeaderValue(new HeaderCellValue(name, dfCol));
-        }
-    }
-
-    @Override
-    public void addColumn(TableColumn aColumn) {
-        int i = aColumn.getModelIndex();
-        String name = getModel().getColumnName(i);
-        double[] dfCol = getModel().getDataFrame().getCol(i);
-        aColumn.setHeaderValue(new CellValue(name, dfCol));
-        super.addColumn(aColumn);
-    }
-
 }
