@@ -12,6 +12,8 @@ import org.af.commons.images.GraphDrawHelper;
 import org.af.commons.images.GraphException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.mutoss.config.Configuration;
+import org.mutoss.gui.RControl;
 
 public class Edge {
 
@@ -22,9 +24,9 @@ public class Edge {
 	FontRenderContext frc = null;
 	Graphics2D g2d;
 	int k1, k2;
-	public Node nach;
+	public Node to;
 
-	public Node von;
+	public Node from;
 	
 	VS vs;
 	
@@ -38,8 +40,8 @@ public class Edge {
 		y2 = nach.getY() + Node.getRadius();
 		k1 = x1 + (x2-x1)/4; //(x1+x2)/2;
 		k2 = y1 + (y2-y1)/4; //(y1+y2)/2;
-		this.von = von;
-		this.nach = nach;
+		this.from = von;
+		this.to = nach;
 		this.w = w;
 		this.vs = vs;
 	}
@@ -77,8 +79,8 @@ public class Edge {
 	}
 	
 	public Edge(Node von, Node nach, Double w, VS vs, int k1, int k2) {
-		this.von = von;
-		this.nach = nach;
+		this.from = von;
+		this.to = nach;
 		this.w = w;
 		this.vs = vs;
 		this.k1 = k1;
@@ -87,10 +89,10 @@ public class Edge {
 	
 	public int getBendLeft() {
 		int x1, x2, y1, y2;
-		x1 = von.getX() + Node.getRadius();
-		x2 = nach.getX() + Node.getRadius();
-		y1 = von.getY() + Node.getRadius();
-		y2 = nach.getY() + Node.getRadius();
+		x1 = from.getX() + Node.getRadius();
+		x2 = to.getX() + Node.getRadius();
+		y1 = from.getY() + Node.getRadius();
+		y2 = to.getY() + Node.getRadius();
 		double[] m;
 		try {
 			m = GraphDrawHelper.getCenter(x1, y1, k1, k2, x2, y2);
@@ -117,10 +119,10 @@ public class Edge {
 
 	public double getPos() {
 		int x1, x2, y1, y2;
-		x1 = von.getX() + Node.getRadius();
-		x2 = nach.getX() + Node.getRadius();
-		y1 = von.getY() + Node.getRadius();
-		y2 = nach.getY() + Node.getRadius();		
+		x1 = from.getX() + Node.getRadius();
+		x2 = to.getX() + Node.getRadius();
+		y1 = from.getY() + Node.getRadius();
+		y2 = to.getY() + Node.getRadius();		
 		double[] m;
 		try {
 			m = GraphDrawHelper.getCenter(x1, y1, k1, k2, x2, y2);
@@ -157,7 +159,28 @@ public class Edge {
 		if (w<0.0009) {
 			return formatSmall.format(w);
 		} else {
-			return format.format(w);
+			if (!Configuration.getInstance().getGeneralConfig().showFractions()) {
+				return format.format(w);
+			} else {
+				String f = RControl.getFraction(w);
+				if (f.equals("1/2")) return("½");
+				if (f.equals("1/3")) return("⅓");
+				if (f.equals("2/3")) return("⅔");
+				if (f.equals("1/4")) return("¼");
+				if (f.equals("3/4")) return("¾");
+				/* The following do often not work:
+				if (f.equals("1/5")) return("⅕");
+				if (f.equals("2/5")) return("⅖");
+				if (f.equals("3/5")) return("⅗");
+				if (f.equals("4/5")) return("⅘");
+				if (f.equals("1/6")) return("⅙");
+				if (f.equals("5/6")) return("⅚");
+				if (f.equals("1/8")) return("⅛");
+				if (f.equals("3/8")) return("⅜");
+				if (f.equals("5/8")) return("⅝");
+				if (f.equals("7/8")) return("⅞");*/
+				return f;
+			}
 		}
 	}
 
@@ -171,11 +194,11 @@ public class Edge {
 	
 	public void paintYou(Graphics g) {
 		int x1, x2, y1, y2;
-		x1 = von.x + Node.getRadius();
-		x2 = nach.x + Node.getRadius();
-		y1 = von.y + Node.getRadius();
-		y2 = nach.y + Node.getRadius();
-		if (von != nach) {
+		x1 = from.x + Node.getRadius();
+		x2 = to.x + Node.getRadius();
+		y1 = from.y + Node.getRadius();
+		y2 = to.y + Node.getRadius();
+		if (from != to) {
 			int dx = x1 - k1;
 			int dy = y1 - k2;
 			double d = Math.sqrt(dx * dx + dy * dy);

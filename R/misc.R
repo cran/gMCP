@@ -7,3 +7,13 @@ checkValidAlpha <- function(alpha) {
 	}
 }
 
+# Converts a string like "5+3*e+5*e^2" to the tupel representation c(5,3,5) 
+parseEpsPolynom <- function(s) {
+	e <- polynom()
+	eval(parse(text=paste("p <- ", s)))
+	if(is.numeric(p)) {
+		return(p)
+	} else {
+    	return(coef(p))
+	}
+}

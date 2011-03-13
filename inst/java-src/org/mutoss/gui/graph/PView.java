@@ -5,6 +5,7 @@ import java.awt.Component;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.text.DecimalFormat;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Vector;
 
@@ -23,14 +24,14 @@ public class PView extends JPanel {
 	JLabel statusBar;
 	private static final Log logger = LogFactory.getLog(PView.class);
 
-	private ControlMGraph control;
+	private GraphView control;
 	private Vector<PPanel> panels = new Vector<PPanel>();
 	CellConstraints cc = new CellConstraints();	
 	//JPanel panel = new JPanel();
 	JLabel label = new JLabel("Total α: "+0);
 	GridBagConstraints c = new GridBagConstraints();
 	
-	public PView(ControlMGraph abstractGraphControl) {
+	public PView(GraphView abstractGraphControl) {
 		//super("p-Values");
 		this.control = abstractGraphControl;        
 		setLayout(new GridBagLayout());
@@ -59,6 +60,11 @@ public class PView extends JPanel {
 		logger.debug(debug);
 	}
 	
+	public void setPValues(Double[] pvalues) {
+		pValues = Arrays.asList(pvalues);
+		restorePValues();
+	}
+	
 	public void restorePValues() {
 		String debug = "Restoring : ";
 		if (pValues != null) {
@@ -85,8 +91,9 @@ public class PView extends JPanel {
         panel.setLayout(layout);        
 		
     	panel.add(new JLabel("Hypothesis"), cc.xy(2, 2));
-
-    	panel.add(new JLabel("Significance Level"), cc.xy(4, 2));
+    	
+    	panel.add(new JLabel("α Level"), cc.xy(4, 2));
+    	//panel.add(new JLabel("Signif. Level"), cc.xy(4, 2));
 
     	panel.add(new JLabel("P-Value"), cc.xy(6, 2));
 				

@@ -13,6 +13,7 @@ import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
+import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -21,22 +22,72 @@ import javax.swing.JTextField;
 
 import org.af.commons.errorhandling.ErrorHandler;
 import org.af.commons.widgets.DesktopPaneBG;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.mutoss.gui.CreateGraphGUI;
 import org.mutoss.gui.RControl;
+import org.mutoss.gui.datatable.DataTable;
 
 public class GraphView extends JPanel implements ActionListener {
 
+	String name;
+	CreateGraphGUI parent;
+	
+	private static final Log logger = LogFactory.getLog(GraphView.class);
+	
+	public String getName() {		
+		return name;
+	}
+
+	public JFrame getMainFrame() {		
+		return parent;
+	}
+
+	public PView getPView() {		
+		return parent.getPView();
+	}
+	
+	public GraphView getGraphView() {
+		return parent.getGraphView();
+	}
+
+	public void updateEdge(int from, int to, Double w) {
+		logger.info("Adding Edge from "+from+" to "+to+" with weight "+w+".");
+		Edge e = getNL().findEdge(getNL().getKnoten().get(from), getNL().getKnoten().get(to));
+		if (e!=null) {
+			int x = e.getK1();
+			int y = e.getK2();
+			if (w != 0) {
+				getNL().addEdge(new Edge(getNL().getKnoten().get(from), getNL().getKnoten().get(to), w, getNL().vs, x, y));
+			} else {
+				getNL().removeEdge(e);
+			}
+		} else {
+			getNL().addEdge(getNL().getKnoten().get(from), getNL().getKnoten().get(to), w);
+		}
+		getNL().repaint();
+	}
+
+	public DataTable getDataTable() {		
+		return parent.getDataTable();
+	}
+
+	public CreateGraphGUI getParent() {
+		return parent;
+	}
+	
 	JLabel statusBar;
-	public NetzListe nl;
+	public NetList nl;
 	VS vs = new VS();
 
-	private ControlMGraph control;
 	public static final String STATUSBAR_DEFAULT = "Place new nodes and edges or start the test procedure";
 
-	public GraphView(ControlMGraph abstractGraphControl) {
+	public GraphView(String graph, CreateGraphGUI createGraphGUI) {
 		//super("Graph");
-		this.control = abstractGraphControl;
+		this.name = graph;
+		this.parent = createGraphGUI;
 		statusBar = new JLabel(STATUSBAR_DEFAULT);
-		nl = new NetzListe(statusBar, vs, abstractGraphControl);
+		nl = new NetList(statusBar, vs, this);
 		setLayout(new BorderLayout());
 		add("North", getNorthPanel());		
 		JScrollPane sPane = new JScrollPane(nl);
@@ -50,7 +101,7 @@ public class GraphView extends JPanel implements ActionListener {
 	JButton buttonLatex;
 	JButton buttonPhysics;
 	JButton buttonSave;
-	JTextField jtSaveName;
+	public JTextField jtSaveName;
 	
 	JButton buttonadjPval;
 	JButton buttonConfInt;
@@ -68,11 +119,11 @@ public class GraphView extends JPanel implements ActionListener {
 
     private JPanel getSaveBar() {
     	JPanel panel = new JPanel();
-    	jtSaveName = new JTextField(control.getName(), 24);
+    	jtSaveName = new JTextField(getName(), 24);
     	panel.setLayout(new FlowLayout());
 		((FlowLayout) (panel.getLayout()))
 				.setAlignment(FlowLayout.LEFT);
-		panel.add(new JLabel("Variablename to save to: "));
+		panel.add(new JLabel("Object name in R for saving/loading: "));
 		panel.add(jtSaveName);
 		jtSaveName.addActionListener(this);
 		return panel;
@@ -156,7 +207,7 @@ public class GraphView extends JPanel implements ActionListener {
 		return toolPanel;
 	}
 
-	public NetzListe getNL() {
+	public NetList getNL() {
 		return nl;
 	}
 
@@ -178,7 +229,11 @@ public class GraphView extends JPanel implements ActionListener {
 		} else if (e.getSource().equals(buttonSave) || e.getSource().equals(jtSaveName)) {			
 			getNL().saveGraph(jtSaveName.getText(), true);
 		} else if (e.getSource().equals(buttonConfInt)) {
-			new DialogConfIntEstVar(control.getMainFrame(), control, nl);
+			if (getNL().getKnoten().size()==0) {
+				JOptionPane.showMessageDialog(parent, "Please create first a graph.", "Please create first a graph.", JOptionPane.ERROR_MESSAGE);
+			} else {
+				new DialogConfIntEstVar(parent, this, nl);
+			}
 		} else if (e.getSource().equals(buttonStart)) {
 			if (!getNL().isTesting()) {
 				startTesting();
@@ -186,13 +241,17 @@ public class GraphView extends JPanel implements ActionListener {
 				stopTesting();
 			}
 		} else if (e.getSource().equals(buttonadjPval)) {
-			if (!getNL().isTesting()) {
-				getNL().saveGraph();
-				control.getPView().savePValues();
+			if (getNL().getKnoten().size()==0) {
+				JOptionPane.showMessageDialog(parent, "Please create first a graph.", "Please create first a graph.", JOptionPane.ERROR_MESSAGE);
+			} else {
+				if (!getNL().isTesting()) {
+					getNL().saveGraph();
+					getPView().savePValues();
+				}
+				String pValues = getPView().getPValuesString();
+				double[] adjPValues = RControl.getR().eval("gMCP:::adjPValues("+NetList.initialGraph+","+pValues+")@adjPValues").asRNumeric().getData();
+				new AdjustedPValueDialog(parent, getPView().pValues, adjPValues, getNL().getKnoten());
 			}
-			String pValues = control.getPView().getPValuesString();
-			double[] adjPValues = RControl.getR().eval("gMCP:::adjPValues("+NetzListe.initialGraph+","+pValues+")@adjPValues").asRNumeric().getData();
-			new AdjustedPValueDialog(control.getMainFrame(), control.getPView().pValues, adjPValues, getNL().getKnoten());			
 		} else if (e.getSource().equals(buttonLatex)) {
 			exportLaTeXGraph();
 		}
@@ -245,10 +304,10 @@ public class GraphView extends JPanel implements ActionListener {
 		getNL().reset();
 		//control.getPView().removeAllPanels();
 		getNL().loadGraph();				
-		control.getPView().restorePValues();
-		control.getPView().setTesting(false);
-		control.getPView().revalidate();
-		control.getPView().repaint();
+		getPView().restorePValues();
+		getPView().setTesting(false);
+		getPView().revalidate();
+		getPView().repaint();
 		buttonNewVertex.setEnabled(true);
 		buttonNewEdge.setEnabled(true);
 		try {
@@ -261,11 +320,11 @@ public class GraphView extends JPanel implements ActionListener {
 
 	public void startTesting() {	
 		if (getNL().testingStarted) return;
-		control.getPView().savePValues();
+		getPView().savePValues();
 		try {
 			getNL().startTesting();
 			getNL().saveGraph();
-			control.getPView().setTesting(true);			
+			getPView().setTesting(true);			
 			buttonNewVertex.setEnabled(false);
 			buttonNewEdge.setEnabled(false);				
 			buttonStart.setIcon(new ImageIcon(ImageIO.read(DesktopPaneBG.class
@@ -279,7 +338,7 @@ public class GraphView extends JPanel implements ActionListener {
 	public void WriteLaTeXwithR() {
 		JFileChooser fc = new JFileChooser();
 		File file;
-		int returnVal = fc.showSaveDialog(control.getMainFrame());
+		int returnVal = fc.showSaveDialog(getMainFrame());
 		if (returnVal == JFileChooser.APPROVE_OPTION) {
 			file = fc.getSelectedFile();			
 		} else {
