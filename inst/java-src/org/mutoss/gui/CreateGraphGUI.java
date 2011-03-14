@@ -9,7 +9,6 @@ import java.util.Locale;
 import javax.swing.ImageIcon;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
-import javax.swing.JLabel;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 
@@ -28,6 +27,9 @@ import org.mutoss.gui.graph.PView;
 public class CreateGraphGUI extends JFrame implements WindowListener {
 	
 	GraphMCP graph;
+	GraphView agc;
+	PView pview;
+	DataFramePanel dfp;
 	
 	public CreateGraphGUI(String graph, double[] pvalues, boolean debug, double grid) {
 		super("Creating and modifying graphs");	
@@ -37,7 +39,6 @@ public class CreateGraphGUI extends JFrame implements WindowListener {
 		Localizer.getInstance().addResourceBundle("org.mutoss.gui.ResourceBundle");
 		Configuration.getInstance().getGeneralConfig().setGridSize((int)grid);
 		setIconImage((new ImageIcon(getClass().getResource("/org/mutoss/gui/graph/images/rjavaicon64.png"))).getImage());
-		agc = new GraphView(graph, this);		
 		
 		// Fenster in der Mitte des Bildschirms platzieren mit inset = 50 Pixeln Rand.
 		int inset = 50;
@@ -46,7 +47,10 @@ public class CreateGraphGUI extends JFrame implements WindowListener {
 				screenSize.width  - inset*2,
 				screenSize.height - inset*2);
 		addWindowListener(this);
-		
+
+		pview = new PView();
+		dfp = new DataFramePanel(new RDataFrameRef());
+		agc = new GraphView(graph, this);
 		setJMenuBar(new MenuBarMGraph(agc));
 		makeContent();
 		this.graph = new GraphMCP(graph, agc.getVS());
@@ -74,18 +78,11 @@ public class CreateGraphGUI extends JFrame implements WindowListener {
 		});		
 	}
 	
-	JLabel statusbar = new JLabel(); 
-	GraphView agc;
-	PView pview;
-	DataFramePanel dfp;
-	
 	private void makeContent() {
-		pview = new PView(agc);
-		dfp = new DataFramePanel(new RDataFrameRef());
 		dfp.getTable().setDefaultEditor(CellValue.class, new CellEditorE(agc));
 		JSplitPane splitPane2 = new JSplitPane(JSplitPane.VERTICAL_SPLIT, new JScrollPane(dfp), pview);
 		JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, agc, splitPane2);
-		this.getContentPane().add(splitPane);		
+		getContentPane().add(splitPane);		
 	}
 
 	public static void main(String[] args) {

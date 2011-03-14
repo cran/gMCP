@@ -7,7 +7,6 @@ import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.text.DecimalFormat;
 
 import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
@@ -32,10 +31,28 @@ public class GraphView extends JPanel implements ActionListener {
 
 	String name;
 	CreateGraphGUI parent;
+
+	public JTextField jtSaveName;
+	public static final String STATUSBAR_DEFAULT = "Place new nodes and edges or start the test procedure";
+	JLabel statusBar;
+	public NetList nl;
+	VS vs = new VS();
+	
+	JButton buttonNewVertex;
+	JButton buttonNewEdge;
+	JButton buttonZoomOut;
+	JButton buttonZoomIn;
+	JButton buttonLatex;
+	JButton buttonPhysics;
+	JButton buttonSave;	
+	JButton buttonadjPval;
+	JButton buttonConfInt;
+	JButton buttonStart;	
+	JButton buttonBack;
 	
 	private static final Log logger = LogFactory.getLog(GraphView.class);
 	
-	public String getName() {		
+	public String getGraphName() {		
 		return name;
 	}
 
@@ -45,10 +62,6 @@ public class GraphView extends JPanel implements ActionListener {
 
 	public PView getPView() {		
 		return parent.getPView();
-	}
-	
-	public GraphView getGraphView() {
-		return parent.getGraphView();
 	}
 
 	public void updateEdge(int from, int to, Double w) {
@@ -72,18 +85,11 @@ public class GraphView extends JPanel implements ActionListener {
 		return parent.getDataTable();
 	}
 
-	public CreateGraphGUI getParent() {
+	public CreateGraphGUI getGraphGUI() {
 		return parent;
 	}
 	
-	JLabel statusBar;
-	public NetList nl;
-	VS vs = new VS();
-
-	public static final String STATUSBAR_DEFAULT = "Place new nodes and edges or start the test procedure";
-
 	public GraphView(String graph, CreateGraphGUI createGraphGUI) {
-		//super("Graph");
 		this.name = graph;
 		this.parent = createGraphGUI;
 		statusBar = new JLabel(STATUSBAR_DEFAULT);
@@ -93,20 +99,6 @@ public class GraphView extends JPanel implements ActionListener {
 		JScrollPane sPane = new JScrollPane(nl);
 		add("Center", sPane);
     }
-	
-	JButton buttonNewVertex;
-	JButton buttonNewEdge;
-	JButton buttonZoomOut;
-	JButton buttonZoomIn;
-	JButton buttonLatex;
-	JButton buttonPhysics;
-	JButton buttonSave;
-	public JTextField jtSaveName;
-	
-	JButton buttonadjPval;
-	JButton buttonConfInt;
-	JButton buttonStart;	
-	JButton buttonBack;
 	
 	public JPanel getNorthPanel() {
 		JPanel panel = new JPanel();
@@ -119,7 +111,7 @@ public class GraphView extends JPanel implements ActionListener {
 
     private JPanel getSaveBar() {
     	JPanel panel = new JPanel();
-    	jtSaveName = new JTextField(getName(), 24);
+    	jtSaveName = new JTextField(getGraphName(), 24);
     	panel.setLayout(new FlowLayout());
 		((FlowLayout) (panel.getLayout()))
 				.setAlignment(FlowLayout.LEFT);
@@ -178,14 +170,6 @@ public class GraphView extends JPanel implements ActionListener {
 			toolPanel.add(buttonConfInt);
 			buttonConfInt.addActionListener(this);
 			buttonConfInt.setToolTipText("calculate confidence intervals");
-			
-			/*buttonBack = new JButton(
-					new ImageIcon(ImageIO.read(DesktopPaneBG.class
-											.getResource("/org/mutoss/gui/graph/images/back.png"))));
-			toolPanel.add(buttonBack);
-			buttonBack.setEnabled(false);
-			buttonBack.addActionListener(this);
-			buttonBack.setToolTipText("go back one step");*/
 			
 			buttonStart = new JButton(
 					new ImageIcon(ImageIO.read(DesktopPaneBG.class
@@ -256,8 +240,6 @@ public class GraphView extends JPanel implements ActionListener {
 			exportLaTeXGraph();
 		}
 	}
-
-	DecimalFormat format = new DecimalFormat("#.###");
 	
 	public VS getVS() {		
 		return vs;
@@ -302,7 +284,6 @@ public class GraphView extends JPanel implements ActionListener {
 		if (!getNL().testingStarted) return;
 		getNL().stopTesting();
 		getNL().reset();
-		//control.getPView().removeAllPanels();
 		getNL().loadGraph();				
 		getPView().restorePValues();
 		getPView().setTesting(false);

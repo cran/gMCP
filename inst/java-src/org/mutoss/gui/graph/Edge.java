@@ -30,7 +30,8 @@ public class Edge {
 	
 	VS vs;
 	
-	Double w;
+	private Double w;
+	private String stringW = "";
 
 	public Edge(Node von, Node nach, Double w, VS vs) {		
 		int x1, x2, y1, y2;
@@ -43,8 +44,10 @@ public class Edge {
 		this.from = von;
 		this.to = nach;
 		this.w = w;
+		calculateWeightString();
 		this.vs = vs;
 	}
+	
 	public Edge(Node von, Node nach, Double w, VS vs, boolean curve) {
 		this(von, nach, w, vs);
 		int x1, x2, y1, y2;
@@ -82,6 +85,7 @@ public class Edge {
 		this.from = von;
 		this.to = nach;
 		this.w = w;
+		calculateWeightString();
 		this.vs = vs;
 		this.k1 = k1;
 		this.k2 = k2;
@@ -159,28 +163,7 @@ public class Edge {
 		if (w<0.0009) {
 			return formatSmall.format(w);
 		} else {
-			if (!Configuration.getInstance().getGeneralConfig().showFractions()) {
-				return format.format(w);
-			} else {
-				String f = RControl.getFraction(w);
-				if (f.equals("1/2")) return("½");
-				if (f.equals("1/3")) return("⅓");
-				if (f.equals("2/3")) return("⅔");
-				if (f.equals("1/4")) return("¼");
-				if (f.equals("3/4")) return("¾");
-				/* The following do often not work:
-				if (f.equals("1/5")) return("⅕");
-				if (f.equals("2/5")) return("⅖");
-				if (f.equals("3/5")) return("⅗");
-				if (f.equals("4/5")) return("⅘");
-				if (f.equals("1/6")) return("⅙");
-				if (f.equals("5/6")) return("⅚");
-				if (f.equals("1/8")) return("⅛");
-				if (f.equals("3/8")) return("⅜");
-				if (f.equals("5/8")) return("⅝");
-				if (f.equals("7/8")) return("⅞");*/
-				return f;
-			}
+			return stringW;			
 		}
 	}
 
@@ -213,8 +196,6 @@ public class Edge {
 			
 			if (g2d == null) {
 				g2d = (Graphics2D) g;
-				/*g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
-                        RenderingHints.VALUE_ANTIALIAS_ON);*/
 			}
 			g2d = (Graphics2D) g;			
 
@@ -223,9 +204,6 @@ public class Edge {
 					(int) (k2 * vs.getZoom()),
 					(int) (x2 * vs.getZoom()), (int) (y2 * vs.getZoom()), 
 					(int) (8 * vs.getZoom()), 35, true);
-			
-			//QuadCurve2D quadcurve = new QuadCurve2D.Float(x1, y1, k1, k2 ,x2, y2);
-			//g2d.draw(quadcurve);
 			
 			g2d.setFont(new Font("Arial", Font.PLAIN, (int) (16 * vs.getZoom())));
 			frc = g2d.getFontRenderContext();		
@@ -264,7 +242,38 @@ public class Edge {
 
 	public void setW(Double w) {
 		this.w = w;
+		calculateWeightString();
 		vs.nl.repaint();
+	}
+
+	// TODO Call this method when options change!
+	public void calculateWeightString() {
+		stringW = getString();		
+	}
+
+	private String getString() {
+		if (!Configuration.getInstance().getGeneralConfig().showFractions()) {
+			return format.format(w);
+		} else {
+			String f = RControl.getFraction(w);
+			if (f.equals("1/2")) return("½");
+			if (f.equals("1/3")) return("⅓");
+			if (f.equals("2/3")) return("⅔");
+			if (f.equals("1/4")) return("¼");
+			if (f.equals("3/4")) return("¾");
+			/* The following do often not work:
+			if (f.equals("1/5")) return("⅕");
+			if (f.equals("2/5")) return("⅖");
+			if (f.equals("3/5")) return("⅗");
+			if (f.equals("4/5")) return("⅘");
+			if (f.equals("1/6")) return("⅙");
+			if (f.equals("5/6")) return("⅚");
+			if (f.equals("1/8")) return("⅛");
+			if (f.equals("3/8")) return("⅜");
+			if (f.equals("5/8")) return("⅝");
+			if (f.equals("7/8")) return("⅞");*/
+			return f;
+		}
 	}
 
 }

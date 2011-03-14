@@ -23,45 +23,30 @@ import org.apache.commons.logging.LogFactory;
 import org.mutoss.config.Configuration;
 import org.mutoss.gui.RControl;
 
-
-/**
- * Diese Klasse (extends JPanel) stellt einen Graphen graphisch dar.
- */
-
 public class NetList extends JPanel implements MouseMotionListener, MouseListener {
 
 	private static final Log logger = LogFactory.getLog(NetList.class);
 	GraphView control;
-	int drag = -1;
+	
 	protected Vector<Edge> edges = new Vector<Edge>();
+	protected Vector<Node> nodes = new Vector<Node>();
+		
+	int drag = -1;
 	int edrag = -1;
 	
 	Node firstVertex;
 	boolean firstVertexSelected = false;
-	protected Vector<Node> nodes = new Vector<Node>();
 
-	boolean started = false;
+	public boolean testingStarted = false;
 
 	JLabel statusBar;
 
 	protected VS vs;
-	public boolean testingStarted = false;
 
-	/**
-	 * Konstruktor der die NetzListe erzeugt
-	 * 
-	 * @param document
-	 *            Ein org.jdom.Document, das den Plan enthält.
-	 * @param statusBar
-	 *            Die Statusbar des zugehörigen FrameViewer
-	 * @param vs
-	 *            VS Viewer Setting Objekt
-	 */
-
-	public NetList(JLabel statusBar, VS vs,  GraphView abstractGraphControl) {
+	public NetList(JLabel statusBar, VS vs,  GraphView graphview) {
 		this.statusBar = statusBar;
 		this.vs = vs;
-		this.control = abstractGraphControl;
+		this.control = graphview;
 		vs.setNL(this);
 		addMouseMotionListener(this);
 		addMouseListener(this);
@@ -151,9 +136,10 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 	}
 
 	public void addNode(Node node) {
-		control.getGraphView().buttonStart.setEnabled(true);
+		control.buttonStart.setEnabled(true);
 		nodes.add(node);
 		nodes.lastElement().fix = false;	
+		// TODO The next two functions must revalidate the window!
 		control.getPView().addPPanel(node);
 		control.getDataTable().getModel().addRowCol(node.name);
 		calculateSize();
@@ -198,6 +184,7 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 	/**
 	 * Liefert die Adjacenz-Matrix zurück
 	 */
+	
 	public int[][] getAMatrix() {
 		int[][] e = new int[nodes.size()][];
 		for (int i = 0; i < nodes.size(); i++) {
@@ -254,9 +241,8 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 		return nodes;
 	}
 	
-	DecimalFormat format = new DecimalFormat("#.###");
-	
 	public String getLaTeX() {
+		DecimalFormat format = Configuration.getInstance().getGeneralConfig().getDecFormat();
 		String latex = "";
 		double scale=0.5;
 		latex += "\\begin{tikzpicture}[scale="+scale+"]";
@@ -315,20 +301,12 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 	
 	public void mouseExited(MouseEvent e) {}
 
-	/**
-	 * Methode die vom MouseMotionListener MouseMotionNetz aufgerufen wird, wenn
-	 * die Mouse bewegt wird.
-	 * 
-	 * @param e
-	 *            Eingetretenes MouseEvent
-	 */
-
 	public void mouseMoved(MouseEvent e) {}
 
 	public void mousePressed(MouseEvent e) {
-		//logger.debug("MousePressed at ("+e.getX()+","+ e.getY()+").");
+		logger.debug("MousePressed at ("+e.getX()+","+ e.getY()+").");
 		if (vs.newVertex) {
-			addDefaultNode((int)(e.getX() / vs.getZoom())	- Node.r, 
+			addDefaultNode((int)(e.getX() / vs.getZoom()) - Node.r, 
 						(int) (e.getY() / vs.getZoom()) - Node.r);
 			vs.newVertex = false;
 			statusBar.setText(GraphView.STATUSBAR_DEFAULT);
@@ -464,8 +442,6 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 		edges.remove(edge);		
 	}
 
-	
-
 	public void removeNode(Node node) {
 		for (int i=edges.size()-1; i>=0; i--) {
 			Edge e = edges.get(i);
@@ -477,7 +453,7 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 		nodes.remove(node);
 		control.getPView().removePPanel(node);
 		if (nodes.size()==0) {
-			control.getGraphView().buttonStart.setEnabled(false);
+			control.buttonStart.setEnabled(false);
 		}
 		repaint();
 	}
@@ -525,7 +501,7 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 			for (Edge e : edges) {				
 				if (e.from == n) {
 					edgeL += "\""+e.to.getName()+"\",";
-					weights += ((""+e.w).equals("NaN")?0+",":e.w +",");
+					weights += ((""+e.getW()).equals("NaN")?0+",":e.getW() +",");
 				}
 			}
 			if (edgeL.length()!=0) {
@@ -566,16 +542,6 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 	
 	public void setKnoten(Vector<Node> knoten) {
 		this.nodes = knoten;
-	}
-	
-	/**
-	 * Setzt die Settings aus dem Viewer Settings Objekt und führt
-	 * gegebenenfalls Algorithmen zur Anordnung der Knoten aus.
-	 */
-
-	public void updateSettings() {
-		int d = (2 * Node.getRadius() + 10);
-		calculateSize();
 	}
 	
 	public Node vertexSelected(int x, int y) {
