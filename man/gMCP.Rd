@@ -8,7 +8,7 @@
 	Performs a sequentially rejective multiple test procedure on a graph given unadjusted p-values.
 }
 \usage{
-	gMCP(graph, pvalues, verbose=FALSE)
+	gMCP(graph, pvalues, test, correlation, ..., verbose=FALSE)
 }
 
 \arguments{
@@ -18,6 +18,15 @@
   \item{pvalues}{
   	A numeric vector specifying the p-values for the sequentially rejective MTP.
   } 
+  \item{test}{
+  	A test function. Will be supported in future versions.
+  } 
+  \item{correlation}{
+  	Correlation matrix, if the tests are correlated. Also valid are strings like \code{"Dunnett"}.
+  }  
+  \item{...}{
+  	Test specific arguments can be given here.
+  }   
   \item{verbose}{Logical scalar.  If \code{TRUE} verbose output is generated during
           sequentially rejection steps.}  
 }
@@ -28,13 +37,18 @@
 An object of class \code{gMCPResult}, more specifically a list with elements
 \item{graphs }{ list of graphs}				
 \item{pvalues }{ p-values}
+\item{rejected }{ logical whether hyptheses could be rejected}
 \item{adjPValues }{ adjusted p-values}
+If a correlation matrix is passed only the slots \code{pvalues} and \code{rejected} are set.
 }
 \references{
 Frank Bretz, Willi Maurer, Werner Brannath, Martin Posch:
 A graphical approach to sequentially rejective multiple test procedures.
 Statistics in Medicine 2009 vol. 28 issue 4 page 586-604. 
 \url{http://www.meduniwien.ac.at/fwf_adaptive/papers/bretz_2009_22.pdf}
+
+Bretz F., Posch M., Glimm E., Klinglmueller F., Maurer W., Rohmeyer K. (2011):
+Graphical approaches for multiple endpoint problems using weighted Bonferroni, Simes or parametric tests - to appear.
 
 Strassburger K., Bretz F.:
 Compatible simultaneous lower confidence bounds for the Holm procedure and other

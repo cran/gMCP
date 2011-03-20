@@ -5,7 +5,9 @@ import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileWriter;
+import java.io.IOException;
 import java.lang.reflect.Method;
+import java.net.URI;
 import java.text.DecimalFormat;
 
 import javax.imageio.ImageIO;
@@ -17,6 +19,7 @@ import javax.swing.JOptionPane;
 
 import org.af.commons.Localizer;
 import org.af.commons.errorhandling.ErrorHandler;
+import org.af.commons.io.FileTransfer;
 import org.af.commons.logging.LoggingSystem;
 import org.af.commons.logging.widgets.DetailsDialog;
 import org.af.commons.tools.OSTools;
@@ -24,6 +27,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.mutoss.config.Configuration;
 import org.mutoss.gui.dialogs.NumberOfHypotheses;
+import org.mutoss.gui.dialogs.TextFileViewer;
 import org.mutoss.gui.graph.GraphView;
 import org.mutoss.gui.graph.NetList;
 import org.mutoss.gui.options.OptionsDialog;
@@ -43,9 +47,11 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
 
 		menu.add(makeMenuItem("New Graph", "new graph"));
 		menu.add(makeMenuItem("Load Graph from file", "load graph"));
+		menu.addSeparator();		
 		menu.add(makeMenuItem("Save Graph to file", "save graph"));		
-		menu.add(makeMenuItem("Save Graph as PNG Image", "save graph image"));
-		menu.add(makeMenuItem("Save Graph as LaTeX File", "save graph latex"));
+		menu.addSeparator();
+		menu.add(makeMenuItem("Export Graph to PNG Image", "save graph image"));
+		menu.add(makeMenuItem("Export Graph to LaTeX File", "save graph latex"));
 		menu.addSeparator();
 		/*menu.add(makeMenuItem("Save LaTeX Report", "save latex report"));
 		menu.add(makeMenuItem("Save PDF Report", "save pdf"));
@@ -72,7 +78,7 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
 	public void loadGraph(String string) {
 		NetList nl = control.getNL();		
 		newGraph();
-		RControl.getR().eval(NetList.initialGraph + " <- " + string);
+		RControl.getR().eval(nl.initialGraph + " <- " + string);
 		nl.loadGraph();
 		control.getMainFrame().validate();
 	}
@@ -127,10 +133,23 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
         	 control.getMainFrame().dispose();
         } else if (e.getActionCommand().equals("showAppHelp")) {
         	showFile("doc/gMCP.pdf");       	 	
+        } else if (e.getActionCommand().equals("showParametric")) {
+        	showFile("doc/correlated.pdf");       	 	
+        } else if (e.getActionCommand().equals("showManual")) {
+        	try {	
+				Method main = Class.forName("java.awt.Desktop").getDeclaredMethod("getDesktop");
+				Object obj = main.invoke(new Object[0]);
+				Method second = obj.getClass().getDeclaredMethod("browse", new Class[] { URI.class }); 
+				second.invoke(obj, new URI("http://cran.at.r-project.org/web/packages/gMCP/gMCP.pdf"));
+			} catch (Exception exc) {			
+				logger.warn("No Desktop class in Java 5 or URI error.");
+				RControl.getR().eval("browseURL(\"http://cran.at.r-project.org/web/packages/gMCP/gMCP.pdf\")");
+			}
         } else if (e.getActionCommand().equals("showEpsDoc")) {
         	showFile("doc/EpsilonEdges.pdf");       	 	
         } else if (e.getActionCommand().equals("showNEWS")) {
-        	showFile("NEWS");       	 	
+        	new TextFileViewer(control.getMainFrame(), new File(RControl.getR().eval("system.file(\"NEWS\", package=\"gMCP\")").asRChar().getData()[0]));
+        	//showFile("NEWS");       	 	
         } else if (e.getActionCommand().equals("showAbout")) {
         	new AboutDialog(control.getMainFrame());
         } else if (e.getActionCommand().equals("showOptions")) {
@@ -140,8 +159,15 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
 	
 	public void showFile(String s) {
 		File f = new File(RControl.getR().eval("system.file(\""+s+"\", package=\"gMCP\")").asRChar().getData()[0]);
+		if (OSTools.isWindows() && s.indexOf('.') == -1) {
+			try {
+				f = FileTransfer.copyFile(f, new File(System.getProperty("java.io.tmpdir"), f.getName()+"TXT"));
+			} catch (IOException e) {
+				JOptionPane.showMessageDialog(control.getMainFrame(), "Please open and read the following file:\n"+f.getAbsolutePath(), "Could not find appropriate viewer", JOptionPane.WARNING_MESSAGE);
+			}
+		}		
 		if (!f.exists()) {
-			throw new RuntimeException("This is strange. The vignette could not be found.");
+			throw new RuntimeException("This is strange. The file \""+s+"\" could not be found.");
 		} else {
 			try {	
 				Method main = Class.forName("java.awt.Desktop").getDeclaredMethod("getDesktop");
@@ -154,9 +180,9 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
 					if (OSTools.isWindows()) {
 						Process p;							
 						p = Runtime.getRuntime().exec("rundll32 url.dll,FileProtocolHandler \"" + f.getAbsolutePath()+"\"");
-						if (s.indexOf('.') == -1) {
-							p = Runtime.getRuntime().exec("wordpad " + f.getAbsolutePath());
-						}						
+						/*if (s.indexOf('.') == -1) {
+							p = Runtime.getRuntime().exec("wordpad \"" + f.getAbsolutePath()+"\"");
+						}*/						
 						p.waitFor();
 					} else {
 						JOptionPane.showMessageDialog(control.getMainFrame(), "Please open and read the following file:\n"+f.getAbsolutePath(), "Could not find appropriate viewer", JOptionPane.WARNING_MESSAGE);
@@ -349,9 +375,12 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
     }
     
     private JMenu makeHelpMenu() {
-    	 JMenu menu = new JMenu(localizer.getString("SGTK_MENU_HELP"));
-         menu.add(makeMenuItem(localizer.getString("SGTK_MENU_HELP_ABOUT"), "showAbout"));         
-         menu.add(makeMenuItem(localizer.getString("SGTK_MENU_HELP_JAVA_HELP"), "showAppHelp"));
+    	 JMenu menu = new JMenu("Help");
+         menu.add(makeMenuItem("About", "showAbout"));         
+         menu.add(makeMenuItem("Introduction to gMCP", "showAppHelp"));
+         menu.add(makeMenuItem("Weighted parametric tests defined by graphs", "showParametric"));
+         menu.add(makeMenuItem("gMCP R Online Reference manual", "showManual"));
+         //menu.add(makeMenuItem("Theoretical Background", "showAppHelp"));
          /*menu.addSeparator();
          menu.add(makeMenuItem("Description of Edges with Infinitesimal Small Epsilon Weights", "showEpsDoc"));*/
          menu.addSeparator();

@@ -1,8 +1,23 @@
-Version 0.3-6 (14-Mar-2011)
+Version 0.4-0
+=============
+- Added code for graph based MCPs with partial knowledge of the correlation structure from Florian Klinglmueller, who is now coauthor.
+- New dependencies in this code: gtools and multcomp (and therefore also mvtnorm)
+- gMCP has a new optional parameter "correlation".
+- The new vignette "correlated.pdf" shows the new features.
+- graphGUI Parameter grid is now 0 by default. This restores the last used grid value.
+- Fractions instead of decimal numbers are shown in more places.
+- Alpha values can be entered as R expression, e.g. "0.05/7".
+- When the test phase is started in the GUI, you are asked, whether you have (partial) knowledge about the correlations between the tests.
+- Better support for more than one GUI window in the same R session.
+- All help files open correctly on windows machines - even with Java 5.0
+- Please note that full epsilon support is postponed for version 0.5-0 
+
+Version 0.3-6 (15-Mar-2011)
 =============
 - Mainly a bug-fix release, since the GUI was often not responding in 0.3-5.
 - C compiler is needed for building gMCP since the first C source file was added.
 - When saving/loading graphs, reports or png/LaTeX files, the last directory is remembered. 
+- Adjusted p-values are now truncated and can not be bigger than one.
 
 Version 0.3-5 (13-Mar-2011)
 =============
@@ -24,7 +39,7 @@ Version 0.3-4 (26-Nov-2010)
 Version 0.3-3 (15-Nov-2010)
 =============
 - Be careful with epsilon edges (we never specified what exactly they are and how they should behave) 
-  and please wait for version 0.4 which will handle them in a completely new way and will document it.
+  and please wait for version 0.5 which will handle them in a completely new way and will document it.
   Support for them is broken in this release. 
 - New example graph from Hommel et al. 2007.
 - Inserted missing $ in LaTeX code output from graph2latex.
