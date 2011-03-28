@@ -1,14 +1,29 @@
 .onLoad <- function(libname, pkgname) {
+	.jinit(parameters="-Xrs")
 	.jpackage(pkgname)
-	# Does this work?
-    classes <- system.file("jri", package = "rJava", lib.loc = NULL)
+
+	classes <- system.file("jri", package = "rJava", lib.loc = NULL)
 	if (nchar(classes)) {
 		.jaddClassPath(classes)
 		jars <- grep(".*\\.jar", list.files(classes, full.names = TRUE), TRUE, value = TRUE)
 		if (length(jars)) { 
 			.jaddClassPath(jars)
 		}		
-	}	
+	}
+	
+	# If we have a rJava version < 0.8-3 load JRIEngine.jar and REngine.jar
+	#if (installed.packages()['rJava','Version']<"0.8-3")  {
+        if (!is.null(sessionInfo()$otherPkgs$rJava$Version) && sessionInfo()$otherPkgs$rJava$Version < "0.8-3") {
+		classes <- system.file("R28", package = "gMCP", lib.loc = NULL)
+		if (nchar(classes)) {
+			.jaddClassPath(classes)
+			jars <- grep(".*\\.jar", list.files(classes, full.names = TRUE), TRUE, value = TRUE)
+			if (length(jars)) { 
+				.jaddClassPath(jars)
+			}		
+		}
+	}
+	
 	## we supply our own JavaGD class
 	#.setenv <- if (exists("Sys.setenv")) Sys.setenv else Sys.putenv
 	#.setenv("JAVAGD_CLASS_NAME"="org/mutoss/gui/JavaGD")  

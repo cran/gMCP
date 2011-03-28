@@ -1,16 +1,17 @@
 useDynLib(gMCP)
 
+import(utils)
 import(graph)
 import(rJava)
 importFrom(graphics, plot)
 
 exportClasses(graphMCP, gMCPResult)
-exportMethods(plot, print, getAlpha, setAlpha, getRejected, getX, getY, simConfint, addEdge)
+exportMethods(plot, print, getWeights, setWeights, getRejected, getXCoordinates, getYCoordinates, simConfint, addEdge)
 
 export(graphGUI)
 export(gMCP, rejectNode)
 export(gMCPReport, graph2latex)
-export(matrix2graph, graph2matrix)
+export(matrix2graph, graph2matrix, bdiagNA)
 
 export(createBonferroniHolmGraph)
 export(createGraphFromBretzEtAl)
@@ -18,4 +19,4 @@ export(createGraphFromHommelEtAl)
 export(createGraphForParallelGatekeeping)
 export(createGraphForImprovedParallelGatekeeping)
 
-export(generateWeights, generateBounds, generateTest, graph2weights)
+export(generateWeights, generateBounds, generateTest)

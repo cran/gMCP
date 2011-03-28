@@ -6,18 +6,18 @@ setClass("graphMCP",
 
 
 setMethod("initialize", "graphMCP",
-		function(.Object, nodes=character(0), edgeL, alpha) {
+		function(.Object, nodes=character(0), edgeL, weights) {
 			.Object <- callNextMethod(.Object, nodes, edgeL, edgemode="directed")
-			if (length(alpha)) {			
-				checkValidAlpha(alpha)
+			if (length(weights)) {			
+				checkValidWeights(weights)
 			}
-			defaultProps <- list(alpha=0, rejected=FALSE)
+			defaultProps <- list(nodeWeight=0, rejected=FALSE)
 			nodeAttrData <- new("attrData", defaults=defaultProps)
-			attrDataItem(nodeAttrData, x=nodes, attr="alpha") <- alpha
+			attrDataItem(nodeAttrData, x=nodes, attr="nodeWeight") <- weights
 			.Object@nodeData <- nodeAttrData
 			edgeDataDefaults(.Object, "labelX") <- -100
 			edgeDataDefaults(.Object, "labelY") <- -100
-			#.Object@alpha <- alpha
+			edgeDataDefaults(.Object, "epsilon") <- list(0)
 			validObject(.Object)
 			return(.Object)
 		})
@@ -25,24 +25,43 @@ setMethod("initialize", "graphMCP",
 setClass("gMCPResult",		
 		representation(graphs="list",
 				pvalues="numeric",
+				alpha="numeric",
 				rejected="logical",
 				adjPValues="numeric")
 )
 
 setMethod("print", "gMCPResult",
 		function(x, ...) {
+			callNextMethod(x, ...)
+			#for (node in nodes(x)) {
+			#	cat(paste(node, " (",ifelse(unlist(nodeData(x, node, "rejected")),"rejected","not rejected"),", alpha=",format(unlist(nodeData(x, node, "nodeWeight")), digits=4 ,drop0trailing=TRUE),")\n", sep=""))	
+			#}
+			#cat(paste("alpha=",paste(format(getWeights(x), digits=4 ,drop0trailing=TRUE),collapse="+"),"=",sum(getWeights(x)),"\n", sep=""))			
+		})
+
+setMethod("show", "gMCPResult",
+		function(object) {
 			# callNextMethod(x, ...)
-			cat("gMCP-Result\n")
-			cat("\nP-values:\n")
-			print(x@pvalues)
+			cat("gMCP-Result\n")			
 			cat("\nInitial graph:\n")
-			print(x@graphs[[1]])
-			if (length(x@graphs)==1) {
-				cat("No hypotheses could be rejected.")
-				return()
+			print(object@graphs[[1]])
+			cat("\nP-values:\n")
+			print(object@pvalues)						
+			if (length(object@adjPValues)>0) {
+				cat("\nAdjusted p-values:\n")
+				print(object@adjPValues)
 			}
-			cat("\nFinal graph after", length(x@graphs)-1 ,"steps:\n")
-			print(x@graphs[[length(x@graphs)]])
+			cat(paste("\nAlpha:",object@alpha,"\n"))
+			if (all(!object@rejected)) {
+				cat("\nNo hypotheses could be rejected.\n")				
+			} else {
+				cat("\nHypothesis rejected:\n")
+				print(object@rejected)
+			}
+			if (length(object@graphs)>1) {
+				cat("\nFinal graph after", length(object@graphs)-1 ,"steps:\n")
+				print(object@graphs[[length(object@graphs)]])
+			}			
 		})
 
 setMethod("plot", "gMCPResult",
@@ -50,11 +69,11 @@ setMethod("plot", "gMCPResult",
 			# TODO Show visualization of graph			
 		})
 
-setGeneric("getAlpha", function(object, node, ...) standardGeneric("getAlpha"))
+setGeneric("getWeights", function(object, node, ...) standardGeneric("getWeights"))
 
-setMethod("getAlpha", c("graphMCP"),
+setMethod("getWeights", c("graphMCP"),
 		function(object, node, ...) {
-			alpha <- unlist(nodeData(object, nodes(object), "alpha"))
+			alpha <- unlist(nodeData(object, nodes(object), "nodeWeight"))
 			names(alpha) <- nodes(object)
 			if (!missing(node)) {
 				return(alpha[node])
@@ -62,21 +81,21 @@ setMethod("getAlpha", c("graphMCP"),
 			return(alpha)
 		})
 
-setGeneric("setAlpha", function(object, node, alpha, ...) standardGeneric("setAlpha"))
+setGeneric("setWeights", function(object, weights, node, ...) standardGeneric("setWeights"))
 
-setMethod("setAlpha", c("graphMCP"),
-		function(object, node, alpha, ...) {
+setMethod("setWeights", c("graphMCP"),
+		function(object, weights, node, ...) {
 			if (missing(node)) {
 				node <- nodes(object)
 			}
-			nodeData(object, nodes(object), "alpha") <- alpha			
+			nodeData(object, nodes(object), "nodeWeight") <- weights			
 			return(object)
 		})
 
-setMethod("getAlpha", c("gMCPResult"),
+setMethod("getWeights", c("gMCPResult"),
 		function(object, node, ...) {
 			graph <- object@graphs[[length(object@graphs)]]
-			alpha <- unlist(nodeData(graph, nodes(graph), "alpha"))
+			alpha <- unlist(nodeData(graph, nodes(graph), "nodeWeight"))
 			names(alpha) <- nodes(graph)
 			if (!missing(node)) {
 				return(alpha[node])
@@ -103,9 +122,9 @@ setMethod("getRejected", c("gMCPResult"), function(object, node, ...) {
 			return(rejected)
 		})
 
-setGeneric("getX", function(graph, node) standardGeneric("getX"))
+setGeneric("getXCoordinates", function(graph, node) standardGeneric("getXCoordinates"))
 
-setMethod("getX", c("graphMCP"), function(graph, node) {
+setMethod("getXCoordinates", c("graphMCP"), function(graph, node) {
 			x <- nodeRenderInfo(graph)$nodeX
 			names(x) <- nodes(graph)
 			if (!missing(node)) {
@@ -114,9 +133,9 @@ setMethod("getX", c("graphMCP"), function(graph, node) {
 			return(x)
 		})
 
-setGeneric("getY", function(graph, node) standardGeneric("getY"))
+setGeneric("getYCoordinates", function(graph, node) standardGeneric("getYCoordinates"))
 
-setMethod("getY", c("graphMCP"), function(graph, node) {
+setMethod("getYCoordinates", c("graphMCP"), function(graph, node) {
 			y <- nodeRenderInfo(graph)$nodeY
 			names(y) <- nodes(graph)
 			if (!missing(node)) {
@@ -125,26 +144,28 @@ setMethod("getY", c("graphMCP"), function(graph, node) {
 			return(y)
 		})
 
-canBeRejected <- function(graph, node, pvalues) {	
-	return(getAlpha(graph)[[node]]>pvalues[[node]] | (all.equal(getAlpha(graph)[[node]],pvalues[[node]])[1]==TRUE));
+canBeRejected <- function(graph, node, alpha, pvalues) {	
+	return(getWeights(graph)[[node]]*alpha>pvalues[[node]] | (all.equal(getWeights(graph)[[node]]*alpha,pvalues[[node]])[1]==TRUE));
 }
 
 setMethod("print", "graphMCP",
 		function(x, ...) {
 			callNextMethod(x, ...)
 			#for (node in nodes(x)) {
-			#	cat(paste(node, " (",ifelse(unlist(nodeData(x, node, "rejected")),"rejected","not rejected"),", alpha=",format(unlist(nodeData(x, node, "alpha")), digits=4 ,drop0trailing=TRUE),")\n", sep=""))	
+			#	cat(paste(node, " (",ifelse(unlist(nodeData(x, node, "rejected")),"rejected","not rejected"),", alpha=",format(unlist(nodeData(x, node, "nodeWeight")), digits=4 ,drop0trailing=TRUE),")\n", sep=""))	
 			#}
-			#cat(paste("alpha=",paste(format(getAlpha(x), digits=4 ,drop0trailing=TRUE),collapse="+"),"=",sum(getAlpha(x)),"\n", sep=""))			
+			#cat(paste("alpha=",paste(format(getWeights(x), digits=4 ,drop0trailing=TRUE),collapse="+"),"=",sum(getWeights(x)),"\n", sep=""))			
 		})
 
 setMethod("show", "graphMCP",
 		function(object) {
 			#callNextMethod(object)
 			cat("A graphMCP graph\n")
-			cat(paste("Overall alpha: ",sum(getAlpha(object)),"\n", sep=""))
+			if (sum(getWeights(object))<1) {
+				cat(paste("Sum of weight: ",sum(getWeights(object)),"\n", sep=""))
+			}
 			for (node in nodes(object)) {
-				cat(paste(node, " (",ifelse(unlist(nodeData(object, node, "rejected")),"rejected","not rejected"),", alpha=",format(unlist(nodeData(object, node, "alpha")), digits=4 ,drop0trailing=TRUE),")\n", sep=""))	
+				cat(paste(node, " (",ifelse(unlist(nodeData(object, node, "rejected")),"rejected","not rejected"),", weight=",format(unlist(nodeData(object, node, "nodeWeight")), digits=4, drop0trailing=TRUE),")\n", sep=""))	
 			}
 			if (length(unlist(edges(object)))==0) {
 				cat("No edges.\n")
@@ -154,11 +175,10 @@ setMethod("show", "graphMCP",
 										" -(",format(unlist(edgeWeights(object)), digits=4 ,drop0trailing=TRUE),")-> ",
 										unlist(edges(object)),sep=""),collapse="\n"))
 			}
-			#cat(paste("\nalpha=",paste(format(getAlpha(object), digits=4 ,drop0trailing=TRUE),collapse="+"),"=",sum(getAlpha(object)),"\n", sep=""))
+			#cat(paste("\nalpha=",paste(format(getWeights(object), digits=4 ,drop0trailing=TRUE),collapse="+"),"=",sum(getWeights(object)),"\n", sep=""))
 			cat("\n")
 		}
 )
-
 
 setMethod("plot", "graphMCP",
 		function(x, y, ...) {
@@ -170,9 +190,9 @@ setGeneric("simConfint", function(object, pvalues, confint, alternative=c("less"
 setMethod("simConfint", c("graphMCP"), function(object, pvalues, confint, alternative=c("less", "greater"), estimates, df) {
 			result <- gMCP(object, pvalues)
 			if (all(getRejected(result))) {
-				alpha <- getAlpha(object)				
+				alpha <- getWeights(object)				
 			} else {
-				alpha <- getAlpha(result)				
+				alpha <- getWeights(result)				
 			}
 			if (class(confint)=="function") {
 				m <- mapply(confint, nodes(object), alpha)					

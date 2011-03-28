@@ -1,23 +1,31 @@
-graph2latex <- function(graph, package="TikZ", scale=1, pvalues,
+graph2latex <- function(graph, package="TikZ", scale=1, alpha=0.05, pvalues,
 		fontsize=c("tiny","scriptsize", "footnotesize", "small",
-		"normalsize", "large", "Large", "LARGE", "huge", "Huge")) {
+		"normalsize", "large", "Large", "LARGE", "huge", "Huge"),
+		nodeTikZ) {
 	tikz <- paste("\\begin{tikzpicture}[scale=",scale,"]", sep="")	
 	#tikz <- paste(tikz, "\\tikzset{help lines/.style=very thin}", paste="\n")	
 	for (node in nodes(graph)) {
 		nodeColor <- ifelse(getRejected(graph, node),"red!80", "green!80")
 		x <- nodeRenderInfo(graph)$nodeX[node]*scale
 		y <- nodeRenderInfo(graph)$nodeY[node]*scale
-		#alpha <- format(getAlpha(graph,node), digits=3, drop0trailing=TRUE)
-		alpha <- getLaTeXFraction(getAlpha(graph,node)/sum(getAlpha(graph)))
-		if (alpha != "0") alpha <- paste(alpha, "\\alpha", sep="")
+		#alpha <- format(getWeights(graph,node), digits=3, drop0trailing=TRUE)
+		weight <- getLaTeXFraction(getWeights(graph,node))
+		if (weight == 1) {
+			weight <- "\\alpha"
+		} else if (weight != "0") {
+			weight <- paste(weight, "\\alpha", sep="")
+		}
 		double <- ""
 		if (!missing(pvalues)) {
 			if (is.null(names(pvalues))) {
 				names(pvalues) <- nodes(graph)
 			}
-			if (canBeRejected(graph, node, pvalues)) { double <- "double," }
+			if (canBeRejected(graph, node, alpha, pvalues)) { double <- "double," }
 		}		
-		nodeLine <- paste("\\node (",node,") at (",x,"bp,",-y,"bp) [draw,circle split,",double,"fill=",nodeColor,"] {$",node,"$ \\nodepart{lower} $",alpha,"$};",sep="")
+		nodeLine <- paste("\\node (",node,")",
+				" at (",x,"bp,",-y,"bp)",
+				"[draw,circle split,",ifelse(missing(nodeTikZ),"",paste(nodeTikZ,", ",sep="")),double,"fill=",nodeColor,"]",
+				" {$",node,"$ \\nodepart{lower} $",weight,"$};",sep="")
 		tikz <- paste(tikz, nodeLine,sep="\n")			
 	}
 	# A second loop for the edges is necessary:

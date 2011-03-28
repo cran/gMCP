@@ -6,27 +6,39 @@ w.dunnet <- function(w,cr,al=.05){
   }
   lconn <- sapply(conn,length)
   conn <- lapply(conn,as.numeric)
-  error <- function(c) {
-    sum(sapply(conn,function(edx){
+  
+  error <- function(cb) {
+    e <- sum(sapply(conn,function(edx){
       if(length(edx)>1){
-        return((1-pmvnorm(upper=qnorm(1-(w[edx]*c)),corr=cr[edx,edx])))
+        return((1-pmvnorm(lower=-Inf,upper=qnorm(1-(w[edx]*cb*al)),corr=cr[edx,edx])))
       } else {
-        return((w[edx]*c))
+        return((w[edx]*cb*al))
       }
     }))-al
+    e <- ifelse(isTRUE(all.equal(e,0)),0,e)
+    return(e)
   }
-  c <- uniroot(error,c(0,1))$root
-  return(qnorm(1-(w*c)))
+  up <- 1/max(w)
+  cb <- uniroot(error,c(.9,up))$root
+  return(qnorm(1-(w*cb*al)))
 }
 
 
 b.dunnet <- function(h,cr,a) {
+#  if(a > .5){
+#    stop("alpha levels above .5 are not supported")
+#  }
   n <- length(h)
   I <- h[1:(n/2)]
   w <- h[((n/2)+1):n]
-  e <- which(I>0)
+  hw <- sapply(w,function(x) !isTRUE(all.equal(x,0)))
+  e <- which(I>0 & hw)
   zb <- rep(NA,n/2)
+  if(length(e) == 0){
+    return(zb)
+  }
   zb[e] <- w.dunnet(w[e],cr[e,e],al=a)
+  zb[which(I>0 & !hw)] <- Inf
   return(zb)
 }
 
@@ -55,7 +67,7 @@ mtp.edges <- function(h,g,w){
     h[j] <- 1
     gu <- mtp.edges(h,g,w)
     gj <- gu[,j]%*%t(gu[j,])
-    gt <- ((gu+gj)/(1-matrix(rep(diag(gj),nrow(gj)),nr=nrow(gj))))
+    gt <- ((gu+gj)/(1-matrix(rep(diag(gj),nrow(gj)),nrow=nrow(gj))))
     gt[j,] <- 0
     gt[,j] <- 0
     diag(gt) <- 0
@@ -68,6 +80,15 @@ as.graph <- function(m,...){
   as(m,'graphNEL',...)
 }
 
+myRowSums <- function(x,...){
+  if(is.null(dim(x))){
+    a <- sum(x,...)
+  if(dim(x)==2){
+    a <- rowSums(x,...)
+  }
+  return(a)
+  }
+}
 
 
 ################################ Test stuff

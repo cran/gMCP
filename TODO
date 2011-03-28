@@ -1,44 +1,34 @@
 High priority:
 ==============
-
-> graph <- matrix2graph(matrix(c(0,0,0,0), nrow=2))
-> gMCP(graph, pvalues=c(0.0, 0.0))
-Error in edgeWeights(graph, node)[[node]] : 
-  attempt to select less than one element
   
 - 1 Page PDF how to use gMCP, including hint for R installation
 - press e for epsilon, or 1+e+e^2
-- people want to allow alpha = 1 and interpret it as weight, which causes problems
-- display fractions as fractions and allow input as for example 1/7
- # eval(parse(text="1/7"))
 - Implement support for something like 2*\epsilon or \epsilon^2
  (without using a small value for epsilon like 10^{-6} 
   - that does work already if we ignore rounding problems).
 - confidence intervals are strange...
-- Option for rounding how many digits we want to see.
-(search for DecimalFormat and replace it with getDecFormat())
-- PPanels will set alpha to the truncated number.
 - Edge weight from node i to node j: m[i,j] or m[j,i] - please decide.
 - Flag 1+epsilon as line sum
 - round adjusted p-Values up
 - standard examples
+- Think about "-Xrs" - see paragraph below.
+- PView is not well revalidated - load bonferroni holm (3) - total alpha 0.667 is shown
+  Also create node and remove node again - its panels are sometimes still visible for some time 
 
 Medium priority:
 ================
 
-- We have the same Generics as Rgraphviz:
-  library(Rgraphviz)
-  getX(new("xyPoint", x=150, y=30))
-  This causes trouble
 - Warn user when sum of edge weights is bigger than 1
 - Check mutator methods for errors (alpha > 1, edge weights > 1)
 - Update graph2latex to the much better algorithm already implemented in Java.
 - gMCPReport does not work for graphs without layout.
+  also new BlockLayout
 - call calculateWeightString() when options change
-- Mac OS seems to have a problem since 0.3-6:
-http://www.r-project.org/nosvn/R.check/r-release-macosx-ix86/gMCP-00check.html
-- Guide for usage under Mac OS
-- Is Node.nr used for something?
+- Guide for usage under MacOS
+- Test the option for rounding how many digits we want to see.
+(search for DecimalFormat and replace it with getDecFormat())
+- Big font sizes misplaces TextField for object name
+- Ask for saving graph when quitting
 
 Additional features / low priority:
 ===================================
@@ -46,19 +36,15 @@ Additional features / low priority:
 - Do we really need PolynomF and gtools as dependencies?
 - Don't create global variable like .tmpGraph etc.
 - Report generation in GUI (and respect the option whether to show rejected null hypothesis)
-- Look at print method for gMCPResult
 - PNG export cuts perhaps edges. (But already improved!)
 - Speed-up -> Matrices & perhaps ?ReferenceClasses ?
-- Why is the tilde in for example "F.˜Bretz" still shown in the pdf?
 - Package highlight is cool - but how can I tell r-forge or CRAN to use it?
 See also http://comments.gmane.org/gmane.comp.lang.r.general/200179
 - Edge labels should be fixed and placed by user or free and adjust to moving nodes
-- CITATION file? 
 - Can we add a RUnit Test for Java importing Random Graphs and then exporting the same graph?
 - Icon for saving graphs? (And do we need this button?)
 - option to load another R graph
 - TikZ styles for rejected / rejectable nodes
-- LogPanel looks ugly -> bug in afcommons
 - further tests
 
 @Apple - is this a problem?
@@ -94,6 +80,30 @@ $H2
 numeric(0)
 
 In my understanding this should be "H2" instead of "H2.H1" like it would be when H2 has any outgoing edges.
+
+rJava: We had the following problem:
+
+> library(rJava)
+> .jinit()
+> replicate(1000000,rnorm(1))
+^C
+Java requested System.exit(130), closing R.
+
+We solved it by calling .jinit(parameters="-Xrs")
+
+Does this have side effects?
+
+From http://download.oracle.com/javase/1.3/docs/tooldocs/solaris/java.html :
+
+-Xrs
+    Reduces use of operating-system signals by the Java virtual machine (JVM). This option is available beginning with J2SE 1.3.1.
+    In J2SE 1.3.0, the Shutdown Hooks facility was added to allow orderly shutdown of a Java application. The intent was to allow user cleanup code (such as closing database connections) to run at shutdown, even if the JVM terminates abruptly.
+    Sun's JVM catches signals to implement shutdown hooks for abnormal JVM termination. The JVM uses SIGHUP, SIGINT, and SIGTERM to initiate the running of shutdown hooks.
+    The JVM uses a similar mechanism to implement the pre-1.2 feature of dumping thread stacks for debugging purposes. Sun's JVM uses SIGQUIT to perform thread dumps.
+    Applications embedding the JVM frequently need to trap signals like SIGINT or SIGTERM, which can lead to interference with the JVM's own signal handlers. To address this issue, the -Xrs command-line option has been added beginning in J2SE 1.3.1. When -Xrs is used on Sun's JVM, the signal masks for SIGINT, SIGTERM, SIGHUP, and SIGQUIT are not changed by the JVM, and signal handlers for these signals are not installed.
+    There are two consequences of specifying -Xrs:
+        * SIGQUIT thread dumps are not available.
+        * User code is responsible for causing shutdown hooks to run, for example by calling System.exit() when the JVM is to be terminated. 
 
 As always:
 ==========

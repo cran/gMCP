@@ -1,12 +1,13 @@
-createBonferroniHolmGraph <- function(n, alpha=0.05) {
-	alpha <- rep(alpha/n, n)
+createBonferroniHolmGraph <- function(n) {
+	if (missing(n)) { stop("Please provide the number of hypotheses as parameter n.") }
+	weights <- rep(1/n, n)
 	hnodes <- paste("H", 1:n, sep="")
 	edges <- vector("list", length=n)
 	for(i in 1:n) {
 		edges[[i]] <- list(edges=hnodes[(1:n)[-i]], weights=rep(1/(n-1),n-1))
 	}
 	names(edges)<-hnodes
-	BonferroniHolmGraph <- new("graphMCP", nodes=hnodes, edgeL=edges, alpha=alpha)
+	BonferroniHolmGraph <- new("graphMCP", nodes=hnodes, edgeL=edges, weights=weights)
 	# Visualization settings
 	nodeX <- 100+(0:(n-1))*200
 	nodeY <- rep(200, n)
@@ -27,9 +28,9 @@ createBonferroniHolmGraph <- function(n, alpha=0.05) {
 	return(BonferroniHolmGraph)
 }
 
-createGraphFromBretzEtAl <- function(alpha=0.025) {
+createGraphFromBretzEtAl <- function() {
 	# Nodes:
-	alpha <- rep(c(alpha/3,0), each=3)	
+	weights <- rep(c(1/3,0), each=3)	
 	hnodes <- paste("H", rep(1:3, 2), rep(1:2, each=3), sep="")
 	# Edges:
 	edges <- vector("list", length=6)
@@ -41,7 +42,7 @@ createGraphFromBretzEtAl <- function(alpha=0.025) {
 	edges[[6]] <- list(edges="H21", weights=1)
 	names(edges)<-hnodes
 	# Graph creation
-	graph <- new("graphMCP", nodes=hnodes, edgeL=edges, alpha=alpha)
+	graph <- new("graphMCP", nodes=hnodes, edgeL=edges, weights=weights)
 	# Visualization settings
 	nodeX <- rep(c(100, 300, 500), 2)
 	nodeY <- rep(c(100, 300), each=3)
@@ -69,9 +70,9 @@ createGraphFromBretzEtAl <- function(alpha=0.025) {
 }
 
 
-createGraphFromHommelEtAl <- function(alpha=0.025) {
+createGraphFromHommelEtAl <- function() {
 	# Nodes:
-	alpha <- c(rep(alpha/3, 3), rep(0,4))	
+	weights <- c(rep(1/3, 3), rep(0,4))	
 	hnodes <- c("E1", "QoL", "E2", "D1", "D2", "D3", "D4")
 	# Edges:
 	edges <- vector("list", length=7)
@@ -84,7 +85,7 @@ createGraphFromHommelEtAl <- function(alpha=0.025) {
 	edges[[7]] <- list(edges=c("E1","E2"), weights=c(0, 0))
 	names(edges)<-hnodes
 	# Graph creation
-	graph <- new("graphMCP", nodes=hnodes, edgeL=edges, alpha=alpha)
+	graph <- new("graphMCP", nodes=hnodes, edgeL=edges, weights=weights)
 	# Visualization settings
 	nodeX <- c(200, 400, 600, 100, 300, 500, 700)
 	nodeY <- c(100, 100, 100, 300, 300, 300, 300)
@@ -105,9 +106,9 @@ createGraphFromHommelEtAl <- function(alpha=0.025) {
 	return(graph)	
 }
 
-createGraphForParallelGatekeeping <- function(alpha=0.05) {
+createGraphForParallelGatekeeping <- function() {
 	# Nodes:
-	alpha <- rep(c(alpha/2,0), each=2)	
+	weights <- rep(c(1/2,0), each=2)	
 	hnodes <- paste("H", 1:4, sep="")
 	# Edges:
 	edges <- vector("list", length=4)
@@ -117,7 +118,7 @@ createGraphForParallelGatekeeping <- function(alpha=0.05) {
 	edges[[4]] <- list(edges=c("H3"), weights=1)
 	names(edges)<-hnodes
 	# Graph creation
-	graph <- new("graphMCP", nodes=hnodes, edgeL=edges, alpha=alpha)
+	graph <- new("graphMCP", nodes=hnodes, edgeL=edges, weights=weights)
 	# Visualization settings
 	nodeX <- rep(c(100, 300), 2)
 	nodeY <- rep(c(100, 300), each=2)
@@ -133,7 +134,7 @@ createGraphForParallelGatekeeping <- function(alpha=0.05) {
 }
 
 
-createGraphForImprovedParallelGatekeeping <- function(alpha=0.05) {
+createGraphForImprovedParallelGatekeeping <- function() {
 	graph <- createGraphForParallelGatekeeping()
 	graph <- addEdge("H3", "H1", graph, 0)
 	graph <- addEdge("H4", "H2", graph, 0)

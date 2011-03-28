@@ -4,16 +4,16 @@
 \alias{graphMCP}
 \alias{print,graphMCP-method}
 \alias{plot,graphMCP-method}
-\alias{getAlpha}
-\alias{getAlpha,graphMCP-method}
-\alias{setAlpha}
-\alias{setAlpha,graphMCP-method}
+\alias{getWeights}
+\alias{getWeights,graphMCP-method}
+\alias{setWeights}
+\alias{setWeights,graphMCP-method}
 \alias{getRejected}
 \alias{getRejected,graphMCP-method}
-\alias{getX}
-\alias{getX,graphMCP-method}
-\alias{getY}
-\alias{getY,graphMCP-method}
+\alias{getXCoordinates}
+\alias{getXCoordinates,graphMCP-method}
+\alias{getYCoordinates}
+\alias{getYCoordinates,graphMCP-method}
 \alias{addEdge}
 \alias{addEdge,graphMCP-method}
 \title{Class graphMCP}
@@ -42,19 +42,17 @@ Class \code{graph}, by class \code{graphNEL}, distance 2.
 }
 \section{Methods}{
   \describe{
-    \item{getAlpha}{\code{signature(object = "graphMCP")}: A method for
-      getting the allocation of the significance level alpha.
-      If a second optional argument \code{node} is specified, only for these nodes the alpha level will be returned.}
-    \item{setAlpha}{\code{signature(object = "graphMCP")}: A method for
-      setting the allocation of the significance level alpha.
-      If a second optional argument \code{node} is specified, only for these nodes the alpha level will be set.}
+    \item{getWeights}{\code{signature(object = "graphMCP")}: A method for getting the weights.
+      If a third optional argument \code{node} is specified, only for these nodes the alpha level will be returned.}
+    \item{setWeights}{\code{signature(object = "graphMCP")}: A method for setting the weights.
+      If a third optional argument \code{node} is specified, only for these nodes the alpha level will be set.}
     \item{getRejected}{\code{signature(object = "graphMCP")}: A method for
       getting the information whether the hypotheses are marked in the graph as already rejected.
       If a second optional argument \code{node} is specified, only for these nodes the boolean vector will be returned.}
-    \item{getX}{\code{signature(object = "graphMCP")}: A method for
+    \item{getXCoordinates}{\code{signature(object = "graphMCP")}: A method for
       getting the x coordinates of the graph.
       If a second optional argument \code{node} is specified, only for these nodes the x coordinates will be returned.}
-    \item{getY}{\code{signature(object = "graphMCP")}: A method for
+    \item{getYCoordinates}{\code{signature(object = "graphMCP")}: A method for
       getting the y coordinates of the graph
       If a second optional argument \code{node} is specified, only for these nodes the x coordinates will be returned.}
     \item{addEdge}{\code{signature(from="character", to="character", graph="graphNEL", weights="numeric")}: A method for
@@ -68,7 +66,7 @@ Class \code{graph}, by class \code{graphNEL}, distance 2.
 \examples{
 
 hnodes <- c("H11", "H21", "H31", "H12", "H22", "H32")
-alpha <- c(0.05/3, 0.05/3, 0.05/3, 0, 0, 0)
+weights <- c(1/3, 1/3, 1/3, 0, 0, 0)
 edges <- list()
 edges[["H11"]] <- list(edges=c("H21","H12"), weights=c(1/2, 1/2))
 edges[["H21"]] <- list(edges=c("H11","H31","H22"), weights=c(1/3, 1/3, 1/3))
@@ -76,20 +74,20 @@ edges[["H31"]] <- list(edges=c("H21","H32"), weights=c(1/2, 1/2))
 edges[["H12"]] <- list(edges="H21", weights=1)
 edges[["H22"]] <- list(edges=c("H11","H31"), weights=c(1/2, 1/2))
 edges[["H32"]] <- list(edges="H21", weights=1)
-graph <- new("graphMCP", nodes=hnodes, edgeL=edges, alpha=alpha)
+graph <- new("graphMCP", nodes=hnodes, edgeL=edges, weights=weights)
 
 nodeX <- c(H11=10, H21=20, H31=30, H12=10, H22=20, H32=30)
 nodeY <- c(H11=20, H21=20, H31=20, H12=10, H22=10, H32=10)
 nodeRenderInfo(graph) <- list(nodeX=nodeX, nodeY=nodeY)	
 
-getAlpha(graph)
+getWeights(graph)
 
 getRejected(graph)
 
 pvalues <- c(0.1, 0.008, 0.005, 0.15, 0.04, 0.006)
 result <- gMCP(graph, pvalues)
 
-getAlpha(result@graphs[[4]])
+getWeights(result@graphs[[4]])
 getRejected(result@graphs[[4]])
 
 }

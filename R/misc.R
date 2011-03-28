@@ -1,9 +1,15 @@
-checkValidAlpha <- function(alpha) {
-	if(any(0 > alpha | alpha > 1)) {
-		stop("invalid alpha: alphas must be between 0 and 1")
+checkValidWeights <- function(weights) {
+	if(!is.numeric(weights)) {
+		stop("Weights have to be numeric!")
 	}
-	if(sum(alpha) >= 1) {
-		stop("invalid alpha: the sum of all alphas must be less than 1")
+	if(any(is.na(weights) | is.infinite(weights))) {
+		warning("Some of the weights are not real numbers. NA, NaN, Inf and -Inf are not supported.")
+	}
+	if(any(0 > weights | weights > 1)) {
+		stop("Invalid weights: weights must be between 0 and 1")
+	}
+	if(sum(weights) > 1) {
+		stop("Invalid weights: the sum of all weights must be less than 1")
 	}
 }
 
@@ -19,4 +25,47 @@ parseEpsPolynom <- function(s) {
 	} else {
     	return(coef(p))
 	}
+}
+
+getDebugInfo <- function() {	
+	if (exists(".InitialGraph")) {
+		.InitialGraph <- get(".InitialGraph", envir=globalenv())
+		graphTXT <- paste(capture.output(print(.InitialGraph)), collapse="\n")
+		matrixTXT <- paste("m <-",paste(capture.output(dput(graph2matrix(.InitialGraph))), collapse="\n"),"\n")
+		weightsTXT <- paste("w <-",paste(capture.output(dput(getWeights(.InitialGraph))), collapse="\n"),"\n")
+		createTXT <- paste("graph <- matrix2graph(m)", "setWeights(graph, w)", sep="\n")
+		return(paste(graphTXT, matrixTXT, weightsTXT, createTXT, sep="\n"))
+	}
+	return("Graph not available.")
+}
+
+bdiagNA <- function(...) {	
+	if (nargs() == 0) 
+		return(matrix(nrow=0, ncol=0))
+	if (nargs() == 1 && !is.list(...)) 
+		return(as.matrix(...))
+	asList <- if (nargs() == 1 && is.list(...)) ... else list(...)
+	if (length(asList) == 1) 
+		return(as.matrix(asList[[1]]))
+	n <- 0
+	for (m in asList) {
+		if (!is.matrix(m)) {
+			stop("Only matrices are allowed as arguments.")
+		}
+		if (dim(m)[1]!=dim(m)[2]) {
+			stop("Only quadratic matrices are allowed.")
+		}
+		n <- n + dim(m)[1]	
+	}
+	M <- matrix(NA, nrow=n, ncol=n)
+	k <- 0
+	for (m in asList) {
+		for (i in 1:dim(m)[1]) {
+			for (j in 1:dim(m)[1]) {
+				M[i+k,j+k] <- m[i,j]
+			}
+		}
+		k <- k + dim(m)[1]	
+	}	
+	return(M)
 }

@@ -16,6 +16,7 @@ import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
+import javax.swing.filechooser.FileFilter;
 
 import org.af.commons.Localizer;
 import org.af.commons.errorhandling.ErrorHandler;
@@ -46,16 +47,18 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
 		JMenu menu = new JMenu("File");
 
 		menu.add(makeMenuItem("New Graph", "new graph"));
-		menu.add(makeMenuItem("Load Graph from file", "load graph"));
-		menu.addSeparator();		
-		menu.add(makeMenuItem("Save Graph to file", "save graph"));		
+		menu.add(makeMenuItem("Load Graph from R", "load graph"));
+		menu.add(makeMenuItem("Load Graph from RData file", "load graph"));		
 		menu.addSeparator();
-		menu.add(makeMenuItem("Export Graph to PNG Image", "save graph image"));
-		menu.add(makeMenuItem("Export Graph to LaTeX File", "save graph latex"));
+		menu.add(makeMenuItem("Save Graph to R", "save graph"));	
+		menu.add(makeMenuItem("Save Graph to RData file", "save graph"));		
 		menu.addSeparator();
-		/*menu.add(makeMenuItem("Save LaTeX Report", "save latex report"));
+		menu.add(makeMenuItem("Export Graph to PNG Image", "export graph image"));
+		menu.add(makeMenuItem("Export Graph to LaTeX File", "export graph latex"));
+		menu.addSeparator();
+		menu.add(makeMenuItem("Save LaTeX Report", "save latex report"));
 		menu.add(makeMenuItem("Save PDF Report", "save pdf"));
-		menu.addSeparator();*/
+		menu.addSeparator();
 		menu.add(makeMenuItem("Quit", "exit"));
 
 		add(menu);
@@ -105,13 +108,15 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
         	newGraph();			
         } else if (e.getActionCommand().equals("save graph")) {       	
         	saveGraph();
-        } else if (e.getActionCommand().equals("save pdf")) {       	
-        	//savePDF();
-        } else if (e.getActionCommand().equals("save graph image")) {       	
+        } else if (e.getActionCommand().equals("export graph image")) {       	
         	saveGraphImage();
-        } else if (e.getActionCommand().equals("save graph latex")) {       	
+        } else if (e.getActionCommand().equals("export graph latex")) {       	
         	exportLaTeXGraph();
-        } else if (e.getActionCommand().equals("save latex report")) {       	
+        } else if (e.getActionCommand().equals("save pdf")) {  
+        	notYetSupported();
+        	//savePDF();
+        } else if (e.getActionCommand().equals("save latex report")) {
+        	notYetSupported();
         	//exportLaTeXReport();
         } else if (e.getActionCommand().equals("load graph")) {       	
         	loadGraph();
@@ -148,8 +153,7 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
         } else if (e.getActionCommand().equals("showEpsDoc")) {
         	showFile("doc/EpsilonEdges.pdf");       	 	
         } else if (e.getActionCommand().equals("showNEWS")) {
-        	new TextFileViewer(control.getMainFrame(), new File(RControl.getR().eval("system.file(\"NEWS\", package=\"gMCP\")").asRChar().getData()[0]));
-        	//showFile("NEWS");       	 	
+        	new TextFileViewer(control.getMainFrame(), new File(RControl.getR().eval("system.file(\"NEWS\", package=\"gMCP\")").asRChar().getData()[0]));      	 	
         } else if (e.getActionCommand().equals("showAbout")) {
         	new AboutDialog(control.getMainFrame());
         } else if (e.getActionCommand().equals("showOptions")) {
@@ -157,6 +161,10 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
         }
 	}
 	
+	private void notYetSupported() {
+		JOptionPane.showMessageDialog(control.getMainFrame(), "Not yet supported.", "Not yet supported", JOptionPane.INFORMATION_MESSAGE);
+	}
+
 	public void showFile(String s) {
 		File f = new File(RControl.getR().eval("system.file(\""+s+"\", package=\"gMCP\")").asRChar().getData()[0]);
 		if (OSTools.isWindows() && s.indexOf('.') == -1) {
@@ -219,9 +227,6 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
 	}
 	*/
 	
-	DecimalFormat format = new DecimalFormat("#.###");
-	
-	
 	public void writeLaTeX(String s) {
 		JFileChooser fc = new JFileChooser(Configuration.getInstance().getClassProperty(this.getClass(), "LaTeXDirectory"));
 		fc.setDialogType(JFileChooser.SAVE_DIALOG);
@@ -249,8 +254,7 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
 	}
 	
 	public void exportLaTeXGraph() {
-		NetList nl = control.getNL();
-		writeLaTeX(nl.getLaTeX());
+		writeLaTeX(control.getNL().getLaTeX());
 	}
 	
 	public String LATEX_BEGIN_DOCUMENT = "\\documentclass[11pt]{article}\n"+
@@ -306,7 +310,15 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
 	
 	private void loadGraph() {		
 		JFileChooser fc = new JFileChooser(Configuration.getInstance().getClassProperty(this.getClass(), "RObjDirectory"));		
-        fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
+		fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
+		fc.setFileFilter(new FileFilter() {
+			public boolean accept(File f) {
+				if (f.isDirectory()) return true;
+				return f.getName().toLowerCase().endsWith(".RData");
+			}
+			public String getDescription () { return "RData files"; }  
+		});
+
         int returnVal = fc.showOpenDialog(this);
         if (returnVal == JFileChooser.APPROVE_OPTION) {  
         	control.stopTesting();
@@ -326,18 +338,25 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
 	private void saveGraph() {
 		JFileChooser fc = new JFileChooser(Configuration.getInstance().getClassProperty(this.getClass(), "RObjDirectory"));		
         fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
+        fc.setFileFilter(new FileFilter() {
+			public boolean accept(File f) {
+				if (f.isDirectory()) return true;
+				return f.getName().toLowerCase().endsWith(".RData");
+			}
+			public String getDescription () { return "RData files"; }  
+		});
         fc.setDialogType(JFileChooser.SAVE_DIALOG);
         int returnVal = fc.showOpenDialog(this);
         if (returnVal == JFileChooser.APPROVE_OPTION) {
             File f = fc.getSelectedFile();
             Configuration.getInstance().setClassProperty(this.getClass(), "RObjDirectory", f.getParent());
-            if (!f.getName().toLowerCase().endsWith(".xml")) {
-            	f = new File(f.getAbsolutePath()+".xml");
+            if (!f.getName().toLowerCase().endsWith(".RData")) {
+            	f = new File(f.getAbsolutePath()+".RData");
             }
             try {
             	//((ControlMGraph) control).getNL().saveToXML(f);
             	String name = control.jtSaveName.getText();
-            	control.getNL().saveGraph(name, true); 
+            	control.getNL().saveGraph(name, false); 
             	RControl.getR().eval("save("+name+", file=\""+f.getAbsolutePath()+"\")");        		
     		} catch( Exception ex ) {
     			JOptionPane.showMessageDialog(this, "Saving graph to '" + f.getAbsolutePath() + "' failed: " + ex.getMessage(), "Saving failed.", JOptionPane.ERROR_MESSAGE);

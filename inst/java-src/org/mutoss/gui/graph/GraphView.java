@@ -5,7 +5,6 @@ import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 
 import javax.imageio.ImageIO;
@@ -45,8 +44,6 @@ public class GraphView extends JPanel implements ActionListener {
 	JButton buttonNewEdge;
 	JButton buttonZoomOut;
 	JButton buttonZoomIn;
-	JButton buttonLatex;
-	JButton buttonPhysics;
 	JButton buttonSave;	
 	JButton buttonadjPval;
 	JButton buttonConfInt;
@@ -114,7 +111,7 @@ public class GraphView extends JPanel implements ActionListener {
 
     private JPanel getSaveBar() {
     	JPanel panel = new JPanel();
-    	jtSaveName = new JTextField(getGraphName(), 24);
+    	jtSaveName = new JTextField(getGraphName(), 18);
     	panel.setLayout(new FlowLayout());
 		((FlowLayout) (panel.getLayout()))
 				.setAlignment(FlowLayout.LEFT);
@@ -154,12 +151,6 @@ public class GraphView extends JPanel implements ActionListener {
 			toolPanel.add(buttonZoomIn);
 			buttonZoomIn.addActionListener(this);
 			buttonZoomIn.setToolTipText("zoom in");
-			buttonLatex = new JButton(
-					new ImageIcon(ImageIO.read(DesktopPaneBG.class
-											.getResource("/org/mutoss/gui/graph/images/latex.png"))));
-			toolPanel.add(buttonLatex);
-			buttonLatex.addActionListener(this);
-			buttonLatex.setToolTipText("export to LaTeX");
 			
 			buttonadjPval = new JButton(
 					new ImageIcon(ImageIO.read(DesktopPaneBG.class
@@ -216,6 +207,10 @@ public class GraphView extends JPanel implements ActionListener {
 		} else if (e.getSource().equals(buttonSave) || e.getSource().equals(jtSaveName)) {			
 			getNL().saveGraph(jtSaveName.getText(), true);
 		} else if (e.getSource().equals(buttonConfInt)) {
+			if (!getNL().isTesting()) {
+				getNL().saveGraph();
+				getPView().savePValues();
+			}
 			if (getNL().getKnoten().size()==0) {
 				JOptionPane.showMessageDialog(parent, "Please create first a graph.", "Please create first a graph.", JOptionPane.ERROR_MESSAGE);
 			} else {
@@ -240,49 +235,12 @@ public class GraphView extends JPanel implements ActionListener {
 				double[] adjPValues = RControl.getR().eval("gMCP:::adjPValues("+ getNL().initialGraph+","+pValues+")@adjPValues").asRNumeric().getData();
 				new AdjustedPValueDialog(parent, getPView().pValues, adjPValues, getNL().getKnoten());
 			}
-		} else if (e.getSource().equals(buttonLatex)) {
-			exportLaTeXGraph();
 		}
 	}
 	
 	public VS getVS() {		
 		return vs;
 	}
-	
-	public void writeLaTeX(String s) {
-		JFileChooser fc = new JFileChooser();		
-		File f;
-		int returnVal = fc.showSaveDialog(this);
-		if (returnVal == JFileChooser.APPROVE_OPTION) {
-			f = fc.getSelectedFile();
-			if (!f.getName().toLowerCase().endsWith(".tex")) {
-            	f = new File(f.getAbsolutePath()+".tex");
-            }
-			System.out.println("Export to: " + f.getAbsolutePath() + ".");
-		} else {
-			return;
-		}
-		try {
-			FileWriter out = new FileWriter(f);
-			out.write(LATEX_BEGIN_DOCUMENT);
-			out.write(s);
-			out.write(LATEX_END_DOCUMENT);
-			out.close();
-		} catch( Exception ex ) {
-			JOptionPane.showMessageDialog(null, "Saving LaTeX code to '" + f.getAbsolutePath() + "' failed: " + ex.getMessage(), "Saving failed.", JOptionPane.ERROR_MESSAGE);
-		}
-	}
-	
-	public void exportLaTeXGraph() {		
-		writeLaTeX(getNL().getLaTeX());
-	}
-	
-	public String LATEX_BEGIN_DOCUMENT = "\\documentclass[11pt]{article}\n"+
-	 "\\usepackage{tikz}\n"+
-	 "\\usetikzlibrary{snakes,arrows,shapes}\n"+
-	 "\\begin{document}\n";
-
-	public String LATEX_END_DOCUMENT = "\\end{document}";
 
 	public void stopTesting() {
 		if (!getNL().testingStarted) return;

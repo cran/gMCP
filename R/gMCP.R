@@ -1,18 +1,18 @@
-gMCP <- function(graph, pvalues, test, correlation, ..., verbose=FALSE) {
+gMCP <- function(graph, pvalues, test, correlation, alpha=0.05, ..., verbose=FALSE) {
 	if (length(pvalues)!=length(nodes(graph))) {
 		stop("Length of pvalues must equal number of nodes.")
 	}
 	if (is.null(names(pvalues))) {
 		names(pvalues) <- nodes(graph)
 	}
-	if (missing(test) && missing(correlation)) {
+	if (missing(test) && (missing(correlation) || length(pvalues)==1)) {
 		sequence <- list(graph)
-		while(!is.null(node <- getRejectableNode(graph, pvalues))) {
+		while(!is.null(node <- getRejectableNode(graph, alpha, pvalues))) {
 			if (verbose) cat(paste("Node \"",node,"\" can be rejected.\n",sep=""))
 			graph <- rejectNode(graph, node, verbose)
 			sequence <- c(sequence, graph)
 		}	
-		return(new("gMCPResult", graphs=sequence, pvalues=pvalues, rejected=getRejected(graph), adjPValues=adjPValues(sequence[[1]], pvalues, verbose)@adjPValues))
+		return(new("gMCPResult", graphs=sequence, alpha=alpha, pvalues=pvalues, rejected=getRejected(graph), adjPValues=adjPValues(sequence[[1]], pvalues, verbose)@adjPValues))
 	} else if (missing(test) && !missing(correlation)) {
 		if (missing(correlation) || (!is.matrix(correlation) && !is.character(correlation))) {
 			stop("Procedure for correlated tests, expects a correlation matrix as parameter \"correlation\".")
@@ -23,14 +23,19 @@ gMCP <- function(graph, pvalues, test, correlation, ..., verbose=FALSE) {
 				x <- contrMat(samplesize, type = correlation) # balanced design up to now and only Dunnett will work with n+1
 				var <- x %*% diag(length(samplesize)) %*% t(x)
 				correlation <- diag(1/sqrt(diag(var)))%*%var%*%diag(1/sqrt(diag(var)))
-			}
+			}                       
 			Gm <- graph2matrix(graph)
-			w <- graph2weights(graph)
-			myTest <- generateTest(Gm, w, correlation, sum(getAlpha(graph)))
-			zScores <- -qnorm(pvalues)
-			rejected <- myTest(zScores)
-			names(rejected) <- nodes(graph)
-			return(new("gMCPResult", graphs=list(), pvalues=pvalues, rejected=rejected, adjPValues=numeric(0)))
+			w <- getWeights(graph)
+			if( all(w==0) ) {
+				rejected <- rep(FALSE,length(w))
+				names(rejected) <- nodes(graph)
+			} else {
+				myTest <- generateTest(Gm, w, correlation, alpha)
+				zScores <- -qnorm(pvalues)
+				rejected <- myTest(zScores)
+				names(rejected) <- nodes(graph)
+			}
+			return(new("gMCPResult", graphs=list(graph), alpha=alpha, pvalues=pvalues, rejected=rejected, adjPValues=numeric(0)))
 		}
 	}
 }
@@ -40,6 +45,7 @@ getBalancedDesign <- function (correlation, numberOfPValues) {
 	if (correlation == "Dunnett") {
 		return (rep(10, numberOfPValues+1))
 	}
+	stop(paste("The string \"",correlation,"\" does not specify a supported correlation.", sep=""))
 }
 
 adjPValues <- function(graph, pvalues, verbose=FALSE) {
@@ -49,7 +55,8 @@ adjPValues <- function(graph, pvalues, verbose=FALSE) {
 	if (is.null(names(pvalues))) {
 		names(pvalues) <- nodes(graph)
 	}
-	if (sum(getAlpha(graph))>0) nodeData(graph, nodes(graph), "alpha") <- getAlpha(graph)/sum(getAlpha(graph))
+	# TODO for graphs with sum(weights)<1 (do we want to allow this) this will give wrong results
+	if (sum(getWeights(graph))>0) nodeData(graph, nodes(graph), "nodeWeight") <- getWeights(graph)/sum(getWeights(graph))
 	adjPValues <- rep(0, length(nodes(graph)))
 	names(adjPValues) <- nodes(graph)	
 	J <- nodes(graph)
@@ -57,9 +64,11 @@ adjPValues <- function(graph, pvalues, verbose=FALSE) {
 	sequence <- list(graph)
 	pmax <- 0
 	while(length(J) >= 1) {
-		j <- which.min(pvalues[J]/getAlpha(graph)[J])
+		fraction <- pvalues[J]/getWeights(graph)[J]
+		fraction[pvalues[J]==0] <- 0
+		j <- which.min(fraction)
 		node <- J[j]
-		adjPValues[node] <- max(min(pvalues[node]/getAlpha(graph)[node], 1), pmax)
+		adjPValues[node] <- max(min(pvalues[node]/getWeights(graph)[node], 1), pmax)
 		pmax <- adjPValues[node]
 		if (verbose) cat(paste("We will update the graph with node \"",node,"\".\n",sep=""))
 		graph <- rejectNode(graph, node, verbose)
@@ -90,7 +99,7 @@ rejectNode <- function(graph, node, verbose=FALSE) {
 	#for (to in nodes(graph)[nodes(graph)!=node]) {
 	#	if ((getWeight(graph,node,to))>0) {
 	#		keepAlpha <- FALSE
-	#		nodeData(graph2, to, "alpha") <- nodeData(graph, to, "alpha")[[to]] + getWeight(graph,node,to) * nodeData(graph, node, "alpha")[[node]]
+	#		nodeData(graph2, to, "nodeWeight") <- nodeData(graph, to, "nodeWeight")[[to]] + getWeight(graph,node,to) * nodeData(graph, node, "nodeWeight")[[node]]
 	#	}
 	#}	
 	
@@ -100,14 +109,14 @@ rejectNode <- function(graph, node, verbose=FALSE) {
 		for (to in nodes(graph)[nodes(graph)!=node]) {	
 			numberOfEpsilonEdges <- sum(TRUE == all.equal(unname(edgesOut), rep(0, length(edgesOut))))
 			if (existsEdge(graph, node, to)) {
-				nodeData(graph2, to, "alpha") <- nodeData(graph, to, "alpha")[[to]] + nodeData(graph, node, "alpha")[[node]] / numberOfEpsilonEdges
+				nodeData(graph2, to, "nodeWeight") <- nodeData(graph, to, "nodeWeight")[[to]] + nodeData(graph, node, "nodeWeight")[[node]] / numberOfEpsilonEdges
 				keepAlpha <- FALSE
 			}
 		}		
 	} else {
 		if (verbose) cat("Alpha is passed via non-epsilon-edges.\n")
 		for (to in nodes(graph)[nodes(graph)!=node]) {				
-			nodeData(graph2, to, "alpha") <- nodeData(graph, to, "alpha")[[to]] + getWeight(graph,node,to) * nodeData(graph, node, "alpha")[[node]]				
+			nodeData(graph2, to, "nodeWeight") <- nodeData(graph, to, "nodeWeight")[[to]] + getWeight(graph,node,to) * nodeData(graph, node, "nodeWeight")[[node]]				
 		}	
 		keepAlpha <- FALSE
 	}
@@ -143,14 +152,14 @@ rejectNode <- function(graph, node, verbose=FALSE) {
 		graph <- removeEdge(from, node, graph)
 	}
 	if (!keepAlpha) {
-		nodeData(graph, node, "alpha") <- 0
+		nodeData(graph, node, "nodeWeight") <- 0
 	}
 	nodeData(graph, node, "rejected") <- TRUE	
 	return(graph)
 }
 
-getRejectableNode <- function(graph, pvalues) {
-	x <- getAlpha(graph)/pvalues
+getRejectableNode <- function(graph, alpha, pvalues) {
+	x <- getWeights(graph)*alpha/pvalues
 	x[pvalues==0] <- 1
 	x[unlist(nodeData(graph, nodes(graph), "rejected"))] <- NaN
 	i <- which.max(x)

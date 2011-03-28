@@ -12,6 +12,9 @@ import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.awt.image.BufferedImage;
 import java.text.DecimalFormat;
+import java.util.HashSet;
+import java.util.Hashtable;
+import java.util.Set;
 import java.util.Vector;
 
 import javax.swing.JLabel;
@@ -22,6 +25,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.mutoss.config.Configuration;
 import org.mutoss.gui.RControl;
+import org.mutoss.gui.dialogs.VariableDialog;
 
 public class NetList extends JPanel implements MouseMotionListener, MouseListener {
 
@@ -70,7 +74,7 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 			i = i + 1;
 			name = "H" + i;
 		}
-		addNode(new Node(nodes.size() + 1, name, x, y, vs));		
+		addNode(new Node(name, x, y, 0d, vs));		
 	}
 
 	public void addEdge(Edge e) {
@@ -86,7 +90,7 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 		}
 		if (old != null) edges.remove(old);
 		edges.add(e);
-		control.getDataTable().getModel().setValueAt(e.getW(), getKnoten().indexOf(e.from), getKnoten().indexOf(e.to));
+		control.getDataTable().getModel().setValueAt(e.getWS(), getKnoten().indexOf(e.from), getKnoten().indexOf(e.to));
 	}
 
 	/**
@@ -271,29 +275,13 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 			Node node1 = getEdges().get(i).from;
 			Node node2 = getEdges().get(i).to;			
 			String to = "bend left="+getEdges().get(i).getBendLeft();
-			Double w = getEdges().get(i).getW();
-			String weight = (w.toString().equals("NaN")) ? "$\\epsilon$" : ""+format.format(w);
+			String weight = getEdges().get(i).getWLaTeX();			
 			String pos = format.format(getEdges().get(i).getPos()).replace(",", ".");
 			latex += "\\draw [->,line width=1pt] ("+node1.getName().replace("_", "-")+") to["+to+"] node[pos="+pos+",above,fill=blue!20] {"+weight+"} ("+node2.getName().replace("_", "-")+");\n";
 
 		}
 		latex += "\\end{tikzpicture}\n\n";
 		return latex;
-	}
-	
-	/**
-	 * Liefert die interne Nummer des Knoten mit der ID id
-	 * 
-	 * @param id
-	 *            ID des gesuchten Knotens
-	 */
-
-	public int getNodeNr(int id) throws Exception {
-		for (int j = 0; j < nodes.size(); j++) {
-			if (nodes.get(j).nr == id)
-				return j;
-		}
-		throw new Exception();
 	}
 	
 	public void mouseDragged(MouseEvent e) {
@@ -486,6 +474,22 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 	
 
 	public void saveGraph(String graphName, boolean verbose) {
+		// We can only save up to now graphs without variables:
+		
+		Set<String> variables = new HashSet<String>();
+		
+		for (Edge e : edges) {		
+			variables.addAll(e.getVariable());
+		}
+		
+		Hashtable<String,Double> ht = new Hashtable<String,Double>();
+		if (!variables.isEmpty()) {
+			VariableDialog vd = new VariableDialog(this.control.parent, variables);
+			ht = vd.getHT();
+		}
+		
+		// Okay, let's go:
+		
 		graphName = RControl.getR().eval("make.names(\""+graphName+"\")").asRChar().getData()[0];
 		
 		String alpha = "";
@@ -515,7 +519,7 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 			for (Edge e : edges) {				
 				if (e.from == n) {
 					edgeL += "\""+e.to.getName()+"\",";
-					weights += ((""+e.getW()).equals("NaN")?0+",":e.getW() +",");
+					weights += ((""+e.getW(ht)).equals("NaN")?0+",":e.getW(ht) +",");
 				}
 			}
 			if (edgeL.length()!=0) {
@@ -528,7 +532,7 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 		}		
 		//String s = RControl.getR().eval("paste(capture.output(dput(.gsrmtVar)), collapse=\"\")").asRChar().getData()[0];
 		//JOptionPane.showMessageDialog(null, "Exported graph as: "+s);
-		RControl.getR().evalVoid(graphName+" <- new(\"graphMCP\", nodes=.gsrmtVar$hnodes, edgeL=.gsrmtVar$edges, alpha=.gsrmtVar$alpha)");
+		RControl.getR().evalVoid(graphName+" <- new(\"graphMCP\", nodes=.gsrmtVar$hnodes, edgeL=.gsrmtVar$edges, weights=.gsrmtVar$alpha)");
 		//TODO remove this stupid workaround.
 		RControl.getR().evalVoid(graphName+" <- gMCP:::stupidWorkAround("+graphName+")");
 		for (int i=nodes.size()-1; i>=0; i--) {

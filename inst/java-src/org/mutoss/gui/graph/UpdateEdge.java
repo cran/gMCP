@@ -36,8 +36,8 @@ public class UpdateEdge extends JDialog implements ActionListener {
         getContentPane().add(new JLabel("Weight for edge:"), cc.xy(2, 2));
 
         
-        String text = ""+edge.getW();
-        if (text.equals("NaN")) text = "ε";
+        String text = edge.getWS();
+        
         tf = new JTextField(text);
         tf.addActionListener(this);
         getContentPane().add(tf, cc.xy(4, 2));
@@ -55,7 +55,7 @@ public class UpdateEdge extends JDialog implements ActionListener {
 
 	public void actionPerformed(ActionEvent e) {
 		Double w = 0d;		
-		if (e.getSource() != jbDelete) {
+		if (e.getSource() != jbDelete) {			
 			try {
 				w = Double.parseDouble(tf.getText());
 			} catch (NumberFormatException ve) {
@@ -66,8 +66,8 @@ public class UpdateEdge extends JDialog implements ActionListener {
 			control.getDataTable().getModel().setValueAt(0, netzListe.getKnoten().indexOf(edge.from), netzListe.getKnoten().indexOf(edge.to));
 			netzListe.removeEdge(edge);			
 		} else {
-			edge.setW(w);	
-			control.getDataTable().getModel().setValueAt(w, netzListe.getKnoten().indexOf(edge.from), netzListe.getKnoten().indexOf(edge.to));
+			edge.setW(tf.getText());	
+			control.getDataTable().getModel().setValueAt(tf.getText(), netzListe.getKnoten().indexOf(edge.from), netzListe.getKnoten().indexOf(edge.to));
 		}
 		netzListe.repaint();
 		dispose();		

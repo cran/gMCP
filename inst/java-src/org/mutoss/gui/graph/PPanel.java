@@ -15,7 +15,6 @@ import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JTextField;
 
-import org.af.jhlir.call.RErrorException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.mutoss.config.Configuration;
@@ -57,7 +56,7 @@ public class PPanel implements ActionListener, KeyListener, NodeListener, FocusL
         
         label = new JLabel(name);
 		
-		wTF = new JTextField(/*RControl.getFraction*/format.format(w), 7);
+		wTF = new JTextField(RControl.getFraction(w), 7);
 		wTF.addActionListener(this);
 		wTF.addFocusListener(this);
 		wTF.addKeyListener(this);
@@ -72,7 +71,7 @@ public class PPanel implements ActionListener, KeyListener, NodeListener, FocusL
 		if (node.isRejected()) {
 			reject();
 		} else {
-			keyTyped(null);
+			updateMe(false);
 		}		
 	}
 
@@ -81,7 +80,7 @@ public class PPanel implements ActionListener, KeyListener, NodeListener, FocusL
 			reject();
 			updateGraph();
 		} else {
-			keyTyped(null);
+			updateMe(false);
 		}
 	}
 
@@ -115,12 +114,18 @@ public class PPanel implements ActionListener, KeyListener, NodeListener, FocusL
 		try {
 			w = RControl.getR().eval(wTF.getText().replace(",", ".")).asRNumeric().getData()[0];		
 			wTF.setBackground(Color.WHITE);
-		} catch (RErrorException nfe) {		
+		} catch (Exception nfe) {		
 			wTF.setBackground(Color.RED);
 		}
 		node.setAlpha(w, this);
 		//logger.info("P: "+p+", W: "+w);
-		if (p<=w) {
+		updateMe(false);
+	}
+
+	void updateMe(boolean setText) {
+		if (setText) wTF.setText(getWString());
+		if (p<=w*pview.getTotalAlpha()) {
+			System.out.println("Is "+p+"<="+w+"*"+pview.getTotalAlpha()+"?");
 			node.setColor(new Color(50, 255, 50));
 			wTF.setBackground(new Color(50, 255, 50));
 			if (testing) {
@@ -147,10 +152,10 @@ public class PPanel implements ActionListener, KeyListener, NodeListener, FocusL
 		DecimalFormat format = Configuration.getInstance().getGeneralConfig().getDecFormat();
 		this.name = node.name;
 		this.w = node.getAlpha();
-		wTF.setText(format.format(w).replace(",", "."));		
+		wTF.setText(getWString());		
 		pTF.setText(format.format(p).replace(",", "."));
 		if (!rejected) {
-			keyTyped(null);
+			updateMe(true);
 		}
 	}
 
@@ -158,9 +163,17 @@ public class PPanel implements ActionListener, KeyListener, NodeListener, FocusL
 		DecimalFormat format = Configuration.getInstance().getGeneralConfig().getDecFormat();
 		this.name = node.name;
 		this.w = node.getAlpha();
-		wTF.setText(format.format(w).replace(",", "."));		
+		wTF.setText(getWString());		
 		pTF.setText(format.format(p).replace(",", "."));	
 		pview.updateLabels();
+	}
+
+	private String getWString() {	
+		if (testing) {
+			return format.format(w*pview.getTotalAlpha()).replace(",", ".");
+		} else {
+			return RControl.getFraction(w);
+		}
 	}
 
 	public double getP() {		
@@ -179,15 +192,15 @@ public class PPanel implements ActionListener, KeyListener, NodeListener, FocusL
 	}
 
 	@Override
-	public void focusGained(FocusEvent e) {
-		
-	}
+	public void focusGained(FocusEvent e) {	}
 
 	@Override
 	public void focusLost(FocusEvent e) {
-		if (e.getSource()==wTF) {
-			wTF.setText(/*RControl.getFraction*/format.format(w));
+		keyTyped(null);
+		if (e.getSource()==wTF && !testing) {
+			wTF.setText(RControl.getFraction(w));
 		}
+		updateMe(true);
 	}	
 	
 }

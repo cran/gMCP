@@ -1,6 +1,6 @@
-matrix2graph <- function(m, alpha=rep(0,dim(m)[1])) {
+matrix2graph <- function(m, weights=rep(1/dim(m)[1],dim(m)[1])) {
 	# Checking for 0 on diagonal:
-	if (!all(TRUE == all.equal(diag(m), rep(0, length(diag(m)))))) {
+	if (!all(TRUE == all.equal(unname(diag(m)), rep(0, length(diag(m)))))) {
 		warning("Matrix has a diagonal not equal to zero. Loops are not allowed.")
 		diag(m) <- rep(0, length(diag(m)))
 	}
@@ -12,7 +12,7 @@ matrix2graph <- function(m, alpha=rep(0,dim(m)[1])) {
 	edges <- vector("list", length=length(hnodes))
 	names(edges)<-hnodes
 	for (i in 1:length(hnodes)) edges[[i]] <- list()
-	graph <- new("graphMCP", nodes=hnodes, edgeL=edges, alpha=alpha)
+	graph <- new("graphMCP", nodes=hnodes, edgeL=edges, weights=weights)
 	# Creating edges:
 	for (i in 1:length(hnodes)) {
 		for (j in 1:length(hnodes)) {
