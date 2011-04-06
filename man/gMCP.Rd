@@ -8,7 +8,8 @@
 	Performs a sequentially rejective multiple test procedure on a graph given unadjusted p-values.
 }
 \usage{
-	gMCP(graph, pvalues, test, correlation, alpha=0.05, ..., verbose=FALSE)
+	gMCP(graph, pvalues, test, correlation, alpha=0.05, approxEps=TRUE, eps=10^(-4), ..., 
+         verbose=FALSE)
 }
 
 \arguments{
@@ -26,7 +27,13 @@
   } 
   \item{alpha}{
   	A numeric specifying the maximal allowed type one error rate.
+  }
+  \item{approxEps}{
+  	A boolean specifying whether epsilon values should be substituted with the value given in the paramenter \code{eps}.
   }   
+  \item{eps}{
+  	A numeric scalar specifying a value for epsilon edges.
+  }
   \item{...}{
   	Test specific arguments can be given here.
   }   
