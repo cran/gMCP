@@ -93,46 +93,26 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 		control.getDataTable().getModel().setValueAt(e.getEdgeWeight(), getKnoten().indexOf(e.from), getKnoten().indexOf(e.to));
 	}
 
-	/**
-	 * Fügt Kante hinzu mit Gewicht 1
-	 * 
-	 * @param von
-	 *            Nummer des Knotens, aus dem die Kante austritt.
-	 * @param nach
-	 *            Nummer des Knotens, in den die Kante eintritt.
-	 */
-
 	public void addEdge(Node von, Node nach) {
 		addEdge(von, nach, 1d);		
 	}
 
-	/**
-	 * Fügt Kante hinzu mit Gewicht w
-	 * 
-	 * @param von
-	 *            Nummer des Knotens, aus dem die Kante austritt.
-	 * @param nach
-	 *            Nummer des Knotens, in den die Kante eintritt.
-	 * @param w
-	 *            Gewicht der Kante
-	 */
-	
 	public void addEdge(Node von, Node nach, Double w) {	
 		addEdge(von, nach, new EdgeWeight(w));
 	}
 
 	public void addNode(Node node) {
-		control.buttonStart.setEnabled(true);
+		control.enableButtons(true);		
 		nodes.add(node);
 		nodes.lastElement().fix = false;	
 		control.getPView().addPPanel(node);
-		control.getDataTable().getModel().addRowCol(node.name);
+		control.getDataTable().getModel().addRowCol(node.getName());
 		calculateSize();
 	}
 
 	public int whichNode(String name) {
 		for (int i=0; i<nodes.size(); i++) {
-			if (nodes.get(i).name.equals(name)) {
+			if (nodes.get(i).getName().equals(name)) {
 				return i;
 			}
 		}
@@ -140,7 +120,7 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 	}
 
 	/**
-	 * Berechnet die benötigte Größe um alle Knoten anzuzeigen und setzt sie.
+	 * Calculates the size of the panel to view all nodes and resizes the panel.
 	 */
 
 	public int[] calculateSize() {
@@ -175,25 +155,6 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 		return null;
 	}
 
-	/**
-	 * Liefert die Adjacenz-Matrix zurück
-	 */
-	
-	public int[][] getAMatrix() {
-		int[][] e = new int[nodes.size()][];
-		for (int i = 0; i < nodes.size(); i++) {
-			e[i] = new int[nodes.size()];
-			for (int j = 0; j < nodes.size(); j++) {
-				e[i][j] = 0;
-			}
-		}
-		for (int i = 0; i < edges.size(); i++) {
-			e[nodes.indexOf(edges.get(i).from)][nodes.indexOf(edges.get(i).to)] = 1;
-			e[nodes.indexOf(edges.get(i).to)][nodes.indexOf(edges.get(i).from)] = 1;
-		}
-		return e;
-	}
-
 	public Vector<Edge> getEdges() {
 		return edges;
 	}
@@ -225,7 +186,10 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 			node.paintYou(g);
 		}
 		for (Edge edge : edges) {
-			edge.paintYou(g);			
+			edge.paintEdge(g);			
+		}
+		for (Edge edge : edges) {
+			edge.paintEdgeLabel(g);			
 		}
 		return img;
 
@@ -245,7 +209,7 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 			latex += "\\node ("+node.getName().replace("_", "-")+") at ("+node.getX()+"bp,"+(-node.getY())+"bp)\n";
 			String nodeColor = "green!80";
 			if (node.isRejected()) {nodeColor = "red!80";}
-			latex += "[draw,circle split,fill="+nodeColor+"] {$"+node.getName()+"$ \\nodepart{lower} $"+format.format(node.getAlpha())+"$};\n";			
+			latex += "[draw,circle split,fill="+nodeColor+"] {$"+node.getName()+"$ \\nodepart{lower} $"+format.format(node.getWeight())+"$};\n";			
 		}
 		for (int i = 0; i < getEdges().size(); i++) {
 			Node node1 = getEdges().get(i).from;
@@ -273,12 +237,9 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 		repaint();
 	}
 
-	public void mouseClicked(MouseEvent e) {}
-	
-	public void mouseEntered(MouseEvent e) {}
-	
+	public void mouseClicked(MouseEvent e) {}	
+	public void mouseEntered(MouseEvent e) {}	
 	public void mouseExited(MouseEvent e) {}
-
 	public void mouseMoved(MouseEvent e) {}
 
 	public void mousePressed(MouseEvent e) {
@@ -345,14 +306,6 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 		repaint();
 	}
 
-	/**
-	 * Methode die vom MouseListener MouseNetz aufgerufen wird, wenn eine
-	 * Mousetaste losgelassen wird.
-	 * 
-	 * @param e
-	 *            Eingetretenes MouseEvent
-	 */
-
 	public void mouseReleased(MouseEvent e) {
 		if (drag != -1) {
 			nodes.get(drag).setX( (int) ((e.getX() - Node.getRadius() * vs.getZoom()) / (double) vs.getZoom()));
@@ -372,8 +325,8 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 	}
 	
 	/**
-	 * Die Paint-Methode. paint() geht nicht, da sie nicht bei revalidate der
-	 * Scrollbars aufgerufen wird.
+	 * We use paintComponent() instead of paint(), since the later one
+	 * is not called by a revalidate of the scrollbars.
 	 */
 
 	public void paintComponent(Graphics g) {
@@ -397,7 +350,10 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 			node.paintYou(g);
 		}
 		for (Edge edge : edges) {
-			edge.paintYou(g);			
+			edge.paintEdge(g);			
+		}
+		for (Edge edge : edges) {
+			edge.paintEdgeLabel(g);			
 		}
 	}
 
@@ -431,7 +387,7 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 		nodes.remove(node);
 		control.getPView().removePPanel(node);
 		if (nodes.size()==0) {
-			control.buttonStart.setEnabled(false);
+			control.enableButtons(false);
 		}
 		repaint();
 	}
@@ -449,7 +405,7 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 	}
 	
 
-	public void saveGraph(String graphName, boolean verbose) {
+	public String saveGraph(String graphName, boolean verbose) {
 		// We can only save up to now graphs without variables:
 		
 		Set<String> variables = new HashSet<String>();
@@ -457,11 +413,16 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 		for (Edge e : edges) {		
 			variables.addAll(e.getVariable());
 		}
+		if (!Configuration.getInstance().getGeneralConfig().useEpsApprox()) {
+			variables.remove("ε");
+		}
 		
 		Hashtable<String,Double> ht = new Hashtable<String,Double>();
-		if (!variables.isEmpty()) {
+		if (!variables.isEmpty() && !(variables.size()==1 && variables.contains("ε"))) {
 			VariableDialog vd = new VariableDialog(this.control.parent, variables);
 			ht = vd.getHT();
+		} else if (variables.size()==1 && variables.contains("ε")){
+			ht.put("ε", Configuration.getInstance().getGeneralConfig().getEpsilon());
 		}
 		
 		// Okay, let's go:
@@ -473,7 +434,7 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 		String x = "";
 		String y = "";
 		for (Node n : nodes) {
-			alpha += n.getAlpha() +",";
+			alpha += n.getWeight() +",";
 			nodeStr += "\""+n.getName() +"\","; 
 			x += n.getX() + ",";
 			y += n.getY() + ",";
@@ -495,7 +456,7 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 			for (Edge e : edges) {				
 				if (e.from == n) {
 					edgeL += "\""+e.to.getName()+"\",";
-					weights += ((""+e.getW(ht)).equals("NaN")?0+",":e.getW(ht) +",");
+					weights += e.getW(ht)[0] +",";
 				}
 			}
 			if (edgeL.length()!=0) {
@@ -525,8 +486,13 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 		for (Edge e : edges) {				
 			RControl.getR().evalVoid("edgeData("+graphName+", \""+e.from.getName()+"\", \""+e.to.getName()+"\", \"labelX\") <- "+(e.k1-Node.getRadius()));
 			RControl.getR().evalVoid("edgeData("+graphName+", \""+e.from.getName()+"\", \""+e.to.getName()+"\", \"labelY\") <- "+(e.k2-Node.getRadius()));
+			String eps = e.getEpsilonString(null);
+			if (eps!=null) {
+				RControl.getR().evalVoid("edgeData("+graphName+", \""+e.from.getName()+"\", \""+e.to.getName()+"\", \"epsilon\") <- list("+eps+")");
+			}
 		}	
 		if (verbose) { JOptionPane.showMessageDialog(null, "The graph as been exported to R under ther variable name:\n\n"+graphName, "Saved as \""+graphName+"\"", JOptionPane.INFORMATION_MESSAGE); }
+		return graphName;
 	}
 	
 	public void setEdges(Vector<Edge> edges) {

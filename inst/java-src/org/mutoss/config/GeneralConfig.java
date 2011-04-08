@@ -2,6 +2,8 @@ package org.mutoss.config;
 
 import java.io.File;
 import java.text.DecimalFormat;
+import java.util.List;
+import java.util.Vector;
 
 public class GeneralConfig extends SpecificConfig {
 
@@ -68,7 +70,7 @@ public class GeneralConfig extends SpecificConfig {
 	}
 
     public void setDigits(int digit) {
-		setProperty("digit", ""+digit);		
+		setProperty("Digits", ""+digit);		
 		setFormat();
 	}
     
@@ -138,11 +140,50 @@ public class GeneralConfig extends SpecificConfig {
 	}
 
 	public boolean useEpsApprox() {
-		return Boolean.parseBoolean(getProperty("useEpsApprox", "false"));
+		return Boolean.parseBoolean(getProperty("useEpsApprox", "true"));
 	}
 	
 	public void setUseEpsApprox(boolean useEpsApprox) {
 		setProperty("useEpsApprox", ""+useEpsApprox);
+	}
+	
+	public boolean useJLaTeXMath() {
+		return Boolean.parseBoolean(getProperty("useJLaTeXMath", "true"));
+	}
+	
+	public void setUseJLaTeXMath(boolean useJLaTeXMath) {
+		setProperty("useJLaTeXMath", ""+useJLaTeXMath);
+	}
+	
+	public void setVersionNumber(String version) {
+		setProperty("gMCPversion", version);
+	}
+
+	public String getVersionNumber() {
+		return getProperty("gMCPversion", "<= 0.6.0");
+	}
+	
+	public List<String> getLatestGraphs() {
+		Vector<String> graphs = new Vector<String>(); 
+		for (int i=0; i<4; i++) {
+			String graph = getProperty("saved_graph_"+i, "NOT_SAVED_YET");
+			if (graph.startsWith("R Object") || new File(graph).exists()) {
+				graphs.add(graph);
+			}
+		}
+		return graphs;
+	}
+	
+	public void addGraph(String graph) {
+		int i=1;
+		for (; i<4; i++) {
+			if (graph.equals(getProperty("saved_graph_"+(i-1)))) break; 
+		}
+		for (i--; i>0; i--) {
+			String g = getProperty("saved_graph_"+(i-1), "NOT_SAVED_YET");
+			setProperty("saved_graph_"+i, g);			
+		}
+		setProperty("saved_graph_"+0, graph);		
 	}
 	
 }

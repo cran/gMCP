@@ -16,7 +16,6 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-import javax.swing.JTextField;
 
 import org.af.commons.errorhandling.ErrorHandler;
 import org.af.commons.widgets.DesktopPaneBG;
@@ -26,8 +25,8 @@ import org.mutoss.gui.CreateGraphGUI;
 import org.mutoss.gui.RControl;
 import org.mutoss.gui.datatable.DataTable;
 import org.mutoss.gui.dialogs.AdjustedPValueDialog;
-import org.mutoss.gui.dialogs.CorrelatedTest;
 import org.mutoss.gui.dialogs.DialogConfIntEstVar;
+import org.mutoss.gui.dialogs.RejectedDialog;
 
 public class GraphView extends JPanel implements ActionListener {
 
@@ -99,43 +98,34 @@ public class GraphView extends JPanel implements ActionListener {
 			toolPanel.setLayout(new FlowLayout());
 			((FlowLayout) (toolPanel.getLayout()))
 					.setAlignment(FlowLayout.LEFT);
+			
 			buttonNewVertex = new JButton(
 					new ImageIcon(ImageIO.read(DesktopPaneBG.class
 											.getResource("/org/mutoss/gui/graph/images/vertex.png"))));
 			toolPanel.add(buttonNewVertex);
 			buttonNewVertex.addActionListener(this);
 			buttonNewVertex.setToolTipText("new vertex");
+			
 			buttonNewEdge = new JButton(
 					new ImageIcon(ImageIO.read(DesktopPaneBG.class
 											.getResource("/org/mutoss/gui/graph/images/edge.png"))));
 			toolPanel.add(buttonNewEdge);
 			buttonNewEdge.addActionListener(this);
 			buttonNewEdge.setToolTipText("new edge");
+			
 			buttonZoomOut = new JButton(
 					new ImageIcon(ImageIO.read(DesktopPaneBG.class
 											.getResource("/org/mutoss/gui/graph/images/zoom_out.png"))));
 			toolPanel.add(buttonZoomOut);
 			buttonZoomOut.addActionListener(this);
 			buttonZoomOut.setToolTipText("zoom out");
+			
 			buttonZoomIn = new JButton(
 					new ImageIcon(ImageIO.read(DesktopPaneBG.class
 											.getResource("/org/mutoss/gui/graph/images/zoom_in.png"))));
 			toolPanel.add(buttonZoomIn);
 			buttonZoomIn.addActionListener(this);
 			buttonZoomIn.setToolTipText("zoom in");
-			
-			buttonadjPval = new JButton(
-					new ImageIcon(ImageIO.read(DesktopPaneBG.class
-											.getResource("/org/mutoss/gui/graph/images/adjPval.png"))));
-			toolPanel.add(buttonadjPval);
-			buttonadjPval.addActionListener(this);
-			buttonadjPval.setToolTipText("calculate adjusted p-values");
-			buttonConfInt = new JButton(
-					new ImageIcon(ImageIO.read(DesktopPaneBG.class
-											.getResource("/org/mutoss/gui/graph/images/confint2.png"))));
-			toolPanel.add(buttonConfInt);
-			buttonConfInt.addActionListener(this);
-			buttonConfInt.setToolTipText("calculate confidence intervals");
 			
 			buttonStart = new JButton(
 					new ImageIcon(ImageIO.read(DesktopPaneBG.class
@@ -144,6 +134,23 @@ public class GraphView extends JPanel implements ActionListener {
 			buttonStart.addActionListener(this);
 			buttonStart.setEnabled(false);
 			buttonStart.setToolTipText("start testing");		
+			
+			buttonadjPval = new JButton(
+					new ImageIcon(ImageIO.read(DesktopPaneBG.class
+											.getResource("/org/mutoss/gui/graph/images/adjPval.png"))));
+			toolPanel.add(buttonadjPval);			
+			buttonadjPval.addActionListener(this);
+			buttonadjPval.setEnabled(false);
+			buttonadjPval.setToolTipText("calculate adjusted p-values");
+			
+			buttonConfInt = new JButton(
+					new ImageIcon(ImageIO.read(DesktopPaneBG.class
+											.getResource("/org/mutoss/gui/graph/images/confint2.png"))));
+			toolPanel.add(buttonConfInt);
+			buttonConfInt.addActionListener(this);
+			buttonConfInt.setEnabled(false);
+			buttonConfInt.setToolTipText("calculate confidence intervals");
+			
 		} catch (IOException e) {
 			ErrorHandler.getInstance().makeErrDialog(e.getMessage(), e);
 		}
@@ -182,7 +189,15 @@ public class GraphView extends JPanel implements ActionListener {
 		} else if (e.getSource().equals(buttonStart)) {
 			if (!getNL().isTesting()) {
 				startTesting();
-				new CorrelatedTest(this.getGraphGUI());
+				//new CorrelatedTest(this.getGraphGUI());
+				String correlation = "";
+				if (parent.getPView().jrbStandardCorrelation.isSelected()) {
+					correlation = ", correlation=\""+parent.getPView().jcbCorString.getSelectedItem()+"\"";
+				} else if (parent.getPView().jrbRCorrelation.isSelected()) {
+					correlation = ", correlation="+parent.getPView().jcbCorObject.getSelectedItem()+"";
+				} 
+				boolean[] rejected = RControl.getR().eval("gMCP("+parent.getGraphView().getNL().initialGraph+","+parent.getGraphView().getPView().getPValuesString()+ correlation+", alpha="+parent.getPView().getTotalAlpha()+")@rejected").asRLogical().getData();
+				new RejectedDialog(parent, rejected, parent.getGraphView().getNL().getKnoten());
 			} else {
 				stopTesting();
 			}
@@ -270,6 +285,12 @@ public class GraphView extends JPanel implements ActionListener {
 			getNL().addEdge(getNL().getKnoten().get(from), getNL().getKnoten().get(to), weight);
 		}
 		getNL().repaint();		
+	}
+
+	public void enableButtons(Boolean enabled) {
+		buttonadjPval.setEnabled(enabled);
+		buttonConfInt.setEnabled(enabled);
+		buttonStart.setEnabled(enabled);
 	}
 	
 }

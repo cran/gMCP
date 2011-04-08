@@ -4,25 +4,36 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Vector;
 
+import javax.imageio.ImageIO;
+import javax.swing.ButtonGroup;
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.JScrollPane;
+import javax.swing.JRadioButton;
 import javax.swing.JTextField;
 
+import org.af.commons.widgets.DesktopPaneBG;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.mutoss.config.Configuration;
+import org.mutoss.gui.CreateGraphGUI;
+import org.mutoss.gui.RControl;
 
 import com.jgoodies.forms.layout.CellConstraints;
 import com.jgoodies.forms.layout.FormLayout;
 
-public class PView extends JPanel implements KeyListener {
+public class PView extends JPanel implements KeyListener, ActionListener {
 
 	JLabel statusBar;
 	private static final Log logger = LogFactory.getLog(PView.class);
@@ -35,8 +46,10 @@ public class PView extends JPanel implements KeyListener {
 	JLabel alphaLabel = new JLabel("Total α: ");
 	JTextField totalAlpha = new JTextField("0.05");
 	GridBagConstraints c = new GridBagConstraints();
+	CreateGraphGUI parent;
 	
-	public PView() {  
+	public PView(CreateGraphGUI parent) {
+		this.parent = parent;
 		setLayout(new GridBagLayout());
 				
 		c.weightx=1; c.weighty=1; c.fill = GridBagConstraints.BOTH;
@@ -115,10 +128,12 @@ public class PView extends JPanel implements KeyListener {
 		row += 2;
 		panel.add(alphaLabel, cc.xy(2, row));    	
     	panel.add(totalAlpha, cc.xy(4, row));
-		
+    	
 		panel.revalidate();
 		removeAll();
-		add(new JScrollPane(panel), c);
+		add(panel, c);
+		c.gridy++;
+		add(getCorrelatedPanel(), c);
 	}
 	
 	public void updateLabels() {
@@ -207,6 +222,108 @@ public class PView extends JPanel implements KeyListener {
 	public void keyTyped(KeyEvent e) {
 		for (PPanel p : panels) {
 			p.updateMe(false);
+		}
+	}
+	
+	JButton refresh;
+	
+    JRadioButton jrbNoCorrelation = new JRadioButton("No Information about correlations");
+    JRadioButton jrbStandardCorrelation = new JRadioButton("Select a standard correlation");
+    JRadioButton jrbRCorrelation = new JRadioButton("Select an R correlation matrix");
+
+    JComboBox jcbCorString;
+    JComboBox jcbCorObject;
+    
+    JPanel correlatedPanel = null;
+    
+	public JPanel getCorrelatedPanel() {
+		
+		if (correlatedPanel!=null) return correlatedPanel;
+		
+		try {
+			refresh = new JButton(new ImageIcon(ImageIO.read(DesktopPaneBG.class
+					.getResource("/org/mutoss/gui/graph/images/update24.png"))));
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		refresh.setToolTipText("search again for matrices in R");
+		
+		correlatedPanel = new JPanel();
+		
+		String[] matrices = RControl.getR().eval("gMCP:::getAllQuadraticMatrices()").asRChar().getData();
+		
+		String[] correlations = new String[] {"Dunnett"};
+		//"Dunnett", "Tukey", "Sequen", "AVE", "Changepoint", "Williams", "Marcus", "McDermott", "UmbrellaWilliams", "GrandMean"
+		
+	    jcbCorString = new JComboBox(correlations);
+	    jcbCorObject = new JComboBox(matrices);
+		
+		if (matrices.length==1 && matrices[0].equals("No quadratic matrices found.")) {
+			jcbCorObject.setEnabled(false);
+			jrbRCorrelation.setEnabled(false);
+		}
+
+	    jrbNoCorrelation.setSelected(true);
+
+	    ButtonGroup group = new ButtonGroup();
+	    group.add(jrbNoCorrelation);
+	    group.add(jrbStandardCorrelation);
+	    group.add(jrbRCorrelation);
+
+	    jrbNoCorrelation.addActionListener(this);
+	    jrbStandardCorrelation.addActionListener(this);
+	    jrbRCorrelation.addActionListener(this);
+		
+        String cols = "5dlu, pref, 5dlu, fill:pref:grow, 5dlu, pref, 5dlu";
+        String rows = "5dlu, pref, 5dlu, pref, 5dlu, pref, 5dlu, pref, 5dlu";
+        
+        FormLayout layout = new FormLayout(cols, rows);
+        correlatedPanel.setLayout(layout);
+        CellConstraints cc = new CellConstraints();
+
+        int row = 2;
+        
+        correlatedPanel.add(jrbNoCorrelation,     cc.xy(2, row));
+        //getContentPane().add(new JLabel(), cc.xy(4, row));        
+        
+        row += 2;
+        
+        correlatedPanel.add(jrbStandardCorrelation,     cc.xy(2, row));
+        correlatedPanel.add(jcbCorString, cc.xy(4, row));        
+        
+        row += 2;
+        
+        correlatedPanel.add(jrbRCorrelation,     cc.xy(2, row));
+        correlatedPanel.add(jcbCorObject, cc.xy(4, row));
+        correlatedPanel.add(refresh, cc.xy(6, row));  
+        refresh.addActionListener(this);
+        
+        return correlatedPanel;
+	}
+
+	public void actionPerformed(ActionEvent e) {
+		if (e.getSource()==refresh) {
+			jcbCorObject.removeAllItems();
+			String[] matrices = RControl.getR().eval("gMCP:::getAllQuadraticMatrices()").asRChar().getData();
+			if (matrices.length==1 && matrices[0].equals("No quadratic matrices found.")) {
+				jcbCorObject.setEnabled(false);
+				jrbRCorrelation.setEnabled(false);
+			} else {
+				for (String s : matrices) {
+					jcbCorObject.addItem(s);
+				}
+				jcbCorObject.setEnabled(true);
+				jrbRCorrelation.setEnabled(true);
+			}
+		} else if (e.getSource()==jrbNoCorrelation) {
+			if (parent.getGraphView().getNL().getKnoten().size()>0) {
+				parent.getGraphView().buttonConfInt.setEnabled(true);
+				parent.getGraphView().buttonadjPval.setEnabled(true);
+			}
+		} else if (e.getSource()==jrbStandardCorrelation || e.getSource()==jrbRCorrelation) {
+			parent.getGraphView().buttonConfInt.setEnabled(false);
+			parent.getGraphView().buttonadjPval.setEnabled(false);
 		}
 	}
 	

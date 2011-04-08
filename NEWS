@@ -1,10 +1,29 @@
 
+Version 0.6-1 (??-Apr-2011, Rev. ???)
+=====================================
+
+- We use the library JLaTeXMath for edge labeling.
+
+- Eye candy (for example the edge labels have now a border and 
+  are always drawn at the end).
+  
+- The settings for correlation are moved to the p-value panel.
+
+- The value for epsilon is optionally either asked every time
+  or the value from the option panel is used.
+
+- Changed the order of the buttons in the main button panel.
+
+- GUI is remembering the last 4 used R objects / files. 
+
 Version 0.6-0 (06-Apr-2011, Rev. 547)
 =====================================
 
 - The GUI supports edges with variables (although sum checking of
   outgoing edges is disabled then till values are assigned to the
   variables.)
+  
+- gMCP has new arguments: approxEps=TRUE, eps=10^(-4)
   
 - New function: substituteEps
 
@@ -16,6 +35,8 @@ Version 0.6-0 (06-Apr-2011, Rev. 547)
   
 - graph2latex has the new arguments "labelTikZ", "tikzEnv" and 
   "offset".
+  
+ 40 files changed, 599 insertions(+), 339 deletions(-)
 
 Version 0.5-0 (28-Mar-2011, Rev. 525)
 =====================================

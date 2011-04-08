@@ -1,9 +1,9 @@
 High priority:
 ==============
-  
+
+- LaTeX-Report
 - 1 Page PDF how to use gMCP, including hint for R installation
-- press e for epsilon, or 1+e+e^2
-- confidence intervals are strange...
+- confidence intervals are strange / wrong in the vignette...
 - Edge weight from node i to node j: m[i,j] or m[j,i] - please decide.
 - Flag 1+epsilon as line sum
 - round adjusted p-Values up
@@ -43,6 +43,7 @@ See also http://comments.gmane.org/gmane.comp.lang.r.general/200179
 - option to load another R graph
 - TikZ styles for rejected / rejectable nodes
 - further tests
+- Look at http://xmlgraphics.apache.org/fop/
 
 @Apple - is this a problem?
 

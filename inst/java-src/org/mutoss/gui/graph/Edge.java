@@ -1,22 +1,32 @@
 package org.mutoss.gui.graph;
 
+import java.awt.BasicStroke;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Stroke;
 import java.awt.font.FontRenderContext;
 import java.awt.geom.Rectangle2D;
 import java.util.Collection;
 import java.util.Hashtable;
 
+import javax.swing.JPanel;
+
 import org.af.commons.images.GraphDrawHelper;
 import org.af.commons.images.GraphException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.mutoss.config.Configuration;
+import org.scilab.forge.jlatexmath.TeXConstants;
+import org.scilab.forge.jlatexmath.TeXFormula;
+import org.scilab.forge.jlatexmath.TeXIcon;
 
 public class Edge {
 
 	private static final Log logger = LogFactory.getLog(Edge.class);
+	public static Component panel = new JPanel();
 	public boolean curve = false;
 	FontRenderContext frc = null;
 	Graphics2D g2d;
@@ -26,7 +36,7 @@ public class Edge {
 	
 	VS vs;
 	
-	EdgeWeight ew;
+	private EdgeWeight ew;
 
 	public Edge(Node von, Node nach, Double w, VS vs) {		
 		int x1, x2, y1, y2;
@@ -174,14 +184,25 @@ public class Edge {
 	}
 
 	public boolean inYou(int x, int y) {
-		String s = getWS();
-		FontRenderContext frc = g2d.getFontRenderContext();	
-		Rectangle2D rc = (new Font("Arial", Font.PLAIN, (int) (16 * vs.getZoom()))).getStringBounds(s, frc);
-		int TOLERANCE = 4; 
-		return (x/ vs.getZoom()>k1-rc.getWidth()/2-TOLERANCE)&&(x/ vs.getZoom()<k1+rc.getWidth()/2+TOLERANCE)&&(y/ vs.getZoom()<k2- rc.getHeight()*1/ 2+TOLERANCE)&&(y/ vs.getZoom()>k2-rc.getHeight()*3/2-TOLERANCE);
+		if (icon==null) {
+			icon = getTeXIcon(getWS(), (int) (16 * vs.getZoom()));			
+		}		
+		int TOLERANCE = 5; 
+		
+		if (!Configuration.getInstance().getGeneralConfig().useJLaTeXMath()) {
+			String s = getWS();
+			FontRenderContext frc = g2d.getFontRenderContext();	
+			Rectangle2D rc = (new Font("Arial", Font.PLAIN, (int) (16 * vs.getZoom()))).getStringBounds(s, frc); 
+			return (x/ vs.getZoom()>k1-rc.getWidth()/2-TOLERANCE)&&(x/ vs.getZoom()<k1+rc.getWidth()/2+TOLERANCE)&&(y/ vs.getZoom()<k2- rc.getHeight()*1/ 2+TOLERANCE)&&(y/ vs.getZoom()>k2-rc.getHeight()*3/2-TOLERANCE);
+		} else {
+			return (x/vs.getZoom()>k1-icon.getIconWidth()/2-TOLERANCE)
+			&& (x/vs.getZoom()<k1+icon.getIconWidth()/2+TOLERANCE)
+			&& (y/vs.getZoom()<k2+icon.getIconHeight()/2+TOLERANCE)
+			&& (y/vs.getZoom()>k2-icon.getIconHeight()/2-TOLERANCE);
+		}
 	}
 	
-	public void paintYou(Graphics g) {
+	public void paintEdge(Graphics g) {
 		int x1, x2, y1, y2;
 		x1 = from.x + Node.getRadius();
 		x2 = to.x + Node.getRadius();
@@ -210,20 +231,127 @@ public class Edge {
 					(int) (k2 * vs.getZoom()),
 					(int) (x2 * vs.getZoom()), (int) (y2 * vs.getZoom()), 
 					(int) (8 * vs.getZoom()), 35, true);
-			
-			g2d.setFont(new Font("Arial", Font.PLAIN, (int) (16 * vs.getZoom())));
-			frc = g2d.getFontRenderContext();		
-			String s = getWS();
+		} 
+	}
+	
+	public void paintEdgeLabel(Graphics g) {
+		g2d.setFont(new Font("Arial", Font.PLAIN, (int) (16 * vs.getZoom())));
+		frc = g2d.getFontRenderContext();		
+		String s = getWS();	
+
+		if (!Configuration.getInstance().getGeneralConfig().useJLaTeXMath()) {
 			Rectangle2D rc = g2d.getFont().getStringBounds(s, frc);
 			g2d.setColor(new Color(0.99f,0.99f,0.99f));
-			g2d.fillRect((int)((k1* vs.getZoom() - rc.getWidth() / 2)), (int)((k2* vs.getZoom() - rc.getHeight()* 3 / 2)), (int)((rc.getWidth()+5)), (int)((rc.getHeight()+5)));
+			g2d.fillRect((int)((k1* vs.getZoom() - rc.getWidth() / 2)), 
+					(int)((k2* vs.getZoom() - rc.getHeight()* 3 / 2)), 
+					(int)((rc.getWidth()+5)), (int)((rc.getHeight()+5)));
 			g2d.setColor(Color.BLACK);
-			
+
 			g2d.drawString(s, 
 					(float) ((k1* vs.getZoom() - rc.getWidth() / 2)), 
 					(float) ((k2* vs.getZoom() - rc.getHeight() / 2)));
+		} else {
+			if (icon==null) {
+				icon = getTeXIcon(s, (int) (16 * vs.getZoom()));			
+			}
+			g2d.setColor(new Color(0.99f,0.99f,0.99f));
+			g2d.fillRect((int)((k1* vs.getZoom() - icon.getIconWidth() / 2)-5), 
+					(int)((k2* vs.getZoom() - icon.getIconHeight() / 2)-5), 
+					(int)((icon.getIconWidth()+10)),
+					(int)((icon.getIconHeight()+10)));
+			g2d.setColor(Color.BLACK);
 
-		} 
+			Stroke oldStroke = g2d.getStroke();
+			g2d.setStroke(new BasicStroke(1));
+			g2d.drawRect((int)((k1* vs.getZoom() - icon.getIconWidth() / 2)-5), 
+					(int)((k2* vs.getZoom() - icon.getIconHeight() / 2)-5), 
+					(int)((icon.getIconWidth()+10)),
+					(int)((icon.getIconHeight()+10)));		
+			g2d.setStroke(oldStroke);		
+
+			icon.paintIcon(panel, g2d,
+					(int) ((k1* vs.getZoom() - icon.getIconWidth() / 2)), 
+					(int) ((k2* vs.getZoom() - icon.getIconHeight() / 2)));
+		}
+	}
+	
+	TeXIcon icon = null;
+
+	/**
+	 * This function takes a string and creates a TeXIcon from this.
+	 * Things like "2^(1+2)" or even "2*2/4" will cause Exceptions or give false results.
+	 * This function is only meant to be for polynomials. 
+	 * @param s String to be parsed.
+	 * @return
+	 */
+	public static TeXIcon getTeXIcon(String s, int points) {
+		boolean print = true;		
+		s.replaceAll("ε", "\\varepsilon");
+		String latex = "";
+		while (s.length()>0) {			
+			int i = getNextOperator(s);
+			if (i!=-1) {
+				String op = ""+s.charAt(i);
+				String start = s.substring(0, i);
+				s = s.substring(i+1, s.length());
+				if (op.equals("+") || op.equals("-") || op.equals("*")) {
+					if (print) {
+						latex += start;							
+					}
+					if (!op.equals("*")) {
+						latex += op;
+					} else {
+						//formula.addSymbol("cdot");
+					}					
+					print = true;
+				}
+				if (op.equals("/")) {
+					i = getNextOperator(s);
+					String s2;
+					if (i!=-1) {
+						s2 = s.substring(0, i);
+					} else {
+						s2 = s;
+					}
+					if (op.equals("/")) {
+						latex += "\\frac{"+start+"}{"+s2+"}";
+					}
+					print = false;
+				}
+			} else {
+				if (print) {
+					latex += s;
+				}
+				s = "";
+			}
+		}
+		logger.info("LaTeX string:"+latex);		
+		TeXFormula formula = new TeXFormula(latex);//
+		formula = new TeXFormula("\\mathbf{"+latex+"}");
+		
+		return formula.createTeXIcon(TeXConstants.ALIGN_CENTER, points);
+	}
+	
+	private static int getNextOperator(String s) {
+		int min = s.length()+1;
+		int i = s.indexOf("+");
+		if (i!=-1) {
+			min = i;
+		}
+		i = s.indexOf("-");
+		if (i!=-1 && min>i) {
+			min = i;
+		}
+		i = s.indexOf("*");
+		if (i!=-1 && min>i) {
+			min = i;
+		}
+		i = s.indexOf("/");
+		if (i!=-1 && min>i) {
+			min = i;
+		}
+		if (min==s.length()+1) return -1;
+		return min;
 	}
 
 	public void setK1(int k1) {
@@ -248,11 +376,13 @@ public class Edge {
 
 	public void setW(Double w) {
 		ew = new EdgeWeight(w);
+		icon=null;
 		vs.nl.repaint();
 	}
 	
 	public void setW(String text) {
 		ew = new EdgeWeight(text);
+		icon=null;
 		vs.nl.repaint();		
 	}
 
@@ -264,15 +394,27 @@ public class Edge {
 		return ew.getVariables();
 	}
 
-	public double getWeight(Hashtable<String,Double> ht) {
-		return getWeight(ht);
-	}
-
-	public double getW(Hashtable<String, Double> ht) {
+	public double[] getW(Hashtable<String, Double> ht) {
 		return ew.getWeight(ht);
 	}
 	
 	public EdgeWeight getEdgeWeight() {
 		return ew;
+	}
+
+	public String getEpsilonString(Hashtable<String, Double> ht) {
+		double[] w = ew.getWeight(ht);
+		if (w.length<2) {
+			return null;
+		}
+		String s = "c(";
+		for (int i=1; i<w.length; i++) {
+			s += w[i];
+			if (i!=w.length-1) {
+				s += ", ";
+			}
+		}
+		s += ")";
+		return s;
 	}
 }
