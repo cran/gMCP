@@ -12,7 +12,9 @@ getEdges <- function(graph){
 			for (i in 1:length(edgeL)) {
 				# Label: Are these silent "tries" really tested? Or did I just forgot documentating it?
 				weight <- try(edgeData(graph, node, names(edgeL[i]), "weight"), silent = TRUE)
-				weight <- ifelse(edgeL[i]==0, NaN, edgeL[i])
+				p <- unlist(edgeData(graph, node, names(edgeL[i]), "epsilon"))
+				attributes(p) <- NULL # Always do this when using all.equal	
+				weight <- ifelse(length(p)>0 && !isTRUE(all.equal(p, rep(0,length(p)))), NaN, edgeL[i])
 				weightStr <- getWeightStr(graph, node, names(edgeL[i]))
 				x <- try(unlist(edgeData(graph, node, names(edgeL[i]), "labelX")), silent = TRUE)
 				if (class(x)!="try-error") {
@@ -39,14 +41,16 @@ getEdges <- function(graph){
 }
 
 arrangeNodes <- function(graph) {
-	n <- length(nodes(graph))
-	v <- (1:n)/n*2*pi
-	nodeX <- 300 + 250*sin(v)
-	nodeY <- 300 + 250*cos(v)
-	names(nodeX) <- nodes(graph)
-	names(nodeY) <- nodes(graph)
-	nodeRenderInfo(graph) <- list(nodeX=nodeX, nodeY=nodeY)
-	return(graph)
+	if (length(nodeRenderInfo(graph))==0) {
+		n <- length(nodes(graph))
+		v <- (1:n)/n*2*pi
+		nodeX <- 300 + 250*sin(v)
+		nodeY <- 300 + 250*cos(v)
+		names(nodeX) <- nodes(graph)
+		names(nodeY) <- nodes(graph)
+		nodeRenderInfo(graph) <- list(nodeX=nodeX, nodeY=nodeY)
+	}
+	return(graph)	
 }
 
 # I guess I simply don't understand how the graph package is supposed to be used.
@@ -90,4 +94,17 @@ getAllGraphs <- function(envir=globalenv()) {
 	}
 	if (length(graphs)==0) return("No graphMCP objects found.")
 	return(graphs)
+}
+
+getObjectInfo <- function(object) {
+	return(paste(capture.output(print(object)), collapse="\n"))
+}
+
+gMCPVersion <- function() {
+	x <- try(as.character(packageVersion("gMCP")), silent=TRUE)
+	if (class(x)!="try-error") {
+		return(x)
+	} else {
+		return("unknown")
+	}
 }

@@ -6,12 +6,12 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.IOException;
+import java.util.Date;
 
 import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
-import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -21,6 +21,8 @@ import org.af.commons.errorhandling.ErrorHandler;
 import org.af.commons.widgets.DesktopPaneBG;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jdesktop.swingworker.SwingWorker;
+import org.mutoss.config.Configuration;
 import org.mutoss.gui.CreateGraphGUI;
 import org.mutoss.gui.RControl;
 import org.mutoss.gui.datatable.DataTable;
@@ -36,7 +38,6 @@ public class GraphView extends JPanel implements ActionListener {
 	public static final String STATUSBAR_DEFAULT = "Place new nodes and edges or start the test procedure";
 	JLabel statusBar;
 	public NetList nl;
-	VS vs = new VS();
 	
 	JButton buttonNewVertex;
 	JButton buttonNewEdge;
@@ -47,13 +48,17 @@ public class GraphView extends JPanel implements ActionListener {
 	JButton buttonStart;	
 	JButton buttonBack;
 	
+	String correlation;
+	public String result = ".gMCPResult_" + (new Date()).getTime();
+	public boolean resultUpToDate = false;
+	
 	private static final Log logger = LogFactory.getLog(GraphView.class);
 	
 	public String getGraphName() {		
 		return name;
 	}
 
-	public JFrame getMainFrame() {		
+	public CreateGraphGUI getMainFrame() {		
 		return parent;
 	}
 
@@ -77,7 +82,7 @@ public class GraphView extends JPanel implements ActionListener {
 		this.name = graph;
 		this.parent = createGraphGUI;
 		statusBar = new JLabel(STATUSBAR_DEFAULT);
-		nl = new NetList(statusBar, vs, this);
+		nl = new NetList(statusBar, this);
 		setLayout(new BorderLayout());
 		add("North", getNorthPanel());		
 		JScrollPane sPane = new JScrollPane(nl);
@@ -160,21 +165,21 @@ public class GraphView extends JPanel implements ActionListener {
 	public NetList getNL() {
 		return nl;
 	}
-
+	
 	public void actionPerformed(ActionEvent e) {
 		if (e.getSource().equals(buttonZoomIn)) {
-			vs.setZoom(vs.getZoom() * 1.25);
+			nl.setZoom(nl.getZoom() * 1.25);
 			getNL().refresh();
 		} else if (e.getSource().equals(buttonZoomOut)) { 
-			vs.setZoom(vs.getZoom() / 1.25);
+			nl.setZoom(nl.getZoom() / 1.25);
 			getNL().refresh();
 		} else if (e.getSource().equals(buttonNewEdge)) {
-			vs.newVertex = false;
-			vs.newEdge = true;
+			nl.newVertex = false;
+			nl.newEdge = true;
 			getNL().statusBar.setText("Select a node from which this edge should start.");
 		} else if (e.getSource().equals(buttonNewVertex)) {
-			vs.newVertex = true;
-			vs.newEdge = false;
+			nl.newVertex = true;
+			nl.newEdge = false;
 			getNL().statusBar.setText("Click on the graph panel to place the node.");
 		} else if (e.getSource().equals(buttonConfInt)) {
 			if (!getNL().isTesting()) {
@@ -184,40 +189,74 @@ public class GraphView extends JPanel implements ActionListener {
 			if (getNL().getKnoten().size()==0) {
 				JOptionPane.showMessageDialog(parent, "Please create first a graph.", "Please create first a graph.", JOptionPane.ERROR_MESSAGE);
 			} else {
-				new DialogConfIntEstVar(parent, this, nl);
+				parent.glassPane.start();
+				//startTesting();
+				correlation = parent.getPView().getCorrelation();
+				SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
+					@Override
+					protected Void doInBackground() throws Exception {
+						if (!resultUpToDate) {
+							RControl.getR().evalVoid(result+" <- gMCP("+getNL().initialGraph+getGMCPOptions()+")");
+							resultUpToDate = true;
+						}
+						double[] alpha = RControl.getR().eval(""+getPView().getTotalAlpha()+"*getWeights("+result+")").asRNumeric().getData();
+						boolean[] rejected = RControl.getR().eval("getRejected("+result+")").asRLogical().getData();						
+						new DialogConfIntEstVar(parent, nl, rejected, alpha);						
+						parent.glassPane.stop();
+						return null;
+					}  
+				};
+				worker.execute();				
 			}
 		} else if (e.getSource().equals(buttonStart)) {
 			if (!getNL().isTesting()) {
+				parent.glassPane.start();
 				startTesting();
-				//new CorrelatedTest(this.getGraphGUI());
-				String correlation = "";
-				if (parent.getPView().jrbStandardCorrelation.isSelected()) {
-					correlation = ", correlation=\""+parent.getPView().jcbCorString.getSelectedItem()+"\"";
-				} else if (parent.getPView().jrbRCorrelation.isSelected()) {
-					correlation = ", correlation="+parent.getPView().jcbCorObject.getSelectedItem()+"";
-				} 
-				boolean[] rejected = RControl.getR().eval("gMCP("+parent.getGraphView().getNL().initialGraph+","+parent.getGraphView().getPView().getPValuesString()+ correlation+", alpha="+parent.getPView().getTotalAlpha()+")@rejected").asRLogical().getData();
-				new RejectedDialog(parent, rejected, parent.getGraphView().getNL().getKnoten());
+				correlation = parent.getPView().getCorrelation();
+				SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
+					@Override
+					protected Void doInBackground() throws Exception {
+						if (!resultUpToDate) {
+							RControl.getR().evalVoid(result+" <- gMCP("+getNL().initialGraph+getGMCPOptions()+")");
+							resultUpToDate = true;
+						}
+						boolean[] rejected = RControl.getR().eval(result+"@rejected").asRLogical().getData();				
+						new RejectedDialog(parent, rejected, parent.getGraphView().getNL().getKnoten());
+						parent.glassPane.stop();
+						return null;
+					}  
+				};
+				worker.execute();				
 			} else {
 				stopTesting();
 			}
 		} else if (e.getSource().equals(buttonadjPval)) {
 			if (getNL().getKnoten().size()==0) {
-				JOptionPane.showMessageDialog(parent, "Please create first a graph.", "Please create first a graph.", JOptionPane.ERROR_MESSAGE);
+				JOptionPane.showMessageDialog(parent, "Please create first a graph.", "Please create first a graph.", JOptionPane.ERROR_MESSAGE);				
 			} else {
 				if (!getNL().isTesting()) {
 					getNL().saveGraph();
 					getPView().savePValues();
 				}
-				String pValues = getPView().getPValuesString();
-				double[] adjPValues = RControl.getR().eval("gMCP:::adjPValues("+ getNL().initialGraph+","+pValues+")@adjPValues").asRNumeric().getData();
-				new AdjustedPValueDialog(parent, getPView().pValues, adjPValues, getNL().getKnoten());
+				parent.glassPane.start();
+				//startTesting();
+				correlation = parent.getPView().getCorrelation();
+				SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
+					@Override
+					protected Void doInBackground() throws Exception {						
+						if (!resultUpToDate) {
+							RControl.getR().evalVoid(result+" <- gMCP("+getNL().initialGraph+getGMCPOptions()+")");
+							resultUpToDate = true;
+						}
+						double[] adjPValues = RControl.getR().eval(result+"@adjPValues").asRNumeric().getData();
+						new AdjustedPValueDialog(parent, getPView().pValues, adjPValues, getNL().getKnoten());
+						parent.glassPane.stop();
+						return null;
+					}  
+				};
+				worker.execute();
 			}
 		}
-	}
-	
-	public VS getVS() {		
-		return vs;
 	}
 
 	public void stopTesting() {
@@ -277,7 +316,7 @@ public class GraphView extends JPanel implements ActionListener {
 			int x = e.getK1();
 			int y = e.getK2();			
 			if (!weight.toString().equals("0")) {
-				getNL().addEdge(new Edge(getNL().getKnoten().get(from), getNL().getKnoten().get(to), weight, getNL().vs, x, y));
+				getNL().addEdge(new Edge(getNL().getKnoten().get(from), getNL().getKnoten().get(to), weight, getNL(), x, y));
 			} else {
 				getNL().removeEdge(e);
 			}
@@ -291,6 +330,10 @@ public class GraphView extends JPanel implements ActionListener {
 		buttonadjPval.setEnabled(enabled);
 		buttonConfInt.setEnabled(enabled);
 		buttonStart.setEnabled(enabled);
+	}
+
+	public String getGMCPOptions() {
+		return ","+getPView().getPValuesString()+ correlation+", alpha="+getPView().getTotalAlpha()+", eps="+Configuration.getInstance().getGeneralConfig().getEpsilon();
 	}
 	
 }

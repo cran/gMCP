@@ -1,7 +1,6 @@
 High priority:
 ==============
 
-- LaTeX-Report
 - 1 Page PDF how to use gMCP, including hint for R installation
 - confidence intervals are strange / wrong in the vignette...
 - Edge weight from node i to node j: m[i,j] or m[j,i] - please decide.
@@ -9,28 +8,26 @@ High priority:
 - round adjusted p-Values up
 - standard examples
 - Think about "-Xrs" - see paragraph below.
-- PView is not well revalidated - load bonferroni holm (3) - total alpha 0.667 is shown
-  Also create node and remove node again - its panels are sometimes still visible for some time 
+- somehow p-value labels where disabled (but we were not in testing modus).
 
 Medium priority:
 ================
 
+- graphAnalysis: Graph can be optimal despite the fact that some nodes are not accessible from others
 - Warn user when sum of edge weights is bigger than 1
 - Check mutator methods for errors (alpha > 1, edge weights > 1)
 - Update graph2latex to the much better algorithm already implemented in Java.
-- gMCPReport does not work for graphs without layout.
-  also new BlockLayout
-- call calculateWeightString() when options change
+- new BlockLayout in arrangeNodes
 - Guide for usage under MacOS
 - Test the option for rounding how many digits we want to see.
 (search for DecimalFormat and replace it with getDecFormat())
-- Big font sizes misplaces TextField for object name
 - Ask for saving graph when quitting
+- LookNFeel is not kept between sessions (also first call of options result in strange LookNFeel message)
 
 Additional features / low priority:
 ===================================
 
-- Do we really need PolynomF and gtools as dependencies?
+- Do we really need PolynomF and gtools and xtable as dependencies?
 - Don't create global variable like .tmpGraph etc.
 - Report generation in GUI (and respect the option whether to show rejected null hypothesis)
 - PNG export cuts perhaps edges. (But already improved!)
@@ -39,11 +36,12 @@ Additional features / low priority:
 See also http://comments.gmane.org/gmane.comp.lang.r.general/200179
 - Edge labels should be fixed and placed by user or free and adjust to moving nodes
 - Can we add a RUnit Test for Java importing Random Graphs and then exporting the same graph?
-- Icon for saving graphs? (And do we need this button?)
-- option to load another R graph
 - TikZ styles for rejected / rejectable nodes
 - further tests
 - Look at http://xmlgraphics.apache.org/fop/
+- After interruption of a calculation a new calculation gave:
+  "unprotect(): only 0 protected items"
+  Should be fixed now - but if time, we could look further into this.
 
 @Apple - is this a problem?
 
@@ -107,3 +105,56 @@ As always:
 ==========
 - more references, since some people will actually look at this package.
 - More details in manual pages.
+
+Sometimes install.packages fails on Windows machines (one session - second attempt works):
+
+install.packages("gMCP")
+--- Please select a CRAN mirror for use in this session ---
+also installing the dependencies ‘mvtnorm’, ‘rJava’, ‘PolynomF’, ‘multcomp’, ‘graph’, ‘gtools’
+
+trying URL 'http://ftp5.gwdg.de/pub/misc/cran/bin/windows/contrib/2.13/mvtnorm_0.9-96.zip'
+Content type 'application/zip' length 555152 bytes (542 Kb)
+opened URL
+downloaded 542 Kb
+
+[...]
+
+trying URL 'http://ftp5.gwdg.de/pub/misc/cran/bin/windows/contrib/2.13/gMCP_0.6-1.zip'
+Content type 'application/zip' length 4668375 bytes (4.5 Mb)
+opened URL
+downloaded 4.5 Mb
+
+package 'mvtnorm' successfully unpacked and MD5 sums checked
+package 'PolynomF' successfully unpacked and MD5 sums checked
+package 'multcomp' successfully unpacked and MD5 sums checked
+package 'graph' successfully unpacked and MD5 sums checked
+package 'gtools' successfully unpacked and MD5 sums checked
+package 'gMCP' successfully unpacked and MD5 sums checked
+Warning: unable to move temporary installation 'C:\Program Files\R\R-2.13.0\library\file4a063a\gMCP' to 'C:\Program Files\R\R-2.13.0\library\gMCP'
+
+The downloaded packages are in
+        C:\Documents and Settings\Student\Local Settings\Temp\RtmpBJn6oK\downloaded_packages
+        
+> library(gMCP)
+Error in library(gMCP) : there is no package called 'gMCP'
+> install.packages("gMCP")
+trying URL 'http://ftp5.gwdg.de/pub/misc/cran/bin/windows/contrib/2.13/gMCP_0.6-1.zip'
+Content type 'application/zip' length 4668375 bytes (4.5 Mb)
+opened URL
+downloaded 4.5 Mb
+
+package 'gMCP' successfully unpacked and MD5 sums checked
+
+The downloaded packages are in
+        C:\Documents and Settings\Student\Local Settings\Temp\RtmpBJn6oK\downloaded_packages
+> library(gMCP)
+Loading required package: rJava
+Loading required package: MASS
+Loading required package: PolynomF
+Loading required package: multcomp
+Loading required package: mvtnorm
+Loading required package: survival
+Loading required package: splines
+Loading required package: graph
+Loading required package: gtools
+> 

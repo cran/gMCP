@@ -35,13 +35,11 @@ import com.jgoodies.forms.layout.FormLayout;
 
 public class PView extends JPanel implements KeyListener, ActionListener {
 
-	JLabel statusBar;
 	private static final Log logger = LogFactory.getLog(PView.class);
 
 	private Vector<PPanel> panels = new Vector<PPanel>();
 	CellConstraints cc = new CellConstraints();	
-	//JPanel panel = new JPanel();
-	JLabel label = new JLabel("");
+	JLabel statusLabel = new JLabel("");
 	JLabel weightLabel = new JLabel("Weight");
 	JLabel alphaLabel = new JLabel("Total α: ");
 	JTextField totalAlpha = new JTextField("0.05");
@@ -123,17 +121,19 @@ public class PView extends JPanel implements KeyListener, ActionListener {
 				col += 2;
 			}
 			row += 2;
-		}
-		panel.add(label,cc.xyw(2, row, 7));
+		}		
+		panel.add(statusLabel,cc.xyw(2, row, 7));
 		row += 2;
 		panel.add(alphaLabel, cc.xy(2, row));    	
     	panel.add(totalAlpha, cc.xy(4, row));
     	
+    	//updateLabels();
 		panel.revalidate();
-		removeAll();
+		removeAll();		
 		add(panel, c);
 		c.gridy++;
 		add(getCorrelatedPanel(), c);
+		revalidate();
 	}
 	
 	public void updateLabels() {
@@ -144,19 +144,19 @@ public class PView extends JPanel implements KeyListener, ActionListener {
 			}
 		}
 		String text = "Sum of weights: "+Configuration.getInstance().getGeneralConfig().getDecFormat().format(alpha);
-		if (alpha>1) {
-			label.setForeground(Color.RED);
+		if (alpha>1.0001) {
+			statusLabel.setForeground(Color.RED);
 			text += "; The total weight is greater 1!";
 		} else {
-			label.setForeground(Color.BLACK);
+			statusLabel.setForeground(Color.BLACK);
 		}
 		
-		label.setText(text);
+		statusLabel.setText(text);
 	}
 
 	public void recalculate() {
 		for (PPanel p : panels) {
-			p.update();
+			p.updateMe(true);
 		}
 		revalidate();
 		repaint();		
@@ -169,10 +169,6 @@ public class PView extends JPanel implements KeyListener, ActionListener {
 	public void removePPanel(Node node) {
 		for (int i=panels.size()-1;i>=0;i--) {
 			if (panels.get(i).node==node) {
-		/*		panel.remove(panels.get(i).label);
-				panel.remove(panels.get(i).jb);
-				panel.remove(panels.get(i).pTF);
-				panel.remove(panels.get(i).wTF); */
 				panels.remove(i);
 				logger.debug("Removed panel for node "+node.getName());
 			}
@@ -227,12 +223,12 @@ public class PView extends JPanel implements KeyListener, ActionListener {
 	
 	JButton refresh;
 	
-    JRadioButton jrbNoCorrelation = new JRadioButton("No Information about correlations");
-    JRadioButton jrbStandardCorrelation = new JRadioButton("Select a standard correlation");
-    JRadioButton jrbRCorrelation = new JRadioButton("Select an R correlation matrix");
+	protected JRadioButton jrbNoCorrelation = new JRadioButton("No Information about correlations");
+    protected JRadioButton jrbStandardCorrelation = new JRadioButton("Select a standard correlation");
+    protected JRadioButton jrbRCorrelation = new JRadioButton("Select an R correlation matrix");
 
-    JComboBox jcbCorString;
-    JComboBox jcbCorObject;
+    protected JComboBox jcbCorString;
+    protected JComboBox jcbCorObject;
     
     JPanel correlatedPanel = null;
     
@@ -284,8 +280,7 @@ public class PView extends JPanel implements KeyListener, ActionListener {
 
         int row = 2;
         
-        correlatedPanel.add(jrbNoCorrelation,     cc.xy(2, row));
-        //getContentPane().add(new JLabel(), cc.xy(4, row));        
+        correlatedPanel.add(jrbNoCorrelation,     cc.xy(2, row));     
         
         row += 2;
         
@@ -309,12 +304,12 @@ public class PView extends JPanel implements KeyListener, ActionListener {
 			if (matrices.length==1 && matrices[0].equals("No quadratic matrices found.")) {
 				jcbCorObject.setEnabled(false);
 				jrbRCorrelation.setEnabled(false);
-			} else {
-				for (String s : matrices) {
-					jcbCorObject.addItem(s);
-				}
+			} else {				
 				jcbCorObject.setEnabled(true);
 				jrbRCorrelation.setEnabled(true);
+			}
+			for (String s : matrices) {
+				jcbCorObject.addItem(s);
 			}
 		} else if (e.getSource()==jrbNoCorrelation) {
 			if (parent.getGraphView().getNL().getKnoten().size()>0) {
@@ -325,6 +320,16 @@ public class PView extends JPanel implements KeyListener, ActionListener {
 			parent.getGraphView().buttonConfInt.setEnabled(false);
 			parent.getGraphView().buttonadjPval.setEnabled(false);
 		}
+	}
+
+	public String getCorrelation() {
+		String correlation = "";
+		if (jrbStandardCorrelation.isSelected()) {
+			correlation = ", correlation=\""+jcbCorString.getSelectedItem()+"\"";
+		} else if (jrbRCorrelation.isSelected()) {
+			correlation = ", correlation="+jcbCorObject.getSelectedItem()+"";
+		}
+		return correlation;
 	}
 	
 }

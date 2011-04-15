@@ -1,19 +1,12 @@
 package org.mutoss.tests;
 
-import javax.swing.JLabel;
-
 import org.af.jhlir.backends.rengine.RCallServicesREngine;
 import org.mutoss.gui.RControl;
-import org.mutoss.gui.graph.GraphMCP;
-import org.mutoss.gui.graph.GraphView;
-import org.mutoss.gui.graph.NetList;
-import org.mutoss.gui.graph.VS;
 
 public class TestImportExport {
 
 	public TestImportExport(String graph1, String graph2) {
 		RControl.getRControl(true);		
-		VS vs = new VS();
 		double[] weight = RControl.getR().eval("gMCP:::parseEpsPolynom(\"1-e\")").asRNumeric().getData();		
 		for (int i=0; i<weight.length; i++) {
 			System.out.println(weight[i]);

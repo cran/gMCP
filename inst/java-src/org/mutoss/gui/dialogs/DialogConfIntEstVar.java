@@ -8,10 +8,12 @@ import java.text.DecimalFormat;
 import java.util.List;
 import java.util.Vector;
 
+import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSpinner;
@@ -24,15 +26,15 @@ import javax.swing.event.DocumentListener;
 
 import org.af.commons.widgets.validate.RealTextField;
 import org.af.commons.widgets.validate.ValidationException;
+import org.mutoss.config.Configuration;
 import org.mutoss.gui.RControl;
-import org.mutoss.gui.graph.GraphView;
 import org.mutoss.gui.graph.NetList;
 import org.mutoss.gui.graph.Node;
 
 public class DialogConfIntEstVar extends JDialog implements ActionListener, ChangeListener, DocumentListener {
 	
 	List<JLabel> names = new Vector<JLabel>();
-	List<JLabel> alpha = new Vector<JLabel>();
+	List<JLabel> alphaLabel = new Vector<JLabel>();
 	List<JLabel> ci = new Vector<JLabel>();
 	List <JSpinner> df = new Vector<JSpinner>();
 	List <RealTextField> est = new Vector<RealTextField>();
@@ -42,34 +44,37 @@ public class DialogConfIntEstVar extends JDialog implements ActionListener, Chan
 	
 	String[] dists = { "normal-distributed", "t-distributed" };
 	String[] alternatives = { /*"two.sided",*/ "less", "greater" };
+	JButton jbLoadEst = new JButton("Load µ from R");
+	JButton jbLoadSD = new JButton("Load sd from R");
 	
 	NetList nl;	
-	GraphView control;
+	JFrame p;
 	
-	public DialogConfIntEstVar(JFrame p, GraphView control, NetList nl) {		
+	public DialogConfIntEstVar(JFrame p, NetList nl, boolean[] rejected, double[] alpha) {		
 		super(p, "Confidence intervals");
-		setLocationRelativeTo(p);
+		this.p = p;
 		this.nl = nl;
-		this.control = control;
+		this.alpha = alpha;
+		this.rejected = rejected;
 				
 		GridBagConstraints c = new GridBagConstraints();
 		
-		c.fill = GridBagConstraints.HORIZONTAL;	
+		c.fill = GridBagConstraints.BOTH;	
 		c.gridx=0; c.gridy=0;
 		c.gridwidth = 1; c.gridheight = 1;
 		c.ipadx=5; c.ipady=5;
-		c.weightx=1; c.weighty=0;
+		c.weightx=1; c.weighty=1;
 		
 		getContentPane().setLayout(new GridBagLayout());
 		
 		getContentPane().add(new JScrollPane(getPanel()), c);
 		
-		c.fill = GridBagConstraints.BOTH;
-		
 		c.gridy++;
 		
+		c.weightx=0;c.weighty=0;
 		JLabel label = new JLabel("Confidence Intervals:");		
 		getContentPane().add(label, c);
+		c.weightx=1;c.weighty=1;
 		
 		c.gridy++;
 		
@@ -81,6 +86,7 @@ public class DialogConfIntEstVar extends JDialog implements ActionListener, Chan
 		//getContentPane().add(new ConfIntPlot(this), c);
 		
 		pack();
+		setLocationRelativeTo(p);
 		setVisible(true);
 	}
 	
@@ -118,11 +124,11 @@ public class DialogConfIntEstVar extends JDialog implements ActionListener, Chan
 		
 		return panel;
 	}
+	
+	boolean[] rejected;
+	double[] alpha;	
 
 	private void calculateCI() {	
-			String pValues = control.getPView().getPValuesString();
-			double[] alpha = RControl.getR().eval(""+control.getPView().getTotalAlpha()+"*getWeights(gMCP("+ nl.initialGraph+","+pValues+", alpha="+control.getPView().getTotalAlpha()+"))").asRNumeric().getData();
-			boolean[] rejected = RControl.getR().eval("getRejected(gMCP("+ nl.initialGraph+","+pValues+", alpha="+control.getPView().getTotalAlpha()+"))").asRLogical().getData();
 			for (int i=0; i<nl.getKnoten().size(); i++) {
 				Double lb, ub;
 				String d1 = "qnorm(";
@@ -160,12 +166,12 @@ public class DialogConfIntEstVar extends JDialog implements ActionListener, Chan
 					}
 					ci.get(i).setText("]"+format.format(lb2)+","+format.format(ub2)+"[");
 				} catch (ValidationException e) {
-					ci.get(i).setText("Please specify a real number for the estimate!");
+					ci.get(i).setText("Please specify a real decimal number for the estimate!");
 				}
 			}
 	}
 
-	DecimalFormat format = new DecimalFormat("#.####");
+	DecimalFormat format = Configuration.getInstance().getGeneralConfig().getDecFormat();
 	
 	public JPanel getPanel() {
 		
@@ -181,6 +187,21 @@ public class DialogConfIntEstVar extends JDialog implements ActionListener, Chan
 		
 		panel.setLayout(new GridBagLayout());		
 		
+		panel.add(new JLabel("Hypotheses"), c);
+		c.gridx++;
+		panel.add(new JLabel("Initial alpha"), c);
+		c.gridx++;
+		panel.add(new JLabel("Estimate"), c);
+		c.gridx++;
+		panel.add(new JLabel("Standard error/deviation"), c);
+		c.gridx++;		
+		panel.add(new JLabel("Distribution"), c);
+		c.gridx++;
+		panel.add(new JLabel("df"), c);
+		c.gridx++;
+		panel.add(new JLabel("Alternative"), c);
+		c.gridy++;
+		
 		for (Node node : nl.getKnoten()) {
 			c.gridx=0;
 			
@@ -190,11 +211,8 @@ public class DialogConfIntEstVar extends JDialog implements ActionListener, Chan
 			c.gridx++;
 			
 			JLabel alpha = new JLabel("α="+format.format(node.getWeight()));
-			this.alpha.add(alpha);
+			this.alphaLabel.add(alpha);
 			panel.add(alpha, c);
-			c.gridx++;
-			
-			panel.add(new JLabel("Estimate:"), c);
 			c.gridx++;
 			
 			RealTextField estimate = new RealTextField("Point estimate");
@@ -205,9 +223,6 @@ public class DialogConfIntEstVar extends JDialog implements ActionListener, Chan
 			panel.add(estimate, c);
 			c.gridx++;	
 						
-			panel.add(new JLabel("Standard error/deviation:"), c);
-			c.gridx++;
-			
 			RealTextField ste = new RealTextField("Standard error");
 			ste.setColumns(8);
 			ste.setText("1");
@@ -242,16 +257,49 @@ public class DialogConfIntEstVar extends JDialog implements ActionListener, Chan
 			c.gridy++;
 		}
 		
+		c.gridx=0;
+		c.gridx++;
+		c.gridx++;
+		panel.add(jbLoadEst, c);
+		jbLoadEst.addActionListener(this);
+		c.gridx++;
+		panel.add(jbLoadSD, c);
+		jbLoadSD.addActionListener(this);
+		c.gridx++;
+		
 		return panel;
 	}
 
 	@Override
 	public void actionPerformed(ActionEvent e) {
-		int i = dist.indexOf(e.getSource());
-		if (i != -1) {			 
-			df.get(i).setEnabled(dist.get(i).getSelectedItem().equals(dists[1]));				
+		if (e.getSource().getClass().equals(JComboBox.class)) {
+			int i = dist.indexOf(e.getSource());
+			if (i != -1) {			 
+				df.get(i).setEnabled(dist.get(i).getSelectedItem().equals(dists[1]));				
+			}		
+		} else if (e.getSource().getClass().equals(JButton.class)) {
+			VariableNameDialog vnd = new VariableNameDialog(p, "");     
+			try {
+				double[] data = RControl.getR().eval(vnd.getName()).asRNumeric().getData();
+				if (data.length!=names.size()) {
+					JOptionPane.showMessageDialog(this, "Number of hypotheses and values do not match.", 
+							"Number of hypotheses and values do not match", JOptionPane.ERROR_MESSAGE);
+					return;
+				}
+				if (jbLoadEst.equals(e.getSource())) {
+					for (int i=0; i<data.length; i++) {
+						est.get(i).setText(""+data[i]);
+					}
+				} else if (jbLoadSD.equals(e.getSource())) {
+					for (int i=0; i<data.length; i++) {
+						var.get(i).setText(""+data[i]);
+					}
+				}
+			} catch (Exception ex) {
+				JOptionPane.showMessageDialog(this, "Error loading values from R:\n"+ex.getMessage(), 
+						"Error loading values from R", JOptionPane.ERROR_MESSAGE);
+			}        	
 		}
-		
 		calculateCI();
 	}
 

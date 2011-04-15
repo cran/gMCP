@@ -129,10 +129,23 @@ public class Configuration {
     			}
     		}
     	} catch (BackingStoreException e) {
-    		// We really don't want to throw an error here... so we just print the stack
-    		e.printStackTrace();
+    		// We really don't want to throw an error here...
+    		logger.error("Error printing configuration:\n"+e.getMessage(), e);
     	}
     	return s;
+    }
+    
+    public void clearConfiguration() {
+    	try {
+			for (String key : prefs.keys()) {
+				if (key.startsWith(keyPrefix)) {				
+			    	prefs.remove(key);
+				}
+			}
+		} catch (BackingStoreException e) {
+			// We really don't want to throw an error here...
+    		logger.error("Error clearing configuration:\n"+e.getMessage(), e);
+		}
     }
 
 }

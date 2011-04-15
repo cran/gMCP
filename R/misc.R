@@ -5,7 +5,7 @@ checkValidWeights <- function(weights) {
 	if(any(is.na(weights) | is.infinite(weights))) {
 		warning("Some of the weights are not real numbers. NA, NaN, Inf and -Inf are not supported.")
 	}
-	if(any(0 > weights | weights > 1)) {
+	if(any(0 > weights | weights > 1 + .Machine$double.eps ^ 0.25)) {
 		stop("Invalid weights: weights must be between 0 and 1")
 	}
 	if(sum(weights) > 1) {
@@ -15,8 +15,9 @@ checkValidWeights <- function(weights) {
 
 # Converts a string like "5+3*e+5*e^2" to the tupel representation c(5,3,5) 
 parseEpsPolynom <- function(s) {
-	e <- polynom()
-	p <- try(eval(parse(text=s)))
+	env <- new.env(parent = baseenv())
+	assign("e", polynom(), envir=env)
+	p <- try(eval(parse(text=s), envir=env))
 	if (class(p)=="try-error") {
 		stop("String does not represent a polynom in e.")
 	}
@@ -27,14 +28,22 @@ parseEpsPolynom <- function(s) {
 	}
 }
 
-getDebugInfo <- function() {	
-	if (exists(".InitialGraph")) {
-		.InitialGraph <- get(".InitialGraph", envir=globalenv())
-		graphTXT <- paste(capture.output(print(.InitialGraph)), collapse="\n")
-		matrixTXT <- paste("m <-",paste(capture.output(dput(graph2matrix(.InitialGraph))), collapse="\n"),"\n")
-		weightsTXT <- paste("w <-",paste(capture.output(dput(getWeights(.InitialGraph))), collapse="\n"),"\n")
+getDebugInfo <- function() {
+	graphs <- ls(pattern="\\.InitialGraph*", all.names=TRUE, envir=globalenv())
+	if (exists(".tmpGraph")) {
+		graphs <- c(graphs, ".tmpGraph")
+	}
+	graphInfo <- c()
+	for (graph in graphs) {
+		.DebugGraph <- get(graph, envir=globalenv())
+		graphTXT <- paste(capture.output(print(.DebugGraph)), collapse="\n")
+		matrixTXT <- paste("m <-",paste(capture.output(dput(graph2matrix(.DebugGraph))), collapse="\n"),"\n")
+		weightsTXT <- paste("w <-",paste(capture.output(dput(getWeights(.DebugGraph))), collapse="\n"),"\n")
 		createTXT <- paste("graph <- matrix2graph(m)", "setWeights(graph, w)", sep="\n")
-		return(paste(graphTXT, matrixTXT, weightsTXT, createTXT, sep="\n"))
+		graphInfo <- c(graphInfo, paste(graphTXT, matrixTXT, weightsTXT, createTXT, sep="\n"))
+	}
+	if (length(graphInfo)!=0) {
+		return(paste(graphInfo, collapse="\n\n"))
 	}
 	return("Graph not available.")
 }

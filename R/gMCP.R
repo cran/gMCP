@@ -1,5 +1,6 @@
 gMCP <- function(graph, pvalues, test, correlation, alpha=0.05, 
-		approxEps=TRUE, eps=10^(-4), ..., verbose=FALSE) {
+		approxEps=TRUE, eps=10^(-3), ..., verbose=FALSE) {
+	sequence <- list(graph)
 	if (approxEps) {
 		graph <- substituteEps(graph, eps=eps)
 	}
@@ -10,7 +11,7 @@ gMCP <- function(graph, pvalues, test, correlation, alpha=0.05,
 		names(pvalues) <- nodes(graph)
 	}
 	if (missing(test) && (missing(correlation) || length(pvalues)==1)) {
-		sequence <- list(graph)
+		# Bonferroni-based test procedure
 		while(!is.null(node <- getRejectableNode(graph, alpha, pvalues))) {
 			if (verbose) cat(paste("Node \"",node,"\" can be rejected.\n",sep=""))
 			graph <- rejectNode(graph, node, verbose)
@@ -18,6 +19,7 @@ gMCP <- function(graph, pvalues, test, correlation, alpha=0.05,
 		}	
 		return(new("gMCPResult", graphs=sequence, alpha=alpha, pvalues=pvalues, rejected=getRejected(graph), adjPValues=adjPValues(sequence[[1]], pvalues, verbose)@adjPValues))
 	} else if (missing(test) && !missing(correlation)) {
+		# Calling the code from Florian
 		if (missing(correlation) || (!is.matrix(correlation) && !is.character(correlation))) {
 			stop("Procedure for correlated tests, expects a correlation matrix as parameter \"correlation\".")
 		} else {
@@ -39,7 +41,7 @@ gMCP <- function(graph, pvalues, test, correlation, alpha=0.05,
 				rejected <- myTest(zScores)
 				names(rejected) <- nodes(graph)
 			}
-			return(new("gMCPResult", graphs=list(graph), alpha=alpha, pvalues=pvalues, rejected=rejected, adjPValues=numeric(0)))
+			return(new("gMCPResult", graphs=sequence, alpha=alpha, pvalues=pvalues, rejected=rejected, adjPValues=numeric(0)))
 		}
 	}
 }
@@ -88,7 +90,7 @@ adjPValues <- function(graph, pvalues, verbose=FALSE) {
 		fraction[pvalues[J]==0] <- 0
 		j <- which.min(fraction)
 		node <- J[j]
-		adjPValues[node] <- max(min(pvalues[node]/getWeights(graph)[node], 1), pmax)
+		adjPValues[node] <- max(min(ifelse(pvalues[node]==0,0,pvalues[node]/getWeights(graph)[node]), 1), pmax)
 		pmax <- adjPValues[node]
 		if (verbose) cat(paste("We will update the graph with node \"",node,"\".\n",sep=""))
 		graph <- rejectNode(graph, node, verbose)

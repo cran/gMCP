@@ -131,12 +131,19 @@ updated and the alpha level of this node is passed according to the
 edge weights.
 
 \begin{Example}
-  Let $p_1=0.01$, $p_2=0.04$ and $p_3=0.02$ be three p-values and
+  We give an example for the Bonferroni-Holm-Procedure that will
+  be used repeatedly throughout this manual. Of course this 
+  package is made for more advanced tests (you find a selection in 
+  section \ref{caseStudies}),
+  but since most readers are already familiar with this procedure,
+  for a first introduction of gMCP, we stick to this simple example.  
+  
+  Let $p_1=0.01$, $p_2=0.07$ and $p_3=0.02$ be three p-values and
   $\alpha=0.05$.  In the first step $H_1$ can be rejected since
   $p_1<\alpha/3$.  The updated graph can be seen in figure
   \ref{exampleHolmP} and now also $H_3$ can be rejected since
-  $p_1<\alpha/2$.  Again the graph is updated and at last also $H_2$
-  can be rejected.
+  $p_1<\alpha/2$.  Again the graph is updated, but $H_2$
+  can not be rejected.
 \end{Example}
 
 \begin{figure}[ht]
@@ -151,15 +158,14 @@ cat(graph2latex(graph, scale=0.7, fontsize="tiny", nodeTikZ="minimum size=1.2cm"
 cat("$\\downarrow$ reject $H_3$\\\\")
 graph <- rejectNode(graph, "H3")
 cat(graph2latex(graph, scale=0.7, fontsize="tiny", nodeTikZ="minimum size=1.2cm"))
-cat("reject $H_2$")
 
 @
-  \caption{\label{exampleHolmP} Example showing how all three
+  \caption{\label{exampleHolmP} Example showing how two
     null hypotheses can be rejected with p-values $p_1=0.01$,
-    $p_2=0.04$ and $p_3=0.02$.}
+    $p_2=0.07$ and $p_3=0.02$.}
 \end{figure}
 
-Okay, let's reproduce this with the \texttt{gMCP} package. We start R and enter:
+Let's reproduce this with the \texttt{gMCP} package. We start R and enter:
 
 \scriptsize
 <<echo=TRUE>>=
@@ -183,7 +189,7 @@ If we don't want to use the GUI we can also use R:
 
 library(gMCP)
 graph <- createBonferroniHolmGraph(3)
-gMCP(graph, pvalues=c(0.01,0.04,0.02), alpha=0.05)
+gMCP(graph, pvalues=c(0.01,0.07,0.02), alpha=0.05)
 
 @
 \normalsize
@@ -324,7 +330,8 @@ graph2matrix(graph)
 
 \subsection{Using the GUI}
 
-The creation of \texttt{graphMCP} objects is very straight forward,
+The creation of \texttt{graphMCP} objects as seen in the last section 
+with basic R commands is very straight forward,
 but still takes some time and typos may occur.  More convenient for
 the average user is the use of the graphical user interface for
 creating and editing MCP graphs that the \texttt{gMCP} package
@@ -432,48 +439,76 @@ Also adjusted p-values and simultaneous confidence intervals can be computed.
 
 <<echo=FALSE,results=hide>>=
 
-pval <- c(0.02,0.055,0.012)
+d1 <- c(1.68005156523844, 1.95566697423700, 0.00137860945822299, 0.660052238622464, 
+		1.06731835721526, 0.39479303427265, -0.312462050794408, 0.323637755662837, 
+		0.490976552328251, 2.34240774442652)
+
+d2 <- c(0.507878380203451, 1.60461475524144, 2.66959621483759, 0.0358289240280020, 
+		-1.13014087491324, 0.792461583741794, 0.0701657425268248, 3.15360436883856, 
+		0.217669661552567, 1.23979492014026)
+
+d3 <- c(-1.31499425534849, 1.62201370145649, 0.89391826766116, 0.845473572033649, 
+		2.17912435223573, 1.07521368050267, 0.791598289847664, 1.58537210294519, 
+		-0.079778759456515, 0.97295072606043)
+
+est <- c(0.860382, 0.9161474, 0.9732953)
+s <- c(0.8759528, 1.291310, 0.8570892)
+pval <- c(0.01260, 0.05154, 0.02124)/2
 
 df <- 9
-# Sample Standard Deviations:
-s <- c(1.2, 0.8, 1.7)
 # Statistics:
-st <- qt(pval/2,df=df, lower.tail=FALSE)
+st <- qt(pval/2, df=df, lower.tail=FALSE)
 # Estimates:
 est <- st*s/sqrt(10)
 
 @
 
-Let's assume the tests for hypotheses $H1:\;\theta_1=0$,
-$H2:\;\theta_2=0$ and $H3:\;\theta_3=0$ are three t-tests with degree
+Let's assume the tests for hypotheses $H1:\;\theta_1\leq0$,
+$H2:\;\theta_2\leq0$ and $H3:\;\theta_3\leq0$ are three t-tests with degree
 of freedom 9.  The estimates are
 $\hat\theta_1=\Sexpr{format(est[1])}$,
 $\hat\theta_2=\Sexpr{format(est[2])}$ and
 $\hat\theta_3=\Sexpr{format(est[3])}$, the sample standard deviations
-$s_1=1.2$, $s_2=0.8$ and $s_3=1.7$ the t-statistics
+$s_1=\Sexpr{format(s[1])}$,
+$s_2=\Sexpr{format(s[2])}$ and
+$s_3=\Sexpr{format(s[3])}$ the t-statistics
 $\Sexpr{format(st[1])}$, $\Sexpr{format(st[2])}$ and
-$\Sexpr{format(st[3])}$ and the corresponding p-values $p_1=0.02$,
-$p_2=0.055$ and $p_3=0.012$.  We want to adjust for multiple testing
-by using the Bonferroni-Holm-Procedure.
+$\Sexpr{format(st[3])}$ and the corresponding p-values $\Sexpr{format(pval[1])}$, 
+$\Sexpr{format(pval[2])}$ and
+$\Sexpr{format(pval[3])}$.  We want to adjust for multiple testing
+by using the Bonferroni-Holm-Procedure with $\alpha=0.025$.
 
 \scriptsize
 <<echo=TRUE, keep.source=TRUE>>=
 
 # Estimates:
-est <- c("H1"=0.9101444, "H2"=0.4485153, "H3"=1.4568271)
+est <- c("H1"=0.860382, "H2"=0.9161474, "H3"=0.9732953)
 # Sample standard deviations:
-ssd <- c("H1"=1.2, "H2"=0.8, "H3"=1.7)
+ssd <- c("H1"=0.8759528, "H2"=1.291310, "H3"=0.8570892)
 
-simConfint(createBonferroniHolmGraph(3),
-		pvalues  = c(0.02,0.055,0.012), 
-		confint = function(node, alpha) {
-			est[node]+c(-1,1)*qt(1-alpha/2,df=9)*ssd[node]/sqrt(10)
-		})
+pval <- c(0.01260, 0.05154, 0.02124)/2
+
+simConfint(createBonferroniHolmGraph(3), pvalues=pval, 
+		confint=function(node, alpha) {
+			c(est[node]-qt(1-alpha,df=9)*ssd[node]/sqrt(10), Inf)
+		}, alpha=0.025, mu=0, alternative="greater")
+
+# Note that the sample standard deviations will be calculated from the pvalues and estimates.
+# For example by estimates/dist(pvalues) for alternative="less".
+simConfint(createBonferroniHolmGraph(3), pvalues=pval, 
+		confint="t", df=9, estimates=est, alpha=0.025, alternative="greater")
 
 @
 \normalsize
 
 \subsection{Using the GUI}
+
+\begin{figure}[ht]
+  \centering    
+  \includegraphics[width=0.7\textwidth]{pictures/CIDialog.png}      
+  \caption{\label{CIDialog} For normal and t-distributions simultaneous CI can be calculated by the GUI.}
+\end{figure}
+
 
 Use the following two buttons:
 \includegraphics[width=1cm]{pictures/adjPval_b.png}
@@ -481,11 +516,18 @@ Use the following two buttons:
 
 See \cite{Bretz11}.
 
+\section{Weighted parametric tests}
+
 \begin{figure}[ht]
   \centering    
   \includegraphics[width=0.7\textwidth]{pictures/correlated.png}      
   \caption{\label{correlated} You can also specify a correlation between the tests.}
 \end{figure}
+
+In the lower right panel with p-values, it is also possible to specify a known correlation between these values (see figure \ref{correlated}).
+ 
+
+For further information please take a look at the vignette "\emph{Weighted parametric tests defined by graphs}".
 
 \section{Epsilon edges}\index{epsilon edges}
 
@@ -512,6 +554,30 @@ cat(graph2latex(createGraphForImprovedParallelGatekeeping(), scale=0.7, fontsize
 \end{tikzpicture}
   \caption{\label{gatekeeping}\index{parallel gatekeeping}\index{gatekeeping!parallel}\index{gatekeeping!improved parallel} The Parallel Gatekeeping and the Improved Parallel Gatekeeping Procedure.}
 \end{figure}
+
+\commentout{
+
+Algorithm of Bretz et al. \cite{bretzEtAl2009power} for rejecting a node:
+
+\[\alpha_l \leftarrow \begin{cases}\alpha_l+a_jg_{jl}&l\in I\\0&\text{otherwise}\end{cases}\]
+
+\[g_{lk} \leftarrow \begin{cases}\frac{g_{lk}+g_{lj}g_{jk}}{1-g_{lj}g_{jl}}&k,l\in I, l\neq k, g_{lj}g_{jl}<1\\0&\text{otherwise}\end{cases}\]
+
+We want now investigate what happens if a edge weight $\epsilon>0$ approaches $0$.
+In respect to 
+
+\[\alpha_l \leftarrow \begin{cases}0=\lim\limits_{g_{jl}\rightarrow0}(\alpha_l+a_jg_{jl})&l\in I\\0&\text{otherwise}\end{cases}\]
+
+The only question is, what happens if and $l\in I, l\neq k, g_{lj}g_{jl}<1$.
+If $g_{lj}g_{jl}==1$ still $g_{lk}<-0$.
+ 
+\[\lim\limits_{g_{jl}\rightarrow0}\left(\frac{g_{lk}+g_{lj}g_{jk}}{1-g_{lj}g_{jl}}\right)
+=\begin{cases}
+  \frac{g_{lk}+g_{lj}g_{jk}}{1-g_{lj}g_{jl}}&g_{lj}g_{jl}<1\\
+  0&g_{lj}g_{jl}=1\\a\\b\\\end{cases}
+=\]
+}
+
 
 \scriptsize
 <<echo=TRUE, keep.source=TRUE>>=
@@ -542,17 +608,13 @@ This subsection is work in progress, but fortunately the options in figure \ref{
 This subsection is work in progress, but fortunately the menu entries in figure \ref{fileMenu} should be fairly self-explanatory.
 
 You can export graphs to png files.
+The background of these png files will be made transperant, so that they will fit into whichever document you insert them.
+Note that some image viewers visualize transparency with a checkerboard pattern.
 
 \begin{figure}[ht]
   \centering    
   \includegraphics[width=4cm]{pictures/filemenu.png}      
   \caption{\label{fileMenu} Import and export of graphs.}
-\end{figure}
-
-\begin{figure}[ht]
-  \centering    
-  \includegraphics[width=0.7\textwidth]{pictures/pngExport.png}      
-  \caption{\label{pngExport} Graphics can be exported from the GUI to PNG files. Note that the checkerboard pattern in the background of some image viewers is just a way to visualize transparency.}
 \end{figure}
 
 \subsection{Important TikZ commands for optimizing the reports}\index{graph2latex}
@@ -620,9 +682,17 @@ A powerful feature is the use of styles, since this will effect all
 objects of a given class. But for this please take a look directly at
 the TikZ manual \cite{TikZ}.
 
-\section{Case Studies}
+\section{Case Studies}\label{caseStudies}
 
 This section is work in progress.
+
+\section{Appendix - Multiple Testing Basics}
+
+This section is work in progress.
+
+\begin{Def}
+
+\end{Def}
 
 \newpage
 

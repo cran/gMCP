@@ -59,7 +59,13 @@ public class RControl {
 			rcs = new RCallServicesREngine(new JRIEngine(rengine));
 			if (System.getProperty("eclipse") != null) {		
 				rcs.eval("require(gMCP)");				
-				//rcs.eval("graph <- createGraphFromBretzEtAl()");
+				rcs.eval("graph <- createBonferroniHolmGraph(3)");
+				rcs.eval("graph2 <- createGraphFromBretzEtAl()");
+				rcs.eval("m <- matrix(0, nrow=2, ncol=2)");
+				rcs.eval("dunnettM <- matrix(c(1,1/2,1/2,1), nrow=2)");
+				rcs.eval("mu <- c(0.860382, 0.9161474, 0.9732953)");
+				rcs.eval("sdEst <- c(0.8759528, 1.291310, 0.8570892)");
+				rcs.eval("pval <- c(0.01260, 0.05154, 0.02124)/2");
 			}
 		} catch (REngineException e) {
 			ErrorHandler.getInstance().makeErrDialog("Error creating RCallServicesREngine!", e);
@@ -77,13 +83,14 @@ public class RControl {
 
 	public static String getFraction(Double d, boolean useUnicode, int cycles) {
 		String f = getFraction(d, cycles);
+		if (true) return f; //TODO boolean useUnicode is ignored - do we want to use this somewhere?
 		if (!useUnicode) { return f; }
 		if (f.equals("1/2")) return("½");
 		if (f.equals("1/3")) return("⅓");
 		if (f.equals("2/3")) return("⅔");
 		if (f.equals("1/4")) return("¼");
 		if (f.equals("3/4")) return("¾");
-		/* The following do often not work:
+		/* The following does often not work:
 		if (f.equals("1/5")) return("⅕");
 		if (f.equals("2/5")) return("⅖");
 		if (f.equals("3/5")) return("⅗");
@@ -99,6 +106,10 @@ public class RControl {
 
 	public static String getFraction(Double d) {
 		return getFraction(d, -1);
+	}
+
+	public static boolean exists(String obj) {		
+		return getR().eval("exists(\""+obj+"\")").asRLogical().getData()[0];
 	}
 
 }

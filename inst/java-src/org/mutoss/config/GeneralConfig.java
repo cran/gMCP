@@ -28,14 +28,6 @@ public class GeneralConfig extends SpecificConfig {
         }
         return tmpDir;
     }
-    
-    public File getProjectPDFsPath() {
-        return new File(getProperty("pdf.output", System.getProperty("user.dir")));
-    }
-
-    public void setProjectPDFsPath(String path) {
-    	setProperty("pdf.output", path);
-    }
 
     public void setPDFViewerPath(String pdfViewerPath) {
         setProperty("acrobat.path", pdfViewerPath);
@@ -108,7 +100,7 @@ public class GeneralConfig extends SpecificConfig {
 	}
     
     public double getEpsilon() {
-		return Double.parseDouble(getProperty("epsilon", "0.0001"));		
+		return Double.parseDouble(getProperty("epsilon", "0.001"));		
 	}
     
 	public boolean showFractions() {		
@@ -177,7 +169,7 @@ public class GeneralConfig extends SpecificConfig {
 	public void addGraph(String graph) {
 		int i=1;
 		for (; i<4; i++) {
-			if (graph.equals(getProperty("saved_graph_"+(i-1)))) break; 
+			if (graph.equals(getProperty("saved_graph_"+(i-1), "NOT_SAVED_YET"))) break; 
 		}
 		for (i--; i>0; i--) {
 			String g = getProperty("saved_graph_"+(i-1), "NOT_SAVED_YET");

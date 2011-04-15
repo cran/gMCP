@@ -6,15 +6,18 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.Vector;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.mutoss.config.Configuration;
 import org.mutoss.gui.RControl;
 
 public class EdgeWeight {
 	
+	private static final Log logger = LogFactory.getLog(EdgeWeight.class);
+	
 	protected String weightStr = null; 
 	protected double[] weight = null;
 	
-	static DecimalFormat format = new DecimalFormat("#.###");
 	static DecimalFormat formatSmall = new DecimalFormat("#.###E0");
 	
 	public EdgeWeight(String weightStr) {
@@ -24,33 +27,45 @@ public class EdgeWeight {
 	
 	public EdgeWeight(double weight) {
 		this.weight = new double[] { weight };
-		/*if (w.toString().equals("NaN")) return "ε";
-		if (w<0.0009) {
-			return formatSmall.format(w);
-		} else {
-			return stringW;			
-		}*/
-		if (!Configuration.getInstance().getGeneralConfig().showFractions()) {
-			weightStr = format.format(weight);
-		} else {
-			weightStr = RControl.getFraction(weight, true);
-		}		
+		setWeightStr(weight);	
 	}
 	
+	private void setWeightStr(double weight) {
+		DecimalFormat format = Configuration.getInstance().getGeneralConfig().getDecFormat();
+		if (!Configuration.getInstance().getGeneralConfig().showFractions()) {
+			if (weight!=0 && weight < Math.pow(0.1, Configuration.getInstance().getGeneralConfig().getDigits())) {
+				weightStr = formatSmall.format(weight);
+			} else {
+				weightStr = format.format(weight);
+			}
+		} else {
+			if (weight!=0 && weight < Math.pow(0.1, Configuration.getInstance().getGeneralConfig().getDigits())) {
+				weightStr = formatSmall.format(weight);
+			} else {
+				weightStr = RControl.getFraction(weight, true);
+			}
+		}	
+	}
+
 	public String toString() {
 		return weightStr;
 	}
 	
 	public double[] getWeight(Hashtable<String,Double> ht) {
-		String replaceStr = weightStr;
-		if (weight!=null) return weight;
-		for (Enumeration<String> keys = ht.keys() ; keys.hasMoreElements() ;) {
-			String s = keys.nextElement();
-			replaceStr = replaceStr.replaceAll(s, ""+ht.get(s));
+		try {
+			String replaceStr = weightStr;
+			if (weight!=null) return weight;
+			for (Enumeration<String> keys = ht.keys() ; keys.hasMoreElements() ;) {
+				String s = keys.nextElement();
+				replaceStr = replaceStr.replaceAll(s, ""+ht.get(s));
+			}
+			replaceStr = replaceStr.replaceAll("ε", "e");
+			weight = RControl.getR().eval("gMCP:::parseEpsPolynom(\""+replaceStr+"\")").asRNumeric().getData();
+			return weight;
+		} catch (Exception e) {
+			logger.warn("Error parsing edge weight:\n"+e.getMessage(), e);
+			return new double[] {};
 		}
-		replaceStr = replaceStr.replaceAll("ε", "e");
-		weight = RControl.getR().eval("gMCP:::parseEpsPolynom(\""+replaceStr+"\")").asRNumeric().getData();
-		return weight;
 	}
 	
 	public List<String> getVariables() {

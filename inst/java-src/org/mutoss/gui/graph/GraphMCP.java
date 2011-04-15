@@ -16,11 +16,10 @@ public class GraphMCP {
 	public Vector<Edge> edges = new Vector<Edge>();
 	public Vector<Node> knoten = new Vector<Node>();
 	NetList nl;
-	VS vs;
 
-	public GraphMCP(String name, VS vs) {
+	public GraphMCP(String name, NetList nl) {
 		this.name = name;
-		this.vs = vs;
+		this.nl = nl;
 		loadGraph(name);
 		nl.revalidate();
 		nl.repaint();
@@ -35,7 +34,7 @@ public class GraphMCP {
 			boolean[] rejected = RControl.getR().eval("getRejected("+name+")").asRLogical().getData();
 			for (int i=0; i<nodes.length; i++) {
 				logger.debug("Adding node "+nodes[i]+" at ("+x[i]+","+y[i]+").");
-				knoten.add(new Node(nodes[i], (int) x[i], (int) y[i], alpha[i], vs));
+				knoten.add(new Node(nodes[i], (int) x[i], (int) y[i], alpha[i], nl));
 				if (rejected[i]) knoten.lastElement().reject();
 			}
 			// Edges:
@@ -62,24 +61,23 @@ public class GraphMCP {
 					int yl = (int) labelY[i];
 					//if (yl<-50) yl = (fromNode.getY()+toNode.getY())/2;				
 					boolean curve = curved[i];
-					/*if (!((Double)weight[i]).toString().equals("NaN")) {
+					if (!((Double)weight[i]).toString().equals("NaN")) {
 						if (xl < -50 || yl < -50) {
-							edges.add(new Edge(fromNode, toNode, weight[i], vs,  curve));
+							edges.add(new Edge(fromNode, toNode, weight[i], nl,  curve));
 						} else {
-							edges.add(new Edge(fromNode, toNode, weight[i], vs, xl+Node.getRadius(), yl+Node.getRadius()));
+							edges.add(new Edge(fromNode, toNode, weight[i], nl, xl+Node.getRadius(), yl+Node.getRadius()));
 						}
-					} else */ {
+					} else {
 						if (xl < -50 || yl < -50) {
-							edges.add(new Edge(fromNode, toNode, weightStr[i], vs, /* xl+Node.getRadius(), yl+Node.getRadius(),*/ curve));
+							edges.add(new Edge(fromNode, toNode, weightStr[i], nl, /* xl+Node.getRadius(), yl+Node.getRadius(),*/ curve));
 						} else {
-							edges.add(new Edge(fromNode, toNode, weightStr[i], vs, xl+Node.getRadius(), yl+Node.getRadius()));
+							edges.add(new Edge(fromNode, toNode, weightStr[i], nl, xl+Node.getRadius(), yl+Node.getRadius()));
 						}
 					}
 					
 				}
 			}
-		}		
-		this.nl = vs.nl;
+		}
 		for (Node k : knoten) {
 			nl.addNode(k);
 		}		

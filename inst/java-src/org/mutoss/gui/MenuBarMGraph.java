@@ -2,6 +2,7 @@ package org.mutoss.gui;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileWriter;
@@ -24,10 +25,13 @@ import org.af.commons.io.FileTransfer;
 import org.af.commons.logging.LoggingSystem;
 import org.af.commons.logging.widgets.DetailsDialog;
 import org.af.commons.tools.OSTools;
+import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jdesktop.swingworker.SwingWorker;
 import org.mutoss.config.Configuration;
 import org.mutoss.gui.dialogs.NumberOfHypotheses;
+import org.mutoss.gui.dialogs.RObjectLoadingDialog;
 import org.mutoss.gui.dialogs.TextFileViewer;
 import org.mutoss.gui.dialogs.VariableNameDialog;
 import org.mutoss.gui.graph.GraphView;
@@ -39,34 +43,36 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
 	GraphView control;
     protected Localizer localizer = Localizer.getInstance();
     private static final Log logger = LogFactory.getLog(MenuBarMGraph.class);
-    //protected HelpSystem helpSystem;
     JMenu fmenu = new JMenu("File");
 
 	public MenuBarMGraph(GraphView control) {
 		
 		this.control = control;		
 
-		fmenu.add(makeMenuItem("New Graph", "new graph"));
-		fmenu.add(makeMenuItem("Load Graph from R", "load graph from R"));
-		fmenu.add(makeMenuItem("Load Graph from RData file", "load graph"));		
+		fmenu.add(makeMenuItem("New Graph", "new graph", KeyEvent.VK_N));
+		fmenu.add(makeMenuItem("Load Graph from R", "load graph from R", KeyEvent.VK_L));
+		fmenu.add(makeMenuItem("Load Graph from RData file", "load graph"));
 		fmenu.addSeparator();
-		fmenu.add(makeMenuItem("Save Graph to R", "save graph to R"));	
+		fmenu.add(makeMenuItem("Load p-Values from R", "load p-values from R"));
+		fmenu.addSeparator();
+		fmenu.add(makeMenuItem("Save Graph to R", "save graph to R", KeyEvent.VK_S));	
 		fmenu.add(makeMenuItem("Save Graph to RData file", "save graph"));		
 		fmenu.addSeparator();
-		fmenu.add(makeMenuItem("Export Graph to PNG Image", "export graph image"));
-		fmenu.add(makeMenuItem("Export Graph to LaTeX File", "export graph latex"));
+		fmenu.add(makeMenuItem("Export Graph to PNG Image", "export graph image", KeyEvent.VK_P));
+		fmenu.add(makeMenuItem("Export Graph to LaTeX File", "export graph latex", KeyEvent.VK_L));
 		fmenu.addSeparator();
-		fmenu.add(makeMenuItem("Save LaTeX Report", "save latex report"));
+		fmenu.add(makeMenuItem("Save LaTeX Report", "save latex report", KeyEvent.VK_R));
 		JMenuItem item = makeMenuItem("Save PDF Report", "save pdf");
 		item.setEnabled(false);
 		fmenu.add(item);
 		//fmenu.add(makeMenuItem("Save PDF Report", "save pdf"));
 		fmenu.addSeparator();
 		createLastUsed();
-
+		fmenu.setMnemonic(KeyEvent.VK_F);
 		add(fmenu);
 
 		JMenu menu = new JMenu("Example graphs");
+		menu.setMnemonic(KeyEvent.VK_X);
 
 		menu.add(makeMenuItem("Bonferroni-Holm Test", "bht"));
 		menu.addSeparator();
@@ -78,6 +84,15 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
 
 		add(menu);
 
+		menu = new JMenu("Analysis");
+		menu.setMnemonic(KeyEvent.VK_A);
+		
+		menu.add(makeMenuItem("Graph analysis", "graphAnalysis"));
+		menu.addSeparator();
+		menu.add(makeMenuItem("Power analysis", "powerAnalysis"));		
+
+		add(menu);
+		
         addExtrasMenu();
         addHelpMenu();
 	}
@@ -85,12 +100,14 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
 	private void createLastUsed() {
 		List<String> graphs = Configuration.getInstance().getGeneralConfig().getLatestGraphs();
 		
-		for(int i=fmenu.getItemCount()-1; i>12; i--) {
+		for(int i=fmenu.getItemCount()-1; i>14; i--) {
 			fmenu.remove(i);
 		}
 		
-		if (graphs.size()>0) {
+		if (graphs.size()>0) {	
+			int i = 0;
 			for (String graph : graphs) {
+				i++;
 				String s = graph;
 				logger.info("Process last used graph: '"+s+"'.");			
 				File f = new File(s);				
@@ -100,25 +117,39 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
 						path = path.substring(0, 17)+"...";
 					}
 					s = f.getName()+" ["+path+"]";
-					fmenu.add(makeMenuItem(s, "LOAD_GRAPH"+graph));
+					fmenu.add(makeMenuItem(i+" "+s, "LOAD_GRAPH"+graph, (i+"").charAt(0)));
 				} else {					
 					if (s.startsWith("R Object: ")) {
 						s = s.substring(10);
 						if (RControl.getR().eval("exists(\""+s+"\")").asRLogical().getData()[0]) {
-							fmenu.add(makeMenuItem(s, "LOAD_GRAPH"+graph));
+							fmenu.add(makeMenuItem(i+" "+s, "LOAD_GRAPH"+graph, (i+"").charAt(0)));
 						}
 					}
 				}				
 			}
 			fmenu.addSeparator();
 		}		
-		fmenu.add(makeMenuItem("Quit", "exit"));
+		fmenu.add(makeMenuItem("Exit", "exit", KeyEvent.VK_X));
 	}
+
+	private JMenuItem makeMenuItem(String text, String action, int key) {
+		JMenuItem item = makeMenuItem(text, action);
+		item.setMnemonic(key);
+		return item;
+	}
+	
+	private JMenuItem makeMenuItem(String text, String action, char key) {
+		JMenuItem item = makeMenuItem(text, action);
+		item.setMnemonic(key);
+		return item;
+	}
+
 
 	public void loadGraph(String string) {
 		NetList nl = control.getNL();		
 		newGraph();
-		RControl.getR().eval(nl.initialGraph + " <- " + string);
+		boolean matrix = RControl.getR().eval("is.matrix("+string+")").asRLogical().getData()[0];
+		RControl.getR().eval(nl.initialGraph + " <- gMCP:::arrangeNodes("+ (matrix?"matrix2graph(":"(")+ string + "))");
 		nl.loadGraph();
 		control.getMainFrame().validate();
 	}
@@ -168,7 +199,7 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
         		JOptionPane.showMessageDialog(control.getMainFrame(), "Will not save empty graph.", "Saving to R failed.", JOptionPane.ERROR_MESSAGE);
         		return;
         	}
-        	VariableNameDialog vnd = new VariableNameDialog(control.getGraphGUI());
+        	VariableNameDialog vnd = new VariableNameDialog(control.getGraphGUI(), control.getGraphName());
         	String name = control.getNL().saveGraph(vnd.getName(), true);
         	Configuration.getInstance().getGeneralConfig().addGraph("R Object: "+name);
         	createLastUsed();
@@ -180,14 +211,12 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
         	notYetSupported();
         	//savePDF();
         } else if (e.getActionCommand().equals("save latex report")) {
-        	notYetSupported();
-        	//exportLaTeXReport();
+        	exportLaTeXReport();
         } else if (e.getActionCommand().equals("load graph")) {       	
         	loadGraph();
         } else if (e.getActionCommand().equals("load graph from R")) {
-        	VariableNameDialog vnd = new VariableNameDialog(control.getGraphGUI());
-        	loadGraph(vnd.getName());
-        	Configuration.getInstance().getGeneralConfig().addGraph("R Object: "+vnd.getName());
+        	new RObjectLoadingDialog(control.getGraphGUI());
+        	//VariableNameDialog vnd = new VariableNameDialog(control.getGraphGUI());
         	createLastUsed();        	
         } else if (e.getActionCommand().equals("bht")) {
         	new NumberOfHypotheses(control.getGraphGUI(), this, "createBonferroniHolmGraph");        	
@@ -227,6 +256,35 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
         	new AboutDialog(control.getMainFrame());
         } else if (e.getActionCommand().equals("showOptions")) {
         	new OptionsDialog(control.getMainFrame());
+        } else if (e.getActionCommand().equals("clearOptions")) {
+        	Configuration.getInstance().clearConfiguration();
+        	control.getMainFrame().repaint();
+        } else if (e.getActionCommand().equals("debugConsole")) {
+        	RControl.console.setVisible(true);
+        } else if (e.getActionCommand().equals("graphAnalysis")) {
+        	if (control.getNL().getKnoten().size()==0) {
+        		JOptionPane.showMessageDialog(control.getMainFrame(), "Graph is empty!", "Graph is empty!", JOptionPane.ERROR_MESSAGE);
+        		return;
+        	}
+        	control.getNL().saveGraph(".tmpGraph", false);
+        	String text = RControl.getR().eval("graphAnalysis(.tmpGraph, file=tempfile())").asRChar().getData()[0];
+        	new TextFileViewer(control.getMainFrame(), "Graph analysis", text);
+        } else if (e.getActionCommand().equals("powerAnalysis")) {
+        	notYetSupported();
+        } else if (e.getActionCommand().equals("load p-values from R")) {
+        	VariableNameDialog vnd = new VariableNameDialog(control.getGraphGUI(), "");     
+			try {
+				double[] data = RControl.getR().eval(vnd.getName()).asRNumeric().getData();
+				if (data.length!=control.getNL().getKnoten().size()) {
+					JOptionPane.showMessageDialog(this, "Number of hypotheses and values do not match.", 
+							"Number of hypotheses and values do not match", JOptionPane.ERROR_MESSAGE);
+					return;
+				}
+				control.getPView().setPValues(ArrayUtils.toObject(data));					
+			} catch (Exception ex) {
+				JOptionPane.showMessageDialog(this, "Error loading values from R:\n"+ex.getMessage(), 
+						"Error loading values from R", JOptionPane.ERROR_MESSAGE);
+			} 
         }
 	}
 	
@@ -273,28 +331,48 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
 			}
 		}
 	}
-
-	/*
+	
+	String correlation;
+	File f;
+	
 	public void exportLaTeXReport() {
-		NetzListe nl = ((ControlMGraph) control).getNL();
-		String doc = "\\section*{Initial graph}\n";
-		for (GraphStep gs : nl.getReport()) {			
-			if (gs.getName().trim().length!=0) {
-				doc += "\n"+gs.getLatex()+"\n\\section{Rejection of "+gs.getName().replace("_", "\\_")+"}\n";
-			} else {
-				doc += "\n"+gs.getLatex()+"\n";
-			}
+		if (control.getNL().getKnoten().size()==0) {
+    		JOptionPane.showMessageDialog(control.getMainFrame(), "Can not create report for empty graph.", "Can not create report for empty graph.", JOptionPane.ERROR_MESSAGE);
+    		return;
+    	}
+		if (!RControl.getR().eval("exists(\""+control.getNL().initialGraph+"\")").asRLogical().getData()[0]) {
+			control.getNL().saveGraph();
 		}
-		List<CI> ciV = ((ControlMGraph) control).getNL().getCi();
-		if (ciV != null) {
-			doc += "\n\\section{Confidence intervals}";
-			for (CI ci : ciV) {				
-				doc += "Confidence interval "+ci.getName().replace("_", "\\_")+":  $]"+((ci.getLb()==Double.NEGATIVE_INFINITY)?"-\\infty":format.format(ci.getLb()))+", "+((ci.getUb()==Double.POSITIVE_INFINITY)?"\\infty":format.format(ci.getUb()))+"[$\\\\\n";					
-			}
-		}		
-		writeLaTeX(doc);
+		JFileChooser fc = new JFileChooser(Configuration.getInstance().getClassProperty(this.getClass(), "LaTeXReportDirectory"));
+		fc.setDialogType(JFileChooser.SAVE_DIALOG);		
+		int returnVal = fc.showSaveDialog(this);
+		if (returnVal == JFileChooser.APPROVE_OPTION) {			
+			f = fc.getSelectedFile();
+			Configuration.getInstance().setClassProperty(this.getClass(), "LaTeXReportDirectory", f.getParent());
+			if (!f.getName().toLowerCase().endsWith(".tex")) {
+            	f = new File(f.getAbsolutePath()+".tex");
+            }
+			logger.info("Export to: " + f.getAbsolutePath() + ".");
+		} else {
+			return;
+		}
+		control.getMainFrame().glassPane.start();
+		//startTesting();
+		correlation = control.getPView().getCorrelation();
+		SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
+			@Override
+			protected Void doInBackground() throws Exception {
+				if (!control.resultUpToDate) {
+					RControl.getR().evalVoid(control.result+" <- gMCP("+control.getNL().initialGraph+control.getGMCPOptions()+")");
+					control.resultUpToDate = true;
+				}
+				RControl.getR().eval("gMCPReport("+control.result+", file=\""+f.getAbsolutePath()+"\")");
+				control.getMainFrame().glassPane.stop();
+				return null;
+			}  
+		};
+		worker.execute();
 	}
-	*/
 	
 	public void writeLaTeX(String s) {
 		JFileChooser fc = new JFileChooser(Configuration.getInstance().getClassProperty(this.getClass(), "LaTeXDirectory"));
@@ -307,7 +385,7 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
 			if (!f.getName().toLowerCase().endsWith(".tex")) {
             	f = new File(f.getAbsolutePath()+".tex");
             }
-			System.out.println("Export to: " + f.getAbsolutePath() + ".");
+			logger.info("Export to: " + f.getAbsolutePath() + ".");
 		} else {
 			return;
 		}
@@ -372,10 +450,8 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
     		} catch( Exception ex ) {
     			JOptionPane.showMessageDialog(this, "Saving image to '" + f.getAbsolutePath() + "' failed: " + ex.getMessage(), "Saving failed.", JOptionPane.ERROR_MESSAGE);
     		}
-        }	
-		
+        }		
 	}
-
 	
 	private void loadGraph() {		
 		JFileChooser fc = new JFileChooser(Configuration.getInstance().getClassProperty(this.getClass(), "RObjDirectory"));		
@@ -429,7 +505,7 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
             	f = new File(f.getAbsolutePath()+".RData");
             }
             try {
-            	VariableNameDialog vnd = new VariableNameDialog(control.getGraphGUI());            	
+            	VariableNameDialog vnd = new VariableNameDialog(control.getGraphGUI(), control.getGraphName());            	
             	String name = vnd.getName();
             	control.getNL().saveGraph(name, false); 
             	RControl.getR().eval("save("+name+", file=\""+f.getAbsolutePath()+"\")");        		
@@ -460,12 +536,17 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
 
     public JMenu makeExtrasMenu() {
     	JMenu menu = new JMenu(localizer.getString("SGTK_MENU_EXTRAS"));
-    	menu.add(makeMenuItem(localizer.getString("SGTK_MENU_EXTRAS_LOG"), "showLog"));
-    	menu.add(makeMenuItem(localizer.getString("SGTK_MENU_EXTRAS_OPTIONS"), "showOptions"));
-    	menu.add(makeMenuItem(localizer.getString("SGTK_MENU_EXTRAS_REPORT_ERROR"), "reportError"));
+    	menu.add(makeMenuItem(localizer.getString("SGTK_MENU_EXTRAS_OPTIONS"), "showOptions", KeyEvent.VK_O));
+    	menu.add(makeMenuItem("Set all options back to default", "clearOptions", KeyEvent.VK_C));
+    	menu.addSeparator();
+    	menu.add(makeMenuItem(localizer.getString("SGTK_MENU_EXTRAS_LOG"), "showLog", KeyEvent.VK_L));
+    	menu.add(makeMenuItem(localizer.getString("SGTK_MENU_EXTRAS_REPORT_ERROR"), "reportError", KeyEvent.VK_R));
+    	if (System.getProperty("eclipse") != null) {		
+    		menu.add(makeMenuItem("Debug console", "debugConsole", KeyEvent.VK_D));
+    	}
+    	menu.setMnemonic(KeyEvent.VK_E);
     	return menu;
     }
-
     
     public void addHelpMenu() {
     	add(makeHelpMenu());
@@ -473,17 +554,17 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
     
     private JMenu makeHelpMenu() {
     	 JMenu menu = new JMenu("Help");
-         menu.add(makeMenuItem("About", "showAbout"));         
-         menu.add(makeMenuItem("Introduction to gMCP", "showAppHelp"));
-         menu.add(makeMenuItem("Weighted parametric tests defined by graphs", "showParametric"));
-         menu.add(makeMenuItem("gMCP R Online Reference manual", "showManual"));
+    	 menu.setMnemonic(KeyEvent.VK_H);
+         menu.add(makeMenuItem("About", "showAbout", KeyEvent.VK_B));         
+         menu.add(makeMenuItem("Introduction to gMCP", "showAppHelp", KeyEvent.VK_I));
+         menu.add(makeMenuItem("Weighted parametric tests defined by graphs", "showParametric", KeyEvent.VK_P));
+         menu.add(makeMenuItem("gMCP R Online Reference manual", "showManual", KeyEvent.VK_M));
          //menu.add(makeMenuItem("Theoretical Background", "showAppHelp"));
          /*menu.addSeparator();
          menu.add(makeMenuItem("Description of Edges with Infinitesimal Small Epsilon Weights", "showEpsDoc"));*/
          menu.addSeparator();
-         menu.add(makeMenuItem("Version Info / NEWS", "showNEWS"));
+         menu.add(makeMenuItem("Version Info / NEWS", "showNEWS", KeyEvent.VK_N));
          return menu;
-	}
-	
+	}	
 
 }

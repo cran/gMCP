@@ -1,5 +1,39 @@
 
-Version 0.6-1 (??-Apr-2011, Rev. ???)
+Version 0.6-2 (16-Apr-2011, Rev. 279)
+=====================================
+
+- New dependency: xtable 
+
+- Indefinite ProgressPanel is shown while calculating.
+
+- Calculations can be interrupted and canceled.
+
+- Improved / updated gMCP-LaTeX-Report now in the GUI.
+
+- New function: graphAnalysis
+
+- Fixed a major bug which prevented saving/loading in the GUI.
+
+- Mnemonic keys for the menu.
+
+- Buttons for loading estimates / sd from R in CI-dialog.
+
+- Improved zoom with TeXItem edge labels.
+
+- Menu entry for loading p-values.
+
+- Fixed visualization bug: 
+  Panel with p-values was sometimes out of sync.
+
+- Fixed bug: Edges with small values were set to 0.
+
+- Fixed visualization bug: 
+  Adjacency table was not updated when edge was deleted.
+  
+- GUI deals a lot better with rounding errors.  
+
+
+Version 0.6-1 (09-Apr-2011, Rev. 589)
 =====================================
 
 - We use the library JLaTeXMath for edge labeling.
@@ -15,6 +49,12 @@ Version 0.6-1 (??-Apr-2011, Rev. ???)
 - Changed the order of the buttons in the main button panel.
 
 - GUI is remembering the last 4 used R objects / files. 
+
+- Since r-forge has rJava problems at the moment and does
+  not provide gMCP builds, we pushed 0.6-1 early to CRAN. 
+
+ 43 files changed, 666 insertions(+), 248 deletions(-)
+
 
 Version 0.6-0 (06-Apr-2011, Rev. 547)
 =====================================
@@ -37,6 +77,7 @@ Version 0.6-0 (06-Apr-2011, Rev. 547)
   "offset".
   
  40 files changed, 599 insertions(+), 339 deletions(-)
+
 
 Version 0.5-0 (28-Mar-2011, Rev. 525)
 =====================================
