@@ -139,15 +139,32 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 	public void addNode(Node node) {
 		control.enableButtons(true);		
 		nodes.add(node);
-		nodes.lastElement().fix = false;	
 		control.getPView().addPPanel(node);
 		control.getDataTable().getModel().addRowCol(node.getName());
 		calculateSize();
 		graphHasChanged();
 	}
+	
+	public boolean updateGUI = true;
 
 	public void graphHasChanged() {
-		control.resultUpToDate = false;	
+		control.resultUpToDate = false;
+		if (!updateGUI) return;
+		String analysis = null;
+		Set<String> variables = getAllVariables();
+		variables.remove("ε");
+		if (variables.size()==0) {
+			try {
+				String graphName = ".tmpGraph" + (new Date()).getTime();
+				saveGraph(graphName, false);
+				analysis = RControl.getR().eval("graphAnalysis("+graphName+", file=tempfile())").asRChar().getData()[0];
+			} catch (Exception e) {
+				// We simply set the analysis to null - that's fine.
+			}
+		} else {
+			analysis = "Graphs with variables are not yet supported for analysis.";
+		}
+		control.getDView().setAnalysis(analysis);
 	}
 
 	/**
@@ -172,8 +189,10 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 		setPreferredSize(new Dimension(
 				(int) ((maxX + 2 * Node.getRadius() + 30) * getZoom()),
 				(int) ((maxY + 2 * Node.getRadius() + 30) * getZoom())));
-		revalidate();
-		repaint();
+		if (updateGUI) {
+			revalidate();
+			repaint();
+		}		
 		return new int[] {maxX, maxY};
 	}
 	
@@ -264,9 +283,26 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 	}
 
 	public void loadGraph() {
-		new GraphMCP(initialGraph, this);
+		control.stopTesting();
+		reset();
+		this.updateGUI = false;
+		GraphMCP graph = new GraphMCP(initialGraph, this);
+		if (graph.getDescription()!=null) {
+			control.getDView().setDescription(graph.getDescription());
+		} else {
+			control.getDView().setDescription("");
+		}
 		control.getPView().restorePValues();
+		this.updateGUI = true;
 		graphHasChanged();
+		revalidate();
+		repaint();
+	}
+
+	public void loadGraph(String string) {
+		boolean matrix = RControl.getR().eval("is.matrix("+string+")").asRLogical().getData()[0];
+		RControl.getR().eval(initialGraph + " <- placeNodes("+ (matrix?"matrix2graph(":"(")+ string + "))");
+		loadGraph();
 	}
 	
 	public void mouseClicked(MouseEvent e) {}
@@ -461,19 +497,20 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 		control.getPView().savePValues();
 	}
 	
-	public String saveGraph(String graphName, boolean verbose) {
-		// We can only save up to now graphs without variables:
-		
-		Set<String> variables = new HashSet<String>();
-		
+	public Set<String> getAllVariables() {
+		Set<String> variables = new HashSet<String>();		
 		for (Edge e : edges) {		
 			variables.addAll(e.getVariable());
 		}
-		/*if (!Configuration.getInstance().getGeneralConfig().useEpsApprox()) */
-		{
+		return variables;
+	}
+	
+	public String saveGraphWithoutVariables(String graphName, boolean verbose) {
+		Set<String> variables = getAllVariables();
+		if (!Configuration.getInstance().getGeneralConfig().useEpsApprox())	{
 			variables.remove("ε");
 		}
-		
+
 		Hashtable<String,Double> ht = new Hashtable<String,Double>();
 		if (!variables.isEmpty() && !(variables.size()==1 && variables.contains("ε"))) {
 			VariableDialog vd = new VariableDialog(this.control.parent, variables);
@@ -481,8 +518,15 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 		} else if (variables.size()==1 && variables.contains("ε")){
 			ht.put("ε", Configuration.getInstance().getGeneralConfig().getEpsilon());
 		}
-		
-		// Okay, let's go:
+		return saveGraph(graphName, verbose, ht);
+	}
+	
+	
+	public String saveGraph(String graphName, boolean verbose) {
+		return saveGraph(graphName, verbose, new Hashtable<String,Double>());
+	}
+	
+	public String saveGraph(String graphName, boolean verbose, Hashtable<String,Double> ht) {
 		
 		graphName = RControl.getR().eval("make.names(\""+graphName+"\")").asRChar().getData()[0];
 		
@@ -524,8 +568,7 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 				RControl.getR().evalVoid(".gsrmtVar$edges[["+(i+1)+"]] <- list(edges=character(0), weights=numeric(0))");
 			}
 		}		
-		//String s = RControl.getR().eval("paste(capture.output(dput(.gsrmtVar)), collapse=\"\")").asRChar().getData()[0];
-		//JOptionPane.showMessageDialog(null, "Exported graph as: "+s);
+
 		RControl.getR().evalVoid(graphName+" <- new(\"graphMCP\", nodes=.gsrmtVar$hnodes, edgeL=.gsrmtVar$edges, weights=.gsrmtVar$alpha)");
 		//TODO remove this stupid workaround.
 		RControl.getR().evalVoid(graphName+" <- gMCP:::stupidWorkAround("+graphName+")");
@@ -547,7 +590,12 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 			if (eps!=null) {
 				RControl.getR().evalVoid("edgeData("+graphName+", \""+e.from.getName()+"\", \""+e.to.getName()+"\", \"epsilon\") <- list("+eps+")");
 			}
+			logger.debug("Weight is: "+e.getW(ht)[0]);
+			if (((Double)e.getW(ht)[0]).isNaN()) {
+				RControl.getR().evalVoid("edgeData("+graphName+", \""+e.from.getName()+"\", \""+e.to.getName()+"\", \"variableWeight\") <- \""+e.getWS().replaceAll("\\\\", "\\\\\\\\")+"\"");
+			}
 		}	
+		RControl.getR().evalVoid("attr("+graphName+", \"description\") <- \""+ control.getDView().getDescription()+"\"");
 		if (verbose) { JOptionPane.showMessageDialog(null, "The graph as been exported to R under ther variable name:\n\n"+graphName, "Saved as \""+graphName+"\"", JOptionPane.INFORMATION_MESSAGE); }
 		return graphName;
 	}

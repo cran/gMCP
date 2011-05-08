@@ -18,6 +18,7 @@ setMethod("initialize", "graphMCP",
 			edgeDataDefaults(.Object, "labelX") <- -100
 			edgeDataDefaults(.Object, "labelY") <- -100
 			edgeDataDefaults(.Object, "epsilon") <- list(0)
+			edgeDataDefaults(.Object, "variableWeight") <- ""
 			validObject(.Object)
 			return(.Object)
 		})
@@ -215,7 +216,7 @@ getWeightStr <- function(graph, from, to, LaTeX=FALSE) {
 		e <- "\\epsilon"
 	} else {
 		frac <- function(x) {as.character(fractions(x))}
-		e <- "e"
+		e <- "\\epsilon"
 	}
 	for (i in 1:length(p)) {
 		if (!isTRUE(all.equal(p[i], 0))) {
@@ -235,6 +236,9 @@ getWeightStr <- function(graph, from, to, LaTeX=FALSE) {
 				pStr <- paste(pStr, "^", i, sep="")
 			}
 		}
+	}
+	if (is.nan(weight)) {
+		return(paste(unlist(edgeData(graph, from, to, "variableWeight")), pStr, sep=""))
 	}
 	if (weight==0 && pStr!="") { # Remove the first "+" and just return the epsilon part:
 		return(substring(pStr, 2))
@@ -262,8 +266,9 @@ setMethod("simConfint", c("graphMCP"), function(object, pvalues, confint, altern
 					if (rejected && alternative=="greater") return(c(mu, Inf))
 					return(confint(node, alpha))
 				}
-				m <- mapply(f, nodes(object), alpha, getRejected(result))					
-				rownames(m) <- c("lower bound", "upper bound")
+				m <- mapply(f, nodes(object), alpha, getRejected(result))	
+				m <- rbind(m[1,], estimates, m[2,])
+				rownames(m) <- c("lower bound", "estimate", "upper bound")
 				return(t(m))
 			} else if (confint=="t") {
 				dist <- function(x) {qt(p=x, df=df)}
@@ -285,8 +290,7 @@ setMethod("simConfint", c("graphMCP"), function(object, pvalues, confint, altern
 			} else {
 				stop("Specify alternative as \"less\" or \"greater\".")
 			}
-			m <- matrix(c(lb, ub), ncol=2)
-			colnames(m) <- c("lower bound", "upper bound")
+			m <- matrix(c(lb, estimates, ub), ncol=3)
+			colnames(m) <- c("lower bound", "estimate", "upper bound")
 			return(m)
 		})
-

@@ -1,5 +1,46 @@
 
-Version 0.6-2 (16-Apr-2011, Rev. 279)
+Version 0.6-3 (08-Mai-2011, Rev. 767)
+=====================================
+
+- New dependency: JavaGD, MCPAN
+
+- Example graphs have been renamed (Please look at ?exampleGraph).
+
+- Greek small letters are allowed as variables
+  - enter them as e.g. "\epsilon", "\iota", "\phi" in the GUI.
+  - use edgeData "variableWeight" to set them in R
+    (see graph2FromBretzEtAl2009 as an example).
+  - epsilon has to be entered as "\epsilon" instead of "e"
+
+- Below the graphPanel is now a new panel with 
+  graph description and graph analysis. 
+
+- Function placeNodes is now exported with new parameters:
+  nrow, ncol and force
+  
+- We use package highlight for the manuals.
+
+- New example graphs:
+   
+  - Graphs from Hung and Wang (2010) and 
+    Bretz et al. (2011)
+
+- All example graphs have a description and
+  graph attributes "description" are shown in the GUI.
+
+- First data files: hydroquinone and simvastatin
+
+- simConfint also returns the point estimates as second column.
+
+- Improved compatibility for R 2.8.
+
+- New HTML file References.html accessible from the GUI.
+ 
+- Unified loading of graphs.
+
+- New function: joinGraphs
+
+Version 0.6-2 (24-Apr-2011, Rev. 679)
 =====================================
 
 - New dependency: xtable 
@@ -25,13 +66,14 @@ Version 0.6-2 (16-Apr-2011, Rev. 279)
 - Fixed visualization bug: 
   Panel with p-values was sometimes out of sync.
 
-- Fixed bug: Edges with small values were set to 0.
+- Fixed bug: Edges with very small values were set to 0.
 
 - Fixed visualization bug: 
   Adjacency table was not updated when edge was deleted.
   
 - GUI deals a lot better with rounding errors.  
 
+ 58 files changed, 1072 insertions(+), 596 deletions(-)
 
 Version 0.6-1 (09-Apr-2011, Rev. 589)
 =====================================

@@ -40,12 +40,30 @@ getEdges <- function(graph){
 	return(list(from=fromL, to=toL, weight=weightL, labelx=labelx, labely=labely, curve=curveL, weightStr=weightStrL))
 }
 
-arrangeNodes <- function(graph) {
-	if (length(nodeRenderInfo(graph))==0) {
+placeNodes <- function(graph, nrow, ncol, byrow = TRUE, force = FALSE) {
+	if (length(nodeRenderInfo(graph))==0 || force) {
 		n <- length(nodes(graph))
-		v <- (1:n)/n*2*pi
-		nodeX <- 300 + 250*sin(v)
-		nodeY <- 300 + 250*cos(v)
+		if (missing(nrow) && missing(ncol)) {		
+			v <- (1:n)/n*2*pi
+			nodeX <- 300 + 250*sin(v)
+			nodeY <- 300 + 250*cos(v)			
+		} else {
+			if (missing(nrow)) {
+				nrow <- ceiling(length(nodes(graph))/ncol)
+			}
+			if (missing(ncol)) {
+				ncol <- ceiling(length(nodes(graph))/nrow)
+			}
+			if (byrow) {
+				nodeX <- rep(((1:ncol)-1)*200+100, nrow)
+				nodeY <- rep(((1:nrow)-1)*200+100, each = ncol)
+			} else {
+				nodeX <- rep(((1:ncol)-1)*200+100, each = nrow)
+				nodeY <- rep(((1:nrow)-1)*200+100, ncol)
+			}
+		}		
+		nodeX <- nodeX[1:n]
+		nodeY <- nodeY[1:n]
 		names(nodeX) <- nodes(graph)
 		names(nodeY) <- nodes(graph)
 		nodeRenderInfo(graph) <- list(nodeX=nodeX, nodeY=nodeY)

@@ -22,7 +22,6 @@ public class Node {
 	int x;
 	int y;
 	private String name;
-	boolean fix = false;
 	boolean drag = false;
 	NetList nl;
 	private double weight;
@@ -106,7 +105,7 @@ public class Node {
 		} else {		
 			if (lastFontSize != (int) (14 * nl.getZoom())) {
 				lastFontSize = (int) (14 * nl.getZoom());
-				iconWeight = Edge.getTeXIcon(stringW, lastFontSize);
+				iconWeight = Edge.getTeXIcon(this.nl.control.getGraphGUI(), stringW, lastFontSize);
 				TeXFormula formula = new TeXFormula("\\mathbf{"+name+"}"); 
 				iconName = formula.createTeXIcon(TeXConstants.ALIGN_CENTER, lastFontSize);
 			}
@@ -147,7 +146,7 @@ public class Node {
 			}
 		}
 		
-		iconWeight = Edge.getTeXIcon(stringW, (int) (14 * nl.getZoom()));
+		iconWeight = Edge.getTeXIcon(this.nl.control.getGraphGUI(), stringW, (int) (14 * nl.getZoom()));
 		
 		for (NodeListener l : listener) {
 			if (me!=l) {

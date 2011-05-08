@@ -8,8 +8,8 @@
 	Performs a sequentially rejective multiple test procedure on a graph given unadjusted p-values.
 }
 \usage{
-	gMCP(graph, pvalues, test, correlation, alpha=0.05, approxEps=TRUE, eps=10^(-3), ..., 
-         verbose=FALSE)
+	gMCP(graph, pvalues, test, correlation, alpha=0.05, 
+	     approxEps=TRUE, eps=10^(-3), ..., verbose=FALSE)
 }
 
 \arguments{
@@ -83,7 +83,7 @@ Kornelius Rohmeyer \email{rohmeyer@small-projects.de}
 }
 \examples{
 
-g <- createBonferroniHolmGraph(5)
+g <- BonferroniHolmGraph(5)
 
 gMCP(g, pvalues=c(0.01, 0.02, 0.04, 0.04, 0.7))
 

@@ -21,7 +21,7 @@ public class EdgeWeight {
 	static DecimalFormat formatSmall = new DecimalFormat("#.###E0");
 	
 	public EdgeWeight(String weightStr) {
-		weightStr =	weightStr.replace('e', 'ε');
+		//weightStr =	weightStr.replace('e', 'ε');
 		this.weightStr = weightStr;
 	}
 	
@@ -57,28 +57,54 @@ public class EdgeWeight {
 			if (weight!=null) return weight;
 			for (Enumeration<String> keys = ht.keys() ; keys.hasMoreElements() ;) {
 				String s = keys.nextElement();
-				replaceStr = replaceStr.replaceAll(s, ""+ht.get(s));
+				for (int i=0; i <greek.length; i++) {
+					if ((""+greek[i]).equals(s)) {
+						replaceStr = replaceStr.replaceAll(""+greekLaTeX[i], ""+ht.get(s));		
+					}
+				}								
 			}
-			replaceStr = replaceStr.replaceAll("ε", "e");
-			weight = RControl.getR().eval("gMCP:::parseEpsPolynom(\""+replaceStr+"\")").asRNumeric().getData();
+			for (Enumeration<String> keys = ht.keys() ; keys.hasMoreElements() ;) {
+				String s = keys.nextElement();
+				replaceStr = replaceStr.replaceAll(s, ""+ht.get(s));				
+			}
+			replaceStr = replaceStr.replaceAll("\\\\epsilon", "epsilon");
+			weight = RControl.getR().eval("gMCP:::parseEpsPolynom(\""+replaceStr.replaceAll("\\\\", "\\\\\\\\")+"\")").asRNumeric().getData();
 			return weight;
 		} catch (Exception e) {
-			logger.warn("Error parsing edge weight:\n"+e.getMessage(), e);
-			return new double[] {};
+			logger.warn("Error parsing edge weight:\n"+e.getMessage());
+			return new double[] {Double.NaN};
 		}
 	}
 	
+	public static final String[] greekLaTeX = {
+		"\\\\alpha", "\\\\beta", "\\\\gamma", "\\\\delta", "\\\\epsilon", "\\\\zeta", "\\\\eta", 
+		"\\\\theta", "\\\\iota", "\\\\kappa", "\\\\lambda", "\\\\mu", "\\\\nu", "\\\\xi", 
+		"\\\\omicron", "\\\\pi", "\\\\rho", "\\\\sigma", "\\\\tau", "\\\\nu", "\\\\phi",
+		 "\\\\chi", "\\\\psi", "\\\\omega"
+	};
+	
+	public static final char[] greek = {
+			'α', 'β', 'γ', 'δ', 'ε', 'ζ', 'η', 
+			'θ', 'ι', 'κ', 'λ', 'μ', 'ν', 'ξ', 
+			'ο', 'π', 'ρ', 'σ', 'τ', 'υ', 'φ',
+			'χ', 'ψ', 'ω'
+	};
+	
 	public List<String> getVariables() {
+		String replaceStr = weightStr;
 		Vector<String> variables = new Vector<String>();
+		for (int i=0; i<greek.length; i++) {
+			replaceStr = replaceStr.replaceAll(greekLaTeX[i], ""+greek[i]);
+			if (replaceStr.lastIndexOf(greek[i])!=-1) {
+				variables.add(""+greek[i]);
+			}
+		}
 		for (int i=0; i<26; i++) {
 			char l = (char) ('a' + i);
-			if (weightStr.lastIndexOf(l)!=-1) {
+			if (replaceStr.lastIndexOf(l)!=-1) {
 				variables.add(""+l);
 			}				
-		}
-		if (weightStr.lastIndexOf("ε")!=-1) {
-			variables.add("ε");
-		}
+		}		
 		return variables;
 	}
 

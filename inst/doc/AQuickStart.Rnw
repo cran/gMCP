@@ -1,0 +1,4 @@
+\documentclass[10pt]{article}
+% \VignetteIndexEntry{gMCP Quick Start Guide}
+\begin{document}
+\end{document}

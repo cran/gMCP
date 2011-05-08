@@ -35,7 +35,11 @@ public class VariableDialog extends JDialog implements ActionListener {
 		variables = v.toArray();
 				
         String cols = "5dlu, pref, 5dlu, fill:pref:grow, 5dlu";
-        String rows = "5dlu, pref, 5dlu, pref, 5dlu, pref, 5dlu, pref, 5dlu";
+        String rows = "5dlu, pref, 5dlu";
+        
+        for (Object s : variables) {
+        	rows += ", pref, 5dlu";
+        }
         
         FormLayout layout = new FormLayout(cols, rows);
         getContentPane().setLayout(layout);

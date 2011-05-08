@@ -11,7 +11,6 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JTextField;
 
-import org.af.jhlir.call.RErrorException;
 import org.mutoss.gui.RControl;
 
 import com.jgoodies.forms.layout.CellConstraints;
@@ -78,7 +77,7 @@ public class UpdateNode extends JDialog implements ActionListener {
 		try {
 			w = RControl.getR().eval(tf.getText().replace(",", ".")).asRNumeric().getData()[0];		
 			tf.setBackground(Color.WHITE);
-		} catch (RErrorException nfe) {		
+		} catch (Exception nfe) {		
 			tf.setBackground(Color.RED);
 			JOptionPane.showMessageDialog(this, "The expression \""+tf.getText()+"\" is not a valid number.", "Not a valid number", JOptionPane.ERROR_MESSAGE);
 		}

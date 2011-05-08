@@ -25,17 +25,17 @@ import org.mutoss.gui.datatable.CellEditorE;
 import org.mutoss.gui.datatable.DataFramePanel;
 import org.mutoss.gui.datatable.DataTable;
 import org.mutoss.gui.datatable.RDataFrameRef;
+import org.mutoss.gui.graph.DView;
 import org.mutoss.gui.graph.EdgeWeight;
-import org.mutoss.gui.graph.GraphMCP;
 import org.mutoss.gui.graph.GraphView;
 import org.mutoss.gui.graph.PView;
 import org.rosuda.REngine.JRI.JRIEngine;
 
 public class CreateGraphGUI extends JFrame implements WindowListener, AbortListener {
 	
-	GraphMCP graph;
 	GraphView agc;
 	PView pview;
+	DView dview;
 	DataFramePanel dfp;
 	public InfiniteProgressPanel glassPane;
 	protected static Log logger = LogFactory.getLog(CreateGraphGUI.class);
@@ -55,6 +55,8 @@ public class CreateGraphGUI extends JFrame implements WindowListener, AbortListe
 			// This is no vital information and will fail for e.g. R 2.8.0, so no error handling here...
 			logger.warn("Package version could not be set:\n"+e.getMessage());
 		}
+		Configuration.getInstance().getGeneralConfig().setNumberOfStarts(
+				Configuration.getInstance().getGeneralConfig().getNumberOfStarts()+1);		
 		setIconImage((new ImageIcon(getClass().getResource("/org/mutoss/gui/graph/images/rjavaicon64.png"))).getImage());
 		
 		// Fenster in der Mitte des Bildschirms platzieren mit inset = 50 Pixeln Rand.
@@ -66,11 +68,13 @@ public class CreateGraphGUI extends JFrame implements WindowListener, AbortListe
 		addWindowListener(this);
 
 		pview = new PView(this);
+		dview = new DView(this);
 		dfp = new DataFramePanel(new RDataFrameRef());
-		agc = new GraphView(graph, this);
-		setJMenuBar(new MenuBarMGraph(agc));
+		agc = new GraphView(graph, this);  // NetList object is created here.	
+		setJMenuBar(new MenuBarMGraph(agc));		
 		makeContent();
-		this.graph = new GraphMCP(graph, agc.getNL());
+		
+		agc.getNL().loadGraph(graph);
 		
 		if (pvalues.length>0) getPView().setPValues(ArrayUtils.toObject(pvalues));
 		glassPane = new InfiniteProgressPanel(this, "Calculating");
@@ -78,6 +82,22 @@ public class CreateGraphGUI extends JFrame implements WindowListener, AbortListe
 	    glassPane.addAbortListener(this);
 
 		setVisible(true);
+		//splitPane.setDividerLocation(0.5);
+		splitPane1.setDividerLocation(0.75);
+		splitPane2.setDividerLocation(0.5);		
+		
+		//TODO Is there really no better way than this kind of strange workaround?!?
+		javax.swing.SwingUtilities.invokeLater(new Runnable() {
+			public void run() {
+				try {
+					Thread.sleep(500);
+				} catch (InterruptedException e) {
+					logger.warn("Interrupted: "+e.getMessage(), e);
+				}
+				splitPane1.setDividerLocation(0.75);
+				splitPane2.setDividerLocation(0.5);		
+			}
+		});	
 	}
 	
 	/**
@@ -98,10 +118,18 @@ public class CreateGraphGUI extends JFrame implements WindowListener, AbortListe
 		});		
 	}
 	
+	JSplitPane splitPane;
+	JSplitPane splitPane1;
+	JSplitPane splitPane2;
+	
 	private void makeContent() {
 		dfp.getTable().setDefaultEditor(EdgeWeight.class, new CellEditorE(agc));
-		JSplitPane splitPane2 = new JSplitPane(JSplitPane.VERTICAL_SPLIT, new JScrollPane(dfp), new JScrollPane(pview));
-		JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, agc, splitPane2);
+		splitPane1 = new JSplitPane(JSplitPane.VERTICAL_SPLIT, agc, dview);
+		
+		splitPane2 = new JSplitPane(JSplitPane.VERTICAL_SPLIT, new JScrollPane(dfp), new JScrollPane(pview));
+		
+		splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, splitPane1, splitPane2);
+		
 		getContentPane().add(splitPane);		
 	}
 
@@ -158,5 +186,9 @@ public class CreateGraphGUI extends JFrame implements WindowListener, AbortListe
 		} else {
 			logger.error("Could not stop REngine of class '"+RControl.getR().getREngine().getClass()+"'");
 		}
+	}
+
+	public DView getDView() {		
+		return dview;
 	}
 }

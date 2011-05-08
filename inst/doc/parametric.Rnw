@@ -1,0 +1,4 @@
+\documentclass[10pt]{article}
+% \VignetteIndexEntry{Graphical approaches for multiple endpoint problems using weighted parametric tests}
+\begin{document}
+\end{document}
