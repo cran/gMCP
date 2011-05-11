@@ -2,7 +2,7 @@ Package: gMCP
 Type: Package
 Title: A graphical approach to sequentially rejective multiple test
         procedures
-Version: 0.6-3
+Version: 0.6-4
 Author: Kornelius Rohmeyer, Florian Klinglmueller
 Maintainer: Kornelius Rohmeyer <rohmeyer@small-projects.de>
 Description: This package provides functions and a graphical user
@@ -15,6 +15,6 @@ SystemRequirements: Java (>= 5.0)
 License: GPL (>= 2)
 LazyLoad: yes
 URL: http://gsrmtp.r-forge.r-project.org/
-Packaged: 2011-05-08 21:08:50 UTC; kornel
+Packaged: 2011-05-11 10:13:23 UTC; kornel
 Repository: CRAN
-Date/Publication: 2011-05-09 08:00:48
+Date/Publication: 2011-05-11 10:57:53

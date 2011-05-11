@@ -33,6 +33,7 @@ import org.jdesktop.swingworker.SwingWorker;
 import org.mutoss.config.Configuration;
 import org.mutoss.gui.dialogs.NumberOfHypotheses;
 import org.mutoss.gui.dialogs.RObjectLoadingDialog;
+import org.mutoss.gui.dialogs.RearrangeNodesDialog;
 import org.mutoss.gui.dialogs.TextFileViewer;
 import org.mutoss.gui.dialogs.VariableNameDialog;
 import org.mutoss.gui.graph.GraphView;
@@ -322,9 +323,9 @@ Stuttgart, 1995; 3–18.
         } else if (e.getActionCommand().equals("pgi")) {       	
         	loadGraph("graphForImprovedParallelGatekeeping()");
         } else if (e.getActionCommand().equals("bretzEtAl")) {       	
-        	loadGraph("graphFromBretzEtAl2009()");
+        	loadGraph("graphFromBretzEtAl2011()");
         } else if (e.getActionCommand().equals("bretzEtAl3")) {       	
-        	loadGraph("graph2FromBretzEtAl2009()");
+        	loadGraph("graph2FromBretzEtAl2011()");
         } else if (e.getActionCommand().equals("hommelEtAl")) {       	
         	loadGraph("graphFromHommelEtAl2007()");
         } else if (e.getActionCommand().equals("hung")) { 	
@@ -383,7 +384,7 @@ Stuttgart, 1995; 3–18.
 						"Error loading values from R", JOptionPane.ERROR_MESSAGE);
 			} 
         } else if (e.getActionCommand().equals("changeGraphLayout")) {
-        	notYetSupported();
+        	new RearrangeNodesDialog(control.getMainFrame());
         } else if (e.getActionCommand().equals("replaceVariables")) {
         	Set<String> variables = control.getNL().getAllVariables();
         	if (variables.isEmpty() || (variables.size()==1 && variables.contains("ε"))) {
@@ -487,7 +488,8 @@ Stuttgart, 1995; 3–18.
 					RControl.getR().evalVoid(control.result+" <- gMCP("+control.getNL().initialGraph+control.getGMCPOptions()+")");
 					control.resultUpToDate = true;
 				}
-				RControl.getR().eval("gMCPReport("+control.result+", file=\""+f.getAbsolutePath()+"\")");
+				String filename = f.getAbsolutePath().replaceAll("\\\\", "\\\\\\\\");
+				RControl.getR().eval("gMCPReport("+control.result+", file=\""+filename+"\")");
 				control.getMainFrame().glassPane.stop();
 				return null;
 			}  
@@ -598,7 +600,8 @@ Stuttgart, 1995; 3–18.
         Configuration.getInstance().setClassProperty(this.getClass(), "RObjDirectory", f.getParent());
         try {            	
         	//((ControlMGraph) control).getNL().loadFromXML(f);
-    		String loadedGraph = RControl.getR().eval("load(file=\""+f.getAbsolutePath()+"\")").asRChar().getData()[0];
+        	String filename = f.getAbsolutePath().replaceAll("\\\\", "\\\\\\\\"); 
+    		String loadedGraph = RControl.getR().eval("load(file=\""+filename+"\")").asRChar().getData()[0];
     		loadGraph(loadedGraph);
     		Configuration.getInstance().getGeneralConfig().addGraph(f.getAbsolutePath());
         	createLastUsed();
@@ -628,8 +631,9 @@ Stuttgart, 1995; 3–18.
             try {
             	VariableNameDialog vnd = new VariableNameDialog(control.getGraphGUI(), control.getGraphName());            	
             	String name = vnd.getName();
-            	control.getNL().saveGraph(name, false); 
-            	RControl.getR().eval("save("+name+", file=\""+f.getAbsolutePath()+"\")");        		
+            	name = control.getNL().saveGraph(name, false); 
+            	String filename = f.getAbsolutePath().replaceAll("\\\\", "\\\\\\\\");            	
+            	RControl.getR().eval("save("+name+", file=\""+filename+"\")");        		
             	JOptionPane.showMessageDialog(control.getMainFrame(), "Exported graph to R object '"+name+"' and saved this to \n'" + f.getAbsolutePath() + "'.", "Saved graph", JOptionPane.INFORMATION_MESSAGE);
             	Configuration.getInstance().getGeneralConfig().addGraph(f.getAbsolutePath());
             	createLastUsed();
