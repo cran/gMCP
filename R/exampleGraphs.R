@@ -124,7 +124,7 @@ graphFromHommelEtAl2007 <- function() {
 	attr(graph, "description") <- paste("Graph representing the procedure from Hommel et al. (2007)", 
 			"",
 			"In this clinical trial example three primary endpoints are investigated: QoL (Quality of Life score), E1 and E2.",
-			"If QoL is rejected, four secondary hypotheses D1, D2, D3 and D4 should also be tested.",
+			"If QoL is rejected, four secondary hypotheses D1, D2, D3 and D4 are also be tested.",
 			"",
 			"Literature: Hommel, G., Bretz, F. und Maurer, W. (2007). Powerful short-cuts for multiple testing procedures with special reference to gatekeeping strategies. Statistics in Medicine, 26(22), 4063-4073.", sep="\n")
 	return(graph)	
@@ -329,6 +329,49 @@ exampleGraph <- function(graph, ...) {
 			ImprovedParallelGatekeeping=graphForImprovedParallelGatekeeping(),
 			BonferroniHolm=BonferroniHolmGraph(...))
 }
+
+improvedFallbackGraphI <- function(weights=rep(1/3, 3)) {
+	# Nodes:
+	hnodes <- paste("H", 1:3, sep="")
+	# Edges:
+	edges <- vector("list", length=3)
+	edges[[1]] <- list(edges=c("H2"), weights=1)
+	edges[[2]] <- list(edges=c("H3"), weights=1)
+	edges[[3]] <- list(edges=c("H1","H2"), weights=c(1/2,1/2))
+	names(edges)<-hnodes
+	# Graph creation
+	graph <- new("graphMCP", nodes=hnodes, edgeL=edges, weights=weights)	
+	graph <- placeNodes(graph, nrow=1, ncol=3)
+	attr(graph, "description") <- paste("Improved Fallback Method I by Wiens & Dmitrienko",
+			"",
+			"Literature: B.L. Wiens, A. Dmitrienko (2005): The fallback procedure for evaluating a single family of hypotheses. Journal of Biopharmaceutical Statistics 15:929-942.", sep="\n")
+	edgeData(graph, "H3", "H1", "labelX") <- 300
+	edgeData(graph, "H3", "H1", "labelY") <- 200
+	return(graph)
+} 
+
+improvedFallbackGraphII <- function(weights=rep(1/3, 3)) {
+	# Nodes:
+	hnodes <- paste("H", 1:3, sep="")
+	# Edges:
+	edges <- vector("list", length=3)
+	edges[[1]] <- list(edges=c("H2"), weights=1)
+	edges[[2]] <- list(edges=c("H1","H3"), weights=c(1,0))
+	edges[[3]] <- list(edges=c("H1"), weights=1)
+	names(edges)<-hnodes	
+	# Graph creation
+	graph <- new("graphMCP", nodes=hnodes, edgeL=edges, weights=weights)
+	edgeData(graph, "H2", "H1", "epsilon") <- list(-1)
+	edgeData(graph, "H2", "H3", "epsilon") <- list(1)
+	graph <- placeNodes(graph, nrow=1, ncol=3)
+	attr(graph, "description") <- paste("Improved Fallback Method II by Hommel & Bretz (?)",
+			"",
+			"Literature: Bretz, F., Maurer, W. and Hommel, G. (2011), Test and power considerations for multiple endpoint analyses using sequentially rejective graphical procedures. Statistics in Medicine, 30: n/a.",
+			"TODO: Check reference: G. Hommel, F. Bretz (2008): Aesthetics and power considerations in multiple testing - a contradiction? Biometrical Journal 50:657-666.", sep="\n")
+	edgeData(graph, "H3", "H1", "labelX") <- 300
+	edgeData(graph, "H3", "H1", "labelY") <- 200
+	return(graph)
+} 
 
 joinGraphs <- function(graph1, graph2, xOffset=0, yOffset=200) {
 	m1 <- graph2matrix(graph1)

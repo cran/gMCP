@@ -1,5 +1,23 @@
 
-Version 0.6-4 (12-May-2011, Rev. 782)
+Version 0.6-5 (26-May-2011, Rev. 825)
+=====================================
+
+- New dependency: CommonJavaJars
+  This package contains now all the third party libraries.
+
+- New example graphs:
+  - Two versions of improved fallback procedures
+
+- Improved placeNodes dialog.
+
+- JavaGD plot is shown in CI dialog.
+
+- Fixed bug with directory separators on Windows.
+
+- Initialize the Java VM only if it is not initialized already.
+
+
+Version 0.6-4 (11-May-2011, Rev. 782)
 =====================================
 
 - Fixed bug with saving and loading on Windows.
@@ -16,6 +34,8 @@ Version 0.6-4 (12-May-2011, Rev. 782)
   available any more on CRAN. 
 
 - Layout of graph can be changed automatically from the GUI.
+
+ 22 files changed, 130 insertions(+), 38 deletions(-)
 
   
 Version 0.6-3 (09-May-2011, Rev. 767)
