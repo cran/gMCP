@@ -1,19 +1,16 @@
+PLEASE USE R 2.12 OR A NEWER VERSION OF R, IF AVAILABLE.
+IF YOU NEED gMCP FOR AN OLDER VERSION OF R, PLEASE CONTACT US!
+(For R 2.8 compatibility see instructions below.)
+
+To install gMCP use the following commands:
+
+source("http://www.bioconductor.org/biocLite.R")
+biocLite("graph")
+install.packages("gMCP")
+
 The installation of gMCP via install.packages("gMCP") should be
-unproblematic. However three of the packages gMCP depends on or 
+unproblematic. However one of the packages gMCP depends on or 
 suggests perhaps need more attention:
-
-graph:
-======
-
-Since R 2.13 the package graph is not found any more on CRAN,
-but is still available from bioconductor:
-
-http://www.bioconductor.org/packages/release/bioc/html/graph.html
-
-Install it via
-
-    source("http://www.bioconductor.org/biocLite.R")
-    biocLite("graph")
 
 rJava:
 ======
@@ -31,6 +28,20 @@ For Unix:
 
 Most likely you will have to run the command "R CMD javareconf" with
 root permissions to let R find your java compiler and headers.
+
+
+General Troubleshooting:
+========================
+
+Warning: unable to move temporary installation 'XYZ' to 'ZYX'
+
+If you get this warning while installing or updating packages,
+most likely some other Windows program is accessing the newly installed 
+files and prevents R to move them to the correct place.
+Often simply trying to install the package a second time works.
+Otherwise try to pause your antivirus programs or search indexing 
+(like Google Desktop Search) while installing the packages.
+
 
 Rgraphviz:
 ==========

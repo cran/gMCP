@@ -9,7 +9,7 @@
 }
 \usage{
 	gMCP(graph, pvalues, test, correlation, alpha=0.05, 
-	     approxEps=TRUE, eps=10^(-3), ..., verbose=FALSE)
+	     approxEps=TRUE, eps=10^(-3), ..., useC=FALSE, verbose=FALSE)
 }
 
 \arguments{
@@ -37,7 +37,10 @@
   \item{...}{
   	Test specific arguments can be given here.
   }   
-  \item{verbose}{Logical scalar.  If \code{TRUE} verbose output is generated during
+  \item{useC}{Logical scalar. If \code{TRUE} neither adjusted p-values nor intermediate graphs are returned,
+  		  but the calculation is sped up by using code written in C.
+  		  If approxEps is \code{FALSE} and the graph contains epsilon edges, a warning is thrown and \code{useC} will be ignored.}
+  \item{verbose}{Logical scalar. If \code{TRUE} verbose output is generated during
           sequentially rejection steps.}  
 }
 \details{
@@ -49,7 +52,6 @@ An object of class \code{gMCPResult}, more specifically a list with elements
 \item{pvalues }{ p-values}
 \item{rejected }{ logical whether hyptheses could be rejected}
 \item{adjPValues }{ adjusted p-values}
-If a correlation matrix is passed only the slots \code{pvalues} and \code{rejected} are set.
 }
 \references{
 Frank Bretz, Willi Maurer, Werner Brannath, Martin Posch:

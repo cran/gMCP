@@ -1,5 +1,5 @@
 gMCP <- function(graph, pvalues, test, correlation, alpha=0.05, 
-		approxEps=TRUE, eps=10^(-3), ..., verbose=FALSE) {
+		approxEps=TRUE, eps=10^(-3), ..., useC=FALSE, verbose=FALSE) {
 	sequence <- list(graph)
 	if (approxEps) {
 		graph <- substituteEps(graph, eps=eps)
@@ -12,12 +12,25 @@ gMCP <- function(graph, pvalues, test, correlation, alpha=0.05,
 	}
 	if (missing(test) && (missing(correlation) || length(pvalues)==1)) {
 		# Bonferroni-based test procedure
-		while(!is.null(node <- getRejectableNode(graph, alpha, pvalues))) {
-			if (verbose) cat(paste("Node \"",node,"\" can be rejected.\n",sep=""))
-			graph <- rejectNode(graph, node, verbose)
-			sequence <- c(sequence, graph)
-		}	
-		return(new("gMCPResult", graphs=sequence, alpha=alpha, pvalues=pvalues, rejected=getRejected(graph), adjPValues=adjPValues(sequence[[1]], pvalues, verbose)@adjPValues))
+		m <- graph2matrix(graph)
+		if (useC && !is.numeric(m)) {
+			warning("Option useC=TRUE will be ignored since graph contains epsilons or variables.")			
+		} else if (useC) {
+			w <- getWeights(graph)
+			result <- fastgMCP(m=m, w=w, p=pvalues, a=alpha)
+			lGraph <- matrix2graph(result$m)
+			lGraph <- setWeights(lGraph, result$w)			
+			lGraph <- setRejected(lGraph, result$rejected)
+			sequence <- c(sequence, lGraph)
+			return(new("gMCPResult", graphs=sequence, alpha=alpha, pvalues=pvalues, rejected=getRejected(lGraph), adjPValues=numeric(0)))
+		} else {
+			while(!is.null(node <- getRejectableNode(graph, alpha, pvalues))) {
+				if (verbose) cat(paste("Node \"",node,"\" can be rejected.\n",sep=""))
+				graph <- rejectNode(graph, node, verbose)
+				sequence <- c(sequence, graph)
+			}	
+			return(new("gMCPResult", graphs=sequence, alpha=alpha, pvalues=pvalues, rejected=getRejected(graph), adjPValues=adjPValues(sequence[[1]], pvalues, verbose)@adjPValues))
+		}
 	} else if (missing(test) && !missing(correlation)) {
 		# Calling the code from Florian
 		if (missing(correlation) || (!is.matrix(correlation) && !is.character(correlation))) {
@@ -36,30 +49,17 @@ gMCP <- function(graph, pvalues, test, correlation, alpha=0.05,
 				rejected <- rep(FALSE,length(w))
 				names(rejected) <- nodes(graph)
 			} else {
-				myTest <- generateTest(Gm, w, correlation, alpha)
-				zScores <- -qnorm(pvalues)
-				rejected <- myTest(zScores)
+				#myTest <- generateTest(Gm, w, correlation, alpha)
+				#zScores <- -qnorm(pvalues)
+				#rejected <- myTest(zScores)
+                                adjP <- generatePvals(Gm,w,correlation,pvalues)
+                                rejected <- adjP <= alpha
+                                names(adjP) <- nodes(graph)
 				names(rejected) <- nodes(graph)
 			}
-			return(new("gMCPResult", graphs=sequence, alpha=alpha, pvalues=pvalues, rejected=rejected, adjPValues=numeric(0)))
+			return(new("gMCPResult", graphs=sequence, alpha=alpha, pvalues=pvalues, rejected=rejected, adjPValues=adjP))
 		}
 	}
-}
-
-substituteEps <- function(graph, eps=10^(-4)) {
-	from <- rep(names(edges(graph)), unlist(lapply(edges(graph),length)))	
-	to <- unlist(edges(graph))
-	if (length(from)==0) return(graph)
-	for (i in 1:length(from)) {		
-		p <- unlist(edgeData(graph, from[i], to[i], "epsilon"))
-		if (!all(p==0)) {
-			 text <- gsub("\\\\epsilon", eps, getWeightStr(graph, from[i], to[i]))	
-			 newWeight <- eval(parse(text=text))
-			 edgeData(graph, from[i], to[i], "epsilon") <- 0
-			 edgeData(graph, from[i], to[i], "weight") <- newWeight
-		}		
-	}
-	return(graph)
 }
 
 # This function calculates the number of uncorrelated test statistics given the correlation structure and the number of p-values.

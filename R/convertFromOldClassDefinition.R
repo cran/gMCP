@@ -1,0 +1,73 @@
+updateGraphToNewClassDefinition <- function(object) {
+	requireLibrary("graph")
+	nodes <- object@nodes
+	edges <- object@edgeL
+	eData <- object@edgeData@data
+	nData <- object@nodeData@data
+	renderInfo <- object@renderInfo
+	m <- matrix(0, nrow=length(nodes), ncol=length(nodes))
+	edgeData <- list()
+	nodeData <- list()
+	w <- c()
+	rejected <- c()
+	for (n in nodes) {
+		w <- c(w, nData[[n]]$nodeWeight)
+		rejected <- c(rejected, (!is.null(nData[[n]]$rejected)) && nData[[n]]$rejected)
+	}
+	names (w) <- names(rejected) <- nodes
+	nodeData$rejected <- rejected
+	nodeData$X <- renderInfo@nodes$nodeX
+	names(nodeData$X) <- nodes
+	nodeData$Y <- renderInfo@nodes$nodeY
+	names(nodeData$Y) <- nodes
+	for (i in 1:length(edges)) {
+		indices <- edges[i][[1]]$edges	
+		for(j in indices) {
+			d <- eData[paste(nodes[i], nodes[j], sep="|")][[1]]
+			m[i,j] <- d$weight			
+			if (is.nan(d$weight)) {				
+				if (!is.null(d$variableWeight)) {
+					m[i,j] <- d$variableWeight
+				}
+			}
+			if (!is.null(d$epsilon)) {
+				m[i,j] <- makeEpsilonString(d$weight, d$epsilon)	
+			}
+			if (is.null(edgeData[[nodes[i]]])) edgeData[[nodes[i]]] <- list()
+			if (!any(is.null(c(d$labelX, d$labelY)))) {
+				if (is.null(edgeData[[nodes[i]]][[nodes[j]]])) edgeData[[nodes[i]]][[nodes[j]]] <- list()
+				edgeData[[nodes[i]]][[nodes[j]]]$coordinates <- c(d$labelX, d$labelY)
+			}
+		}		
+	}
+	rownames(m) <- colnames(m) <- nodes
+	return(new("graphMCP", m=m, weights=w, edgeData=edgeData, nodeData=nodeData))
+}
+
+makeEpsilonString <- function(weight, p) {	
+	frac <- function(x) {as.character(fractions(x))}
+	e <- "\\epsilon"	
+	for (i in 1:length(p)) {
+		if (!isTRUE(all.equal(p[i], 0))) {
+			if (p[i]>=0) {
+				pStr <- paste(pStr, "+", sep="")
+			}
+			if (!isTRUE(all.equal(p[i], 1))) {
+				if (!isTRUE(all.equal(p[i], -1))) {
+					pStr <- paste(pStr, frac(p[i]), "*", e, sep="")
+				} else {
+					pStr <- paste(pStr, "-", e, sep="")
+				}
+			} else {
+				pStr <- paste(pStr, e, sep="")
+			}
+			if (i>1) {
+				pStr <- paste(pStr, "^", i, sep="")
+			}
+		}
+	}
+	if (weight==0 && pStr!="") { # Remove the first "+" and just return the epsilon part:
+		return(substring(pStr, 2))
+	}
+	return(paste(frac(weight), pStr, sep=""))	
+}

@@ -89,7 +89,7 @@ setMethod("setWeights", c("graphMCP"),
 			if (missing(node)) {
 				node <- nodes(object)
 			}
-			nodeData(object, nodes(object), "nodeWeight") <- weights			
+			nodeData(object, node, "nodeWeight") <- weights			
 			return(object)
 		})
 
@@ -143,6 +143,17 @@ setMethod("getRejected", c("gMCPResult"), function(object, node, ...) {
 				return(rejected[node])
 			}
 			return(rejected)
+		})
+
+setGeneric("setRejected", function(object, rejected, node, ...) standardGeneric("setRejected"))
+
+setMethod("setRejected", c("graphMCP"),
+		function(object, rejected, node, ...) {
+			if (missing(node)) {
+				node <- nodes(object)
+			}
+			nodeData(object, node, "rejected") <- rejected			
+			return(object)
 		})
 
 setGeneric("getXCoordinates", function(graph, node) standardGeneric("getXCoordinates"))
@@ -205,6 +216,20 @@ setMethod("show", "graphMCP",
 			cat("\n")
 		}
 )
+
+getEdgeWeight <- function(graph, i, j) {
+	from <- nodes(graph)[i]
+	to   <- nodes(graph)[j]
+	weight <- try(unlist(edgeData(graph, from, to, "weight")), silent = TRUE)
+	if (class(weight) == "try-error") {
+		return(0)
+	}
+	p <- unname(unlist(edgeData(graph, from, to, "epsilon")))
+	if (!is.nan(weight) && (length(p)==0 || isTRUE(all.equal(p, rep(0,length(p)))))) {
+		return(weight)
+	}
+	return(getWeightStr(graph, from, to))
+}
 
 getWeightStr <- function(graph, from, to, LaTeX=FALSE) {	
 	weight <- unlist(edgeData(graph, from, to, "weight"))

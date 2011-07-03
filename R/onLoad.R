@@ -28,7 +28,7 @@
 		}
 	}
 	
-	## we supply our own JavaGD class
+	## we supply our own JavaGD class - 'Sys.putenv' is a deprecated synonym for 'Sys.setenv'.
 	.setenv <- if (exists("Sys.setenv")) Sys.setenv else Sys.putenv
 	.setenv("JAVAGD_CLASS_NAME"="org/mutoss/gui/JavaGD")  
 	
@@ -43,22 +43,5 @@
 		}
 	}
 	
-	# UNFORTUNATELY THIS DOES NOT WORK, SINCE THE LOADING FAILS EARLIER (graph as suggest would be a workaround):
-	# If only install.packages("gMCP") is called, the package graph is still missing.
-	# For these people (who did not follow the install instructions) we install the graph package:
-	if(!require("graph", character.only=TRUE)) {
-		if (interactive()) {
-			cat("Required package graph is missing.\n")
-			answer <- readline("Do you want to install it (y/N)? ")
-			if (substr(answer, 1, 1) %in% c("y","Y")) {
-				source("http://bioconductor.org/biocLite.R")
-				biocLite("graph")
-				require("graph")
-			} else {
-				warning("Please install package graph from Bioconductor to use gMCP!")
-			}
-		} else {
-			warning("Please install package graph from Bioconductor to use gMCP!")
-		}
-	}
+	# packageStartupMessage or cat for furter information (package incompatibilities / updates)
 }  

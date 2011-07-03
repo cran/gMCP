@@ -50,6 +50,7 @@ public class CreateGraphGUI extends JFrame implements WindowListener, AbortListe
 			Configuration.getInstance().getGeneralConfig().setGridSize((int)grid);
 		}
 		try {		
+			Configuration.getInstance().getGeneralConfig().setRVersionNumber(RControl.getR().eval("paste(R.version$major,R.version$minor,sep=\".\")").asRChar().getData()[0]);
 			Configuration.getInstance().getGeneralConfig().setVersionNumber(RControl.getR().eval("gMCP:::gMCPVersion()").asRChar().getData()[0]);
 		} catch (Exception e) {
 			// This is no vital information and will fail for e.g. R 2.8.0, so no error handling here...
@@ -60,13 +61,7 @@ public class CreateGraphGUI extends JFrame implements WindowListener, AbortListe
 		logger.info("gMCP start No. "+n+1);
 		
 		setIconImage((new ImageIcon(getClass().getResource("/org/af/gMCP/gui/graph/images/rjavaicon64.png"))).getImage());
-		
-		// Fenster in der Mitte des Bildschirms platzieren mit inset = 50 Pixeln Rand.
-		int inset = 50;
-		Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-		setBounds(inset, inset,
-				screenSize.width  - inset*2,
-				screenSize.height - inset*2);
+				
 		addWindowListener(this);
 
 		pview = new PView(this);
@@ -85,23 +80,44 @@ public class CreateGraphGUI extends JFrame implements WindowListener, AbortListe
 	    setGlassPane(glassPane);
 	    glassPane.addAbortListener(this);
 
+	    // Place the frame in the middle of the screen with a border of inset = 50 pixel.
+		int inset = 50;
+		Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+		setBounds(inset, inset,
+				screenSize.width  - inset*2,
+				screenSize.height - inset*2);
+
 		setVisible(true);
-		//splitPane.setDividerLocation(0.5);
 		splitPane1.setDividerLocation(0.75);
-		splitPane2.setDividerLocation(0.5);		
+		splitPane2.setDividerLocation(0.5);
+		splitPane1.setResizeWeight(0.75);
+		splitPane2.setResizeWeight(0.5);		
 		
+		// If this causes trouble look again at the following bug work around:
+		// http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6409815
+		// or perhaps try something like this:
+		// http://www.jguru.com/faq/view.jsp?EID=27191
+
 		//TODO Is there really no better way than this kind of strange workaround?!?
-		javax.swing.SwingUtilities.invokeLater(new Runnable() {
+		new Thread(new Runnable() {
 			public void run() {
-				try {
-					Thread.sleep(500);
-				} catch (InterruptedException e) {
-					logger.warn("Interrupted: "+e.getMessage(), e);
+				for (int i=0; i<6; i++) {
+					try {
+						Thread.sleep(1000);
+					} catch (InterruptedException e) {
+						logger.warn("Interrupted: "+e.getMessage(), e);
+					}				
+					splitPane1.setDividerLocation(0.75);
+					splitPane2.setDividerLocation(0.5);
 				}
-				splitPane1.setDividerLocation(0.75);
-				splitPane2.setDividerLocation(0.5);		
 			}
-		});	
+		}).start();
+		
+		/* javax.swing.SwingUtilities.invokeLater(new Runnable() {
+			public void run() {
+				 VersionComparator.getOnlineVersion();
+			}
+		});	*/
 	}
 	
 	/**
@@ -122,18 +138,15 @@ public class CreateGraphGUI extends JFrame implements WindowListener, AbortListe
 		});		
 	}
 	
-	JSplitPane splitPane;
-	JSplitPane splitPane1;
-	JSplitPane splitPane2;
+	JSplitPaneBugWorkAround splitPane;
+	JSplitPaneBugWorkAround splitPane1;
+	JSplitPaneBugWorkAround splitPane2;
 	
 	private void makeContent() {
 		dfp.getTable().setDefaultEditor(EdgeWeight.class, new CellEditorE(agc));
-		splitPane1 = new JSplitPane(JSplitPane.VERTICAL_SPLIT, agc, dview);
-		
-		splitPane2 = new JSplitPane(JSplitPane.VERTICAL_SPLIT, new JScrollPane(dfp), new JScrollPane(pview));
-		
-		splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, splitPane1, splitPane2);
-		
+		splitPane1 = new JSplitPaneBugWorkAround(JSplitPane.VERTICAL_SPLIT, agc, dview);		
+		splitPane2 = new JSplitPaneBugWorkAround(JSplitPane.VERTICAL_SPLIT, new JScrollPane(dfp), new JScrollPane(pview));		
+		splitPane = new JSplitPaneBugWorkAround(JSplitPane.HORIZONTAL_SPLIT, splitPane1, splitPane2);		
 		getContentPane().add(splitPane);		
 	}
 

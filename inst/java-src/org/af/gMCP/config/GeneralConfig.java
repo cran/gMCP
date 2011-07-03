@@ -3,6 +3,7 @@ package org.af.gMCP.config;
 import java.io.File;
 import java.text.DecimalFormat;
 import java.util.List;
+import java.util.Random;
 import java.util.Vector;
 
 public class GeneralConfig extends SpecificConfig {
@@ -147,12 +148,48 @@ public class GeneralConfig extends SpecificConfig {
 		setProperty("useJLaTeXMath", ""+useJLaTeXMath);
 	}
 	
+	public boolean checkOnline() {
+		return Boolean.parseBoolean(getProperty("checkOnline", "true"));
+	}
+	
+	public void setCheckOnline(boolean checkOnline) {
+		setProperty("checkOnline", ""+checkOnline);
+	}
+	
+	public boolean reminderNewVersion() {
+		return Boolean.parseBoolean(getProperty("reminderNewVersion", "true"));
+	}
+	
+	public void setReminderNewVersion(boolean reminderNewVersion) {
+		setProperty("reminderNewVersion", ""+reminderNewVersion);
+	}
+	
 	public void setVersionNumber(String version) {
 		setProperty("gMCPversion", version);
 	}
 
 	public String getVersionNumber() {
 		return getProperty("gMCPversion", "<= 0.6.0");
+	}
+	
+	public void setRVersionNumber(String version) {
+		setProperty("Rversion", version);
+	}
+
+	public String getRVersionNumber() {
+		return getProperty("Rversion", "unknown");
+	}
+
+
+	public void setRandomID() {
+		setProperty("randomID", ""+Math.abs((new Random()).nextInt()));
+	}
+
+	public String getRandomID() {
+		if (getProperty("randomID", "NOT_SET_YET").equals("NOT_SET_YET")) {
+			setRandomID();
+		}
+		return getProperty("randomID");
 	}
 	
 	public List<String> getLatestGraphs() {
@@ -184,6 +221,16 @@ public class GeneralConfig extends SpecificConfig {
 
 	public void setNumberOfStarts(int i) {
 		setProperty("NumberOfStarts", ""+i);
+	}
+
+	public String getTimesSymbol() {
+		/* "", "*", "\\cdot", "\\times" */
+		return getProperty("getTimesSymbol", "");
+	}
+	
+	public void setTimesSymbol(String s) {
+		/* "", "*", "\\cdot", "\\times" */
+		setProperty("getTimesSymbol", s);
 	}
 	
 }

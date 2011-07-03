@@ -10,14 +10,18 @@
 \usepackage{hyperref}
 \usepackage{listings}
 \usepackage{xspace}
+\usepackage{tabularx}
 \usepackage{makeidx}\makeindex
 \usepackage[numbers]{natbib}
+\usepackage{algorithmic} 
+\usepackage{algorithm}
 %\usepackage[left=3cm,right=3cm,top=2cm,bottom=2cm]{geometry}
 \usepackage{amsmath,amsthm,amsfonts,amssymb}
 \bibliographystyle{plainnat}
 \setlength{\parindent}{0mm}
 \setlength{\parskip}{1mm}
 \newcommand{\commentout}[1]{}
+\renewcommand{\hlcomment}[1]{\textcolor[rgb]{0.4,0.4,0.4}{#1}}
 \renewcommand{\theequation}{\thesection.\arabic{\equation}}
 \numberwithin{equation}{section}
 
@@ -48,6 +52,7 @@
 
 \renewcommand{\epsilon}{\varepsilon}
 \renewcommand{\phi}{\varphi}
+\newcommand{\id}{\text{id}}
 
 \newenvironment{Proof}{\par\noindent\upshape\textit{Proof. }\nopagebreak}{\qed\par}
 
@@ -77,6 +82,7 @@ options(width=140)
 options(digits=4)
 gMCPReport <- function(...) {invisible(NULL)}
 graphGUI <- function(...) {invisible(NULL)}
+#options(prompt="> ", continue="+ ")
 
 @
 
@@ -116,10 +122,13 @@ install.packages("gMCP")
 
 Select an arbitrary mirror and gMCP will be downloaded and installed.
 
-From now on you can load the gMCP package by entering \texttt{library(gMCP)} into the R Console.
+From now on you can load the gMCP package by entering
+\texttt{library(gMCP)} into the R Console.
 
-If you run into problems, see \url{http://cran.r-project.org/web/packages/gMCP/INSTALL} or write
-us an email at \href{mailto:help@small-projects.de}{\texttt{help@small-projects.de}}.
+If you run into problems, see
+\url{http://cran.r-project.org/web/packages/gMCP/INSTALL} or write us
+an email at
+\href{mailto:help@small-projects.de}{\texttt{help@small-projects.de}}.
 
 \subsection{Example and diving in}
 
@@ -227,7 +236,26 @@ gMCP(graph, pvalues=c(0.01,0.07,0.02), alpha=0.05)
 @
 \normalsize
 
-\section{Creating the graph}
+\section{Basic Theoretical Background}
+
+\begin{algorithm}
+\caption{Removing node $i$, passing the weight and updating the graph edges}
+\label{rmNodeAlg}
+\begin{algorithmic}
+\FOR{$l \in I$} 
+  \STATE $w_l \gets w_l+w_i\cdot g_{il}$
+  \FOR{$k \in I$}    
+    \IF{$l \neq k$ \textbf{and} $g_{lj}\cdot g_{jl}\neq1$}
+      \STATE $g_{lk} \gets \frac{g_{lk}+g_{lj}\cdot g_{jk}}{1-g_{lj}\cdot g_{jl}}$
+    \ELSE
+      \STATE $g_{lk} \gets 0$
+    \ENDIF    
+  \ENDFOR
+\ENDFOR
+\end{algorithmic}
+\end{algorithm}
+
+\section{Creating Weighted Graphs}
 
 In the first step a graph that describes the multiple test procedures
 must be created.
@@ -259,29 +287,31 @@ cat(graph2latex(graph, scale=0.7, fontsize="tiny"))
 
 We build upon the package \texttt{graph} \cite{graph}, more precisely
 we declare a new class \texttt{graphMCP} that is a subclass of
-\texttt{graphNEL}.  The \texttt{initialize} method of this subclass
-differs only in an extra argument \texttt{alpha}, the initial
-allocation of the significance level alpha to the individual
+\texttt{graphNEL}\footnote{The \texttt{initialize} method of this subclass
+differs only in an extra argument \texttt{weights} for the nodes that
+specifies the initial allocation of the significance level alpha to the individual
 hypotheses.  Declaration of the nodes and edges is inherited from
-class \texttt{graphNEL}.
+class \texttt{graphNEL}.}.
 
-As an example we now create the graph from Bretz et
-al. \cite{bretzEtAl2009power} that you can see in figure
-\ref{exampleGraphBretz}.
+The most convenient way to create a graph in R is to use the functions
+\texttt{matrix2graph}\index{matrix2graph} and
+\texttt{setWeights}\index{setWeights}.  As an example we create the
+graph from Bretz et al. \cite{bretzEtAl2009power} that you can see in
+figure \ref{exampleGraphBretz}.
+
 
 \scriptsize
 <<echo=TRUE, size=scriptsize>>=
 
-hnodes <- c("H11", "H21", "H31", "H12", "H22", "H32")
-weights <- c(1/3, 1/3, 1/3, 0, 0, 0)
-edges <- list()
-edges[["H11"]] <- list(edges=c("H21","H12"), weights=c(1/2, 1/2))
-edges[["H21"]] <- list(edges=c("H11","H31","H22"), weights=c(1/3, 1/3, 1/3))
-edges[["H31"]] <- list(edges=c("H21","H32"), weights=c(1/2, 1/2))
-edges[["H12"]] <- list(edges="H21", weights=1)
-edges[["H22"]] <- list(edges=c("H11","H31"), weights=c(1/2, 1/2))
-edges[["H32"]] <- list(edges="H21", weights=1)
-graph <- new("graphMCP", nodes=hnodes, edgeL=edges, weights=weights)
+m <- rbind(H11=c(0,   0.5, 0,   0.5, 0,   0  ),
+           H21=c(1/3, 0,   1/3, 0,   1/3, 0  ),
+           H31=c(0,   0.5, 0,   0,   0,   0.5),
+           H12=c(0,   1,   0,   0,   0,   0  ),
+           H22=c(0.5, 0,   0.5, 0,   0,   0  ),
+           H32=c(0,   1,   0,   0,   0,   0  ))
+
+graph <- matrix2graph(m)
+graph <- setWeights(graph, c(1/3, 1/3, 1/3, 0, 0, 0))
 
 @
 \normalsize
@@ -354,24 +384,6 @@ edgeData(graph, "H11", "H21", "labelY") <- 80
 @
 \normalsize
 
-\subsubsection{graph2matrix and matrix2graph}\index{graph2matrix}\index{matrix2graph}
-
-We can also constuct a graph from a given adjacency matrix via the
-command \texttt{matrix2graph}:
-
-\scriptsize
-<<echo=TRUE, size=scriptsize>>=
-
-# Bonferroni-Holm:
-m <- matrix(rep(1/3, 16), nrow=4)
-diag(m) <- c(0, 0, 0, 0)
-graph <- matrix2graph(m)
-print(graph)
-graph2matrix(graph)
-
-@
-\normalsize
-
 \subsection{Using the GUI}
 
 The creation of \texttt{graphMCP} objects as seen in the last section 
@@ -383,8 +395,9 @@ includes.
 
 It is called by the command \texttt{graphGUI()} and takes as optional
 argument a variable name, given as a character string, of the graph to
-edit or under which a newly created \texttt{graphMCP} object will be
-available from the R command line.
+edit.
+% or under which a newly created \texttt{graphMCP} object will be
+% available from the R command line.
 
 \scriptsize
 <<echo=TRUE, size=scriptsize>>=
@@ -466,8 +479,8 @@ cat(graph2latex(result@graphs[[4]], scale=0.7, fontsize="tiny"))
   \caption{\label{finalstate}Final graph from the test procedure after rejection of $H_{21}$, $H_{31}$ and $H_{32}$.}
 \end{figure}
 
-The command \texttt{gMCPReport}\index{report generation} generates a full report of the testing
-procedure:
+The command \texttt{gMCPReport}\index{report generation} generates a
+full report of the testing procedure:
 
 \scriptsize
 <<echo=TRUE, size=scriptsize>>=
@@ -582,7 +595,6 @@ For further information please take a look at the vignette "\emph{Weighted param
   %Sure convergence
   %Convergence in the r-th mean
 %\end{Def}
- 
 
 The GUI supports epsilon edges. You can enter the weights in R syntax,
 e.g.\ \texttt{1-2*\textbackslash epsilon+1/3*\textbackslash epsilon\^{}2} for $1-2\epsilon+\frac{1}{3}\epsilon^2$.
@@ -627,7 +639,13 @@ If $g_{lj}g_{jl}==1$ still $g_{lk}<-0$.
 \scriptsize
 <<echo=TRUE, keep.source=TRUE, size=scriptsize>>=
 
-graph <- graphForImprovedParallelGatekeeping()
+m <- rbind(H1=c(0,           0,           0.5,           0.5          ),
+           H2=c(0,           0,           0.5,           0.5          ),
+           H3=c("\\epsilon", 0,           0,             "1-\\epsilon"),
+           H4=c(0,           "\\epsilon", "1-\\epsilon", 0            ))
+
+graph <- matrix2graph(m)
+#graph <- graphForImprovedParallelGatekeeping()
 graph
 substituteEps(graph, eps=0.001)
 
@@ -667,7 +685,8 @@ graph
 
 \subsection{Options}\index{options}
 
-This subsection is work in progress, but fortunately the options in figure \ref{optionsDialog} should be fairly self-explanatory.
+This subsection is work in progress, but fortunately the options in
+figure \ref{optionsDialog} should be fairly self-explanatory.
 
 \begin{figure}[ht]
   \centering    
@@ -675,13 +694,30 @@ This subsection is work in progress, but fortunately the options in figure \ref{
   \caption{\label{optionsDialog} You can configure many things in the option dialog.}
 \end{figure}
 
+\subsubsection{Privacy}
+
+The GUI is able to connect to our server to
+\begin{enumerate}
+  \item check whether a new version of gMCP exists,  
+  \item send a wishlist if the user chooses to,
+%  \item submit/load a graph to the online archive 
+  \item send bug reports if an error occurs.
+\end{enumerate}
+
+Only in the last case of a bug report some information about your computer
+is collected that can be reviewed by the user before sending the bug report.
+If you do not agree with sending this data, simply don't send a problematic bug report
+or if you never want to send bug reports, disable the option in the options menu. 
+
 \subsection{Import/Exports}\index{import}\index{export}
 
-This subsection is work in progress, but fortunately the menu entries in figure \ref{fileMenu} should be fairly self-explanatory.
+This subsection is work in progress, but fortunately the menu entries
+in figure \ref{fileMenu} should be fairly self-explanatory.
 
-You can export graphs to png files.
-The background of these png files will be made transperant, so that they will fit into whichever document you insert them.
-Note that some image viewers visualize transparency with a checkerboard pattern.
+You can export graphs to png files.  The background of these png files
+will be made transperant, so that they will fit into whichever
+document you insert them.  Note that some image viewers visualize
+transparency with a checkerboard pattern.
 
 \begin{figure}[ht]
   \centering    
@@ -838,7 +874,39 @@ This section is work in progress.
 
 \newpage
 
+\listofalgorithms
+\listoffigures
+\listoftables
+
+\newpage
+
 \addcontentsline{toc}{section}{Literatur}
 \bibliography{literatur}
+
+\addcontentsline{toc}{section}{Table of Symbols}
+\section*{Table of Symbols}\footnotesize
+%\twocolumn[\section{Symbolverzeichnis}]
+\begin{tabularx}{\textwidth}{lX}
+\multicolumn{2}{l}{\textbf{Sets}}\\
+\R& set of real numbers\\
+\NN& set of natural numbers (including 0)\\
+$\Pot(X)$ & power set of set $X$, i.e.\ the set of all subsets of $X$\\
+\\
+%\multicolumn{2}{l}{\textbf{Relationen}}\\
+%$X\Subset Y$& $X$ ist relativ kompakt in $Y$\\
+%\end{tabularx}\\
+%\begin{tabularx}{\textwidth}{lX}
+\multicolumn{2}{l}{\textbf{Functions}}\\
+$\skp{\cdot,\cdot}$ & standard direct product $\skp{x,y}=\sum_{j=1}^nx_j\cdot y_j$ for $x,y\in\R^n$\\
+$\id_X$ & identity on $X$, i.e.\ $\id_X:\;X\rightarrow X,\;x\mapsto x$\\
+%\\
+%\multicolumn{2}{l}{\textbf{Andere Symbole}}\\
+\end{tabularx}
+%\onecolumn
+
+\normalsize
+
+\newpage
+
 
 \end{document}

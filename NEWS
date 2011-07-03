@@ -1,4 +1,23 @@
 
+Version 0.6-6 (03-Jul-2011, Rev. ???)
+=====================================
+
+- Adjusted p-values are calculated also in the parametric case.
+
+- Graphs without epsilon edges can be processed by a
+  much faster procedure written in C.
+  
+- matrix2graph & graph2matrix deal better with variable edges.
+
+- Hopefully setDividerLocation works now always correct, i.e. 
+  the graph panel will always use 2/3 of the screen.
+  
+- Fractions like (1-a)/(1+b) are now shown with the 
+  correct layout in the GUI.
+
+- Speed up due to reduced Java/R communication.
+  (More results are now cached in a Hashtable.)   
+
 Version 0.6-5 (26-May-2011, Rev. 825)
 =====================================
 
@@ -15,6 +34,8 @@ Version 0.6-5 (26-May-2011, Rev. 825)
 - Fixed bug with directory separators on Windows.
 
 - Initialize the Java VM only if it is not initialized already.
+
+ 46 files changed, 157 insertions(+), 48 deletions(-)
 
 
 Version 0.6-4 (11-May-2011, Rev. 782)
