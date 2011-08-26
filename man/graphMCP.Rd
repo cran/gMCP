@@ -14,27 +14,27 @@
 \alias{getXCoordinates,graphMCP-method}
 \alias{getYCoordinates}
 \alias{getYCoordinates,graphMCP-method}
-\alias{addEdge}
-\alias{addEdge,character,character,graphMCP,character-method}
-\alias{addEdge,character,character,graphNEL,numeric-method}
+\alias{setEdge}
+\alias{setEdge,character,character,graphMCP,character-method}
+\alias{setEdge,character,character,graphMCP,numeric-method}
+\alias{getNodes}
+\alias{getNodes,graphMCP-method}
+\alias{edgeAttr}
+\alias{edgeAttr<-}
+\alias{edgeAttr,graphMCP,character,character,character-method}
+\alias{edgeAttr<-,graphMCP,character,character,character-method}
+\alias{nodeAttr}
+\alias{nodeAttr<-}
+\alias{nodeAttr,graphMCP,character,character-method}
+\alias{nodeAttr<-,graphMCP,character,character-method}
 \title{Class graphMCP}
 \description{A graphMCP object describes a sequentially rejective multiple test procedure.}
 \section{Slots}{  
-  \describe{
-    %\item{\code{alpha}:}{A numeric for the initial allocation of the significance level alpha to the individual hypotheses.}
-    \item{\code{nodes}:}{Object of class \code{vector}}
-    \item{\code{edgeL}:}{Object of class \code{list}. The \code{edgeL}
-      must be the same length as \code{nodes}. The elements of this
-      vector correspond to the same element in \code{nodes}. The
-      elements are themselves lists. If the node has any edges then this
-      list will have an element named \code{edges}.}        
-    \item{\code{edgeData}:}{An \code{attrData} instance for edge attributes.}
-    \item{\code{nodeData}:}{An \code{attrData} instance for node attributes.}
-    \item{\code{graphData}:}{A \code{list} for graph-level
-      attributes. Only mandatory list item is \code{edgemode} which
-      indicates whether edges are \code{"directed"} or
-      \code{"undirected"}}
-    \item{\code{renderInfo}:}{A \code{list} of graph rendering information.}
+  \describe{    
+    \item{\code{m}:}{A matrix.}
+    \item{\code{weights}:}{A numeric.}        
+    \item{\code{edgeAttr}:}{A list for edge attributes.}
+    \item{\code{nodeAttr}:}{A list for node attributes.}
   }
 }
 \section{Extends}{
@@ -56,9 +56,9 @@ Class \code{graph}, by class \code{graphNEL}, distance 2.
     \item{getYCoordinates}{\code{signature(object = "graphMCP")}: 
       A method for getting the y coordinates of the graph
       If a second optional argument \code{node} is specified, only for these nodes the x coordinates will be returned.}
-    \item{addEdge}{\code{signature(from="character", to="character", graph="graphNEL", weights="numeric")}: 
+    \item{setEdge}{\code{signature(from="character", to="character", graph="graphNEL", weights="numeric")}: 
       A method for adding new edges with the given weights.}
-    \item{addEdge}{\code{signature(from="character", to="character", graph="graphMCP", weights="character")}: 
+    \item{setEdge}{\code{signature(from="character", to="character", graph="graphMCP", weights="character")}: 
       A method for adding new edges with the given weights.}
   }
 }
@@ -68,20 +68,23 @@ Class \code{graph}, by class \code{graphNEL}, distance 2.
 }
 \examples{
 
-hnodes <- c("H11", "H21", "H31", "H12", "H22", "H32")
-weights <- c(1/3, 1/3, 1/3, 0, 0, 0)
-edges <- list()
-edges[["H11"]] <- list(edges=c("H21","H12"), weights=c(1/2, 1/2))
-edges[["H21"]] <- list(edges=c("H11","H31","H22"), weights=c(1/3, 1/3, 1/3))
-edges[["H31"]] <- list(edges=c("H21","H32"), weights=c(1/2, 1/2))
-edges[["H12"]] <- list(edges="H21", weights=1)
-edges[["H22"]] <- list(edges=c("H11","H31"), weights=c(1/2, 1/2))
-edges[["H32"]] <- list(edges="H21", weights=1)
-graph <- new("graphMCP", nodes=hnodes, edgeL=edges, weights=weights)
+m <- rbind(H11=c(0,   0.5, 0,   0.5, 0,   0  ),
+			H21=c(1/3, 0,   1/3, 0,   1/3, 0  ),
+			H31=c(0,   0.5, 0,   0,   0,   0.5),
+			H12=c(0,   1,   0,   0,   0,   0  ),
+			H22=c(0.5, 0,   0.5, 0,   0,   0  ),
+			H32=c(0,   1,   0,   0,   0,   0  ))	
 
-nodeX <- c(H11=10, H21=20, H31=30, H12=10, H22=20, H32=30)
-nodeY <- c(H11=20, H21=20, H31=20, H12=10, H22=10, H32=10)
-nodeRenderInfo(graph) <- list(nodeX=nodeX, nodeY=nodeY)	
+weights <- c(1/3, 1/3, 1/3, 0, 0, 0)
+
+# Graph creation
+graph <- new("graphMCP", m=m, weights=weights)
+
+# Visualization settings
+nodeX <- rep(c(100, 300, 500), 2)
+nodeY <- rep(c(100, 300), each=3)
+graph@nodeAttr$X <- nodeX
+graph@nodeAttr$Y <- nodeY	
 
 getWeights(graph)
 

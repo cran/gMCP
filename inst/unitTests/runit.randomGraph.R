@@ -1,34 +1,35 @@
 randomMCPGraph <- function(V=letters[1:10], M=1:4, p=0.2) {	
+	#TODO create random graph
 	g <- randomGraph(V, M, p)
-	edgeDataDefaults(g, "epsilon") <- list(0)
+	edgeAttrDefaults(g, "epsilon") <- list(0)
 	class(g) <- "graphMCP"
 	defaultProps <- list(nodeWeight=0, rejected=FALSE)
 	nodeAttrData <- new("attrData", defaults=defaultProps)
 	alpha <- 0.05
 	attrDataItem(nodeAttrData, x=V, attr="nodeWeight") <- alpha/length(V)	
-	g@nodeData <- nodeAttrData	
+	g@nodeAttr <- nodeAttrData	
 	g@graphData[[1]] <- "directed"
-	#edgeDataDefaults(g, "labelX") <- -100
-	#edgeDataDefaults(g, "labelY") <- -100
-	for (n in nodes(g)) {
+	#edgeAttrDefaults(g, "labelX") <- -100
+	#edgeAttrDefaults(g, "labelY") <- -100
+	for (n in getNodes(g)) {
 		edgeL <- edges(g)[n][[1]]
 		w <- runif(length(edgeL))
 		w <- w/sum(w)
-		edgeData(g, rep(n, length(edgeL)), edgeL, "weight") <- w
+		edgeAttr(g, rep(n, length(edgeL)), edgeL, "weight") <- w
 	}
 	return(g)
 }
 
 isValidGraph <- function(g, alpha=0.05) {
 	if (!all(TRUE==all.equal(sum(getWeights(g)), alpha))) return(paste("Sum of alpha differs from ",alpha,".",sep=""))
-	for (n in nodes(g)) {
+	for (n in getNodes(g)) {
 		w <- edgeWeights(g,"d")[[1]]
 		if (!all(TRUE==all.equal(sum(w),0)||TRUE==all.equal(sum(w),1))) return(paste("Sum of edges from node ",n," is ",sum(w),".",sep=""))
 	}
 	return(TRUE)
 }
 
-test.randomGraph <- function() {
+randomGraph <- function() {
 	set.seed(1234)
 	for (i in 1:4) {
 		g <- randomMCPGraph(letters[1:10])

@@ -2,7 +2,7 @@ graph2latex <- function(graph, package="TikZ", scale=1, alpha=0.05, pvalues,
 		fontsize=c("tiny","scriptsize", "footnotesize", "small",
 		"normalsize", "large", "Large", "LARGE", "huge", "Huge"),
 		nodeTikZ, labelTikZ="near start,above,fill=blue!20",
-		tikzEnv=TRUE, offset=c(0,0)) {
+		tikzEnv=TRUE, offset=c(0,0),fill=list(reject="red!80",retain="green!80")) {
 	graph <- placeNodes(graph)
 	if (tikzEnv) {
 		tikz <- paste("\\begin{tikzpicture}[scale=",scale,"]", sep="")
@@ -10,10 +10,10 @@ graph2latex <- function(graph, package="TikZ", scale=1, alpha=0.05, pvalues,
 		tikz <- ""
 	}
 	#tikz <- paste(tikz, "\\tikzset{help lines/.style=very thin}", paste="\n")	
-	for (node in nodes(graph)) {
-		nodeColor <- ifelse(getRejected(graph, node),"red!80", "green!80")
-		x <- nodeRenderInfo(graph)$nodeX[node]*scale
-		y <- nodeRenderInfo(graph)$nodeY[node]*scale
+	for (node in getNodes(graph)) {
+		nodeColor <- ifelse(getRejected(graph, node),fill$reject, fill$retain)
+		x <- getXCoordinates(graph, node)*scale
+		y <- getYCoordinates(graph, node)*scale
 		#alpha <- format(getWeights(graph,node), digits=3, drop0trailing=TRUE)
 		weight <- getLaTeXFraction(getWeights(graph,node))
 		if (weight == 1) {
@@ -24,7 +24,7 @@ graph2latex <- function(graph, package="TikZ", scale=1, alpha=0.05, pvalues,
 		double <- ""
 		if (!missing(pvalues)) {
 			if (is.null(names(pvalues))) {
-				names(pvalues) <- nodes(graph)
+				names(pvalues) <- getNodes(graph)
 			}
 			if (canBeRejected(graph, node, alpha, pvalues)) { double <- "double," }
 		}		
@@ -35,16 +35,14 @@ graph2latex <- function(graph, package="TikZ", scale=1, alpha=0.05, pvalues,
 		tikz <- paste(tikz, nodeLine,sep="\n")			
 	}
 	# A second loop for the edges is necessary:
-	for (node in nodes(graph)) {
-		edgeL <- edgeWeights(graph)[[node]]	
-		if (length(edgeL)!=0) {
-			for (i in 1:length(edgeL)) {	
-				# The following to lines test whether the edge in opposite direction exists:
-				weight <- try(edgeData(graph, names(edgeL[i]), node,"weight"), silent = TRUE)
-				to <- ifelse(class(weight)=="try-error", "auto", "bend left=15")			
+	for (i in getNodes(graph)) {
+		for (j in getNodes(graph)) {
+			if (graph@m[i,j]!=0) {
+				# The following to lines test whether the edge in opposite direction exists:				
+				to <- ifelse(graph@m[j,i]==0, "auto", "bend left=15")
 				#weight <- ifelse(edgeL[i]==0, "\\epsilon", getLaTeXFraction(edgeL[i])) # format(edgeL[i], digits=3, drop0trailing=TRUE))
-				weight <- getWeightStr(graph, node, names(edgeL[i]), LaTeX=TRUE) 
-				edgeLine <- paste("\\draw [->,line width=1pt] (",node,") to[",to,"] node[",labelTikZ,"] {$",weight,"$} (",names(edgeL[i]),");",sep="")
+				weight <- getWeightStr(graph, i, j, LaTeX=TRUE) 
+				edgeLine <- paste("\\draw [->,line width=1pt] (",i,") to[",to,"] node[",labelTikZ,"] {$",weight,"$} (",j,");",sep="")
 				tikz <- paste(tikz, edgeLine,sep="\n")
 			}
 		}
@@ -68,13 +66,15 @@ gMCPReport <- function(object, file="", ...) {
 		report <- paste(report, "\\subsection*{Initial graph}", sep="\n")
 		report <- paste(report, graph2latex(object@graphs[[1]], ..., pvalues=object@pvalues), sep="\n")
 		report <- paste(report, "\\subsection*{P-Values}", sep="\n")
-		report <- paste(report, print(xtable(t(as.matrix(object@pvalues))),include.rownames=FALSE, file=tempfile()), sep="\n")	
+		report <- paste(report, createTable(object@pvalues), sep="\n")	
 		if (length(object@adjPValues)>0) {
 			report <- paste(report, "\\subsection*{Adjusted p-values}", sep="\n")
-			report <- paste(report, print(xtable(t(as.matrix(object@adjPValues))),include.rownames=FALSE, file=tempfile()), sep="\n")	
+			report <- paste(report, createTable(object@adjPValues), sep="\n")	
 		}
-		report <- paste(report, paste("\\subsection*{Rejected Hypotheses with $\\alpha=",object@alpha,"$}", sep=""), sep="\n")
-		report <- paste(report, print(xtable(t(as.matrix(object@rejected))),include.rownames=FALSE, file=tempfile()), sep="\n")
+		if (length(object@rejected)>0) {
+			report <- paste(report, paste("\\subsection*{Rejected Hypotheses with $\\alpha=",object@alpha,"$}", sep=""), sep="\n")
+			report <- paste(report, createTable(object@rejected), sep="\n")
+		}
 		if (length(object@graphs)>1) {
 			for(i in 2:length(object@graphs)) {
 				report <- paste(report, paste("\\subsection*{Graph in Step ",i,"}", sep=""), sep="\n")
@@ -89,6 +89,22 @@ gMCPReport <- function(object, file="", ...) {
 	} 
 	report <- paste(report, "\\end{document}", sep="\n")
 	cat(report, file=file)
+}
+
+createTable <- function(vector) {
+	table <- paste("\\begin{table}[ht]",
+	"\\begin{center}", sep="\n")
+	table <- paste(table, 
+		"\n\\begin{tabular}{",paste(rep("r",length(vector)),collapse=""),"}\n",
+		"\\hline\n", sep="")
+    values <- paste(vector, collapse="&")
+	if (is.numeric(vector)) values <- paste(sprintf("%.5f", vector), collapse="&")
+	table <- paste(table, "\n", paste(names(vector), collapse="&"), " \\\\\n\\hline\n ", values, "\\\\\n\\hline\n ", sep="") 
+	table <- paste(table, 
+		"\\end{tabular}",
+		"\\end{center}",
+		"\\end{table}", sep="\n");
+	return(table)
 }
 
 LaTeXHeader <- function() {

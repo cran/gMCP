@@ -8,7 +8,7 @@
 	Starts a graphical user interface for the creation of SRMTP graphs.
 }
 \usage{
-	graphGUI(graph="createdGraph", pvalues=numeric(0), grid=0, debug=FALSE)
+	graphGUI(graph="createdGraph", pvalues=numeric(0), grid=0, debug=FALSE, experimentalFeatures=FALSE)
 }
 
 \arguments{
@@ -27,6 +27,9 @@
   \item{debug}{
 	Logical. If \code{TRUE} debug output is printed to the R console.
   }
+  \item{experimentalFeatures}{
+	Logical. If \code{TRUE} some unfinished / little tested experimental features are available in the GUI.
+  }
 }
 \details{
 	See the vignette of this package for further details, since describing a GUI interface is better done with a lot of nice pictures.
@@ -43,7 +46,7 @@
 \dontrun{
 graphGUI()
 pvalues <- c(9.7, 1.5, 0.5, 0.6, 0.4, 0.8, 4)/100 
-graphGUI(graphFromHommelEtAl2007(), pvalues=pvalues)}
+graphGUI(HommelEtAl2007(), pvalues=pvalues)}
 
 }
 \keyword{ misc }

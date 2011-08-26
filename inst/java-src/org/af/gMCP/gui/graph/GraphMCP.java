@@ -18,6 +18,7 @@ public class GraphMCP {
 	NetList nl;
 	
 	String description;
+	double[] pvalues = null;
 
 	public GraphMCP(String name, NetList nl) {
 		this.name = name;
@@ -33,7 +34,7 @@ public class GraphMCP {
 
 	protected void loadGraph(String name) {
 		if ( RControl.getR().eval("exists(\""+name+"\")").asRLogical().getData()[0] ) {
-			String[] nodes = RControl.getR().eval("nodes("+name+")").asRChar().getData();
+			String[] nodes = RControl.getR().eval("getNodes("+name+")").asRChar().getData();
 			double[] alpha = RControl.getR().eval("getWeights("+name+")").asRNumeric().getData();
 			double[] x = RControl.getR().eval("getXCoordinates("+name+")").asRNumeric().getData();
 			double[] y = RControl.getR().eval("getYCoordinates("+name+")").asRNumeric().getData();
@@ -88,12 +89,17 @@ public class GraphMCP {
 			} catch (Exception e) {
 				description = "Enter a description for the graph.";
 			}
+			try {
+				pvalues = RControl.getR().eval("attr("+name+", \"pvalues\")").asRNumeric().getData();
+			} catch (Exception e) {
+				// Nothing to do here.
+			}
 		}
 		for (Node k : knoten) {
 			nl.addNode(k);
 		}		
 		for (Edge e : edges) {
-			nl.addEdge(e);
+			nl.setEdge(e);
 		}
 	}
 

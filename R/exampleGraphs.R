@@ -1,19 +1,16 @@
-BonferroniHolmGraph <- function(n) {
+BonferroniHolm <- function(n) {
 	if (missing(n)) { stop("Please provide the number of hypotheses as parameter n.") }
 	weights <- rep(1/n, n)
 	hnodes <- paste("H", 1:n, sep="")
-	edges <- vector("list", length=n)
-	for(i in 1:n) {
-		edges[[i]] <- list(edges=hnodes[(1:n)[-i]], weights=rep(1/(n-1),n-1))
-	}
-	names(edges)<-hnodes
-	BonferroniHolmGraph <- new("graphMCP", nodes=hnodes, edgeL=edges, weights=weights)
+	m <- matrix(1/(n-1), nrow=n, ncol=n)
+	diag(m) <- 0
+	rownames(m) <- colnames(m) <- hnodes
+	BonferroniHolm <- new("graphMCP", m=m, weights=weights)
 	# Visualization settings
 	nodeX <- 100+(0:(n-1))*200
 	nodeY <- rep(200, n)
-	names(nodeX) <- hnodes
-	names(nodeY) <- hnodes
-	nodeRenderInfo(BonferroniHolmGraph) <- list(nodeX=nodeX, nodeY=nodeY)	
+	BonferroniHolm@nodeAttr$X <- nodeX
+	BonferroniHolm@nodeAttr$Y <- nodeY		
 	# Label settings
 	for (i in 1:n) {
 		n1 <- hnodes[i]
@@ -21,57 +18,52 @@ BonferroniHolmGraph <- function(n) {
 			n2 <- hnodes[j]
 			x <- ((i+j)*200-200)/2
 			y <- 200 + ((i-j)*50)
-			edgeData(BonferroniHolmGraph, n1, n2, "labelX") <- x
-			edgeData(BonferroniHolmGraph, n1, n2, "labelY") <- y
+			edgeAttr(BonferroniHolm, n1, n2, "labelX") <- x			
+			edgeAttr(BonferroniHolm, n1, n2, "labelY") <- y
 		}
 	}
-	attr(BonferroniHolmGraph, "description") <- paste("Graph representing the Bonferroni-Holm-Procedure", 
+	attr(BonferroniHolm, "description") <- paste("Graph representing the (unweighted) Bonferroni-Holm-Procedure", 
 			"",
-			"Most powerful test procedure (without further assumptions) that treats all hypotheses equally.",
+			#"Most powerful test procedure (without further assumptions) that treats all hypotheses equally.",
 			"The graph is a complete graph, where all nodes have the same weights and each edge weight is 1/(n-1).",
 			"",
 			"Literature: Holm, S. (1979). A simple sequentally rejective multiple test procedure. Scandinavian Journal of Statistics 6, 65-70.", sep="\n")
-	return(BonferroniHolmGraph)
+	return(BonferroniHolm)
 }
 
-graphFromBretzEtAl2011 <- function() {
-	# Nodes:
-	weights <- rep(c(1/3,0), each=3)	
-	hnodes <- paste("H", rep(1:3, 2), rep(1:2, each=3), sep="")
-	# Edges:
-	edges <- vector("list", length=6)
-	edges[[1]] <- list(edges=c("H21","H12"), weights=rep(1/2, 2))
-	edges[[2]] <- list(edges=c("H11","H31","H22"), weights=rep(1/3, 3))
-	edges[[3]] <- list(edges=c("H21","H32"), weights=rep(1/2, 2))
-	edges[[4]] <- list(edges="H21", weights=1)
-	edges[[5]] <- list(edges=c("H11","H31"), weights=rep(1/2, 2))
-	edges[[6]] <- list(edges="H21", weights=1)
-	names(edges)<-hnodes
+BretzEtAl2011 <- function() {
+	# M:
+	m <- rbind(H11=c(0,   0.5, 0,   0.5, 0,   0  ),
+			H21=c(1/3, 0,   1/3, 0,   1/3, 0  ),
+			H31=c(0,   0.5, 0,   0,   0,   0.5),
+			H12=c(0,   1,   0,   0,   0,   0  ),
+			H22=c(0.5, 0,   0.5, 0,   0,   0  ),
+			H32=c(0,   1,   0,   0,   0,   0  ))	
 	# Graph creation
-	graph <- new("graphMCP", nodes=hnodes, edgeL=edges, weights=weights)
+	weights <- c(1/3, 1/3, 1/3, 0, 0, 0)
+	graph <- new("graphMCP", m=m, weights=weights)
 	# Visualization settings
 	nodeX <- rep(c(100, 300, 500), 2)
 	nodeY <- rep(c(100, 300), each=3)
-	names(nodeX) <- hnodes
-	names(nodeY) <- hnodes
-	nodeRenderInfo(graph) <- list(nodeX=nodeX, nodeY=nodeY)
+	graph@nodeAttr$X <- nodeX
+	graph@nodeAttr$Y <- nodeY	
 	# Label placement
-	edgeData(graph, "H11", "H21", "labelX") <- 200
-	edgeData(graph, "H11", "H21", "labelY") <- 80	
-	edgeData(graph, "H31", "H21", "labelX") <- 400
-	edgeData(graph, "H31", "H21", "labelY") <- 80	
-	edgeData(graph, "H21", "H11", "labelX") <- 200
-	edgeData(graph, "H21", "H11", "labelY") <- 120	
-	edgeData(graph, "H21", "H31", "labelX") <- 400
-	edgeData(graph, "H21", "H31", "labelY") <- 120	
-	edgeData(graph, "H12", "H21", "labelX") <- 150
-	edgeData(graph, "H12", "H21", "labelY") <- 250	
-	edgeData(graph, "H22", "H11", "labelX") <- 250
-	edgeData(graph, "H22", "H11", "labelY") <- 250	
-	edgeData(graph, "H32", "H21", "labelX") <- 450
-	edgeData(graph, "H32", "H21", "labelY") <- 250	
-	edgeData(graph, "H22", "H31", "labelX") <- 350
-	edgeData(graph, "H22", "H31", "labelY") <- 250	
+	edgeAttr(graph, "H11", "H21", "labelX") <- 200
+	edgeAttr(graph, "H11", "H21", "labelY") <- 80	
+	edgeAttr(graph, "H31", "H21", "labelX") <- 400
+	edgeAttr(graph, "H31", "H21", "labelY") <- 80	
+	edgeAttr(graph, "H21", "H11", "labelX") <- 200
+	edgeAttr(graph, "H21", "H11", "labelY") <- 120	
+	edgeAttr(graph, "H21", "H31", "labelX") <- 400
+	edgeAttr(graph, "H21", "H31", "labelY") <- 120	
+	edgeAttr(graph, "H12", "H21", "labelX") <- 150
+	edgeAttr(graph, "H12", "H21", "labelY") <- 250	
+	edgeAttr(graph, "H22", "H11", "labelX") <- 250
+	edgeAttr(graph, "H22", "H11", "labelY") <- 250	
+	edgeAttr(graph, "H32", "H21", "labelX") <- 450
+	edgeAttr(graph, "H32", "H21", "labelY") <- 250	
+	edgeAttr(graph, "H22", "H31", "labelX") <- 350
+	edgeAttr(graph, "H22", "H31", "labelY") <- 250	
 	attr(graph, "description") <- paste("Graph representing the procedure from Bretz et al. (2011) - Figure 2", 
 			"",
 			"H11, H21 and H31 represent three primary hypotheses and H21, H22 and H23 the associated secondary hypotheses.",
@@ -84,41 +76,139 @@ graphFromBretzEtAl2011 <- function() {
 	return(graph)	
 }
 
+BauerEtAl2001 <- function() {
+	# M:
+	hnodes <- c("H_{E_1}","H_{E_2}","H_{E_3}","H_{S_1}","H_{S_2}","H_{S_3}")
+	m <- rbind(c(0,    0,  0, 1, 0, 0),
+			   c(0,    0,  0, 0, 1, 0),
+			   c(0,    0,  0, 0, 0, 1),
+			   c(0,  1/2,1/2, 0, 0, 0),
+			   c(1/2,  0,1/2, 0, 0, 0),
+			   c(1/2,1/2,  0, 0, 0, 0))
+	rownames(m) <- colnames(m) <- hnodes
+	# Graph creation
+	weights <- c(1/3, 1/3, 1/3, 0, 0, 0)
+	graph <- new("graphMCP", m=m, weights=weights)
+	# Visualization settings
+	nodeX <- rep(c(100, 300, 500), 2)
+	nodeY <- rep(c(100, 300), each=3)
+	graph@nodeAttr$X <- nodeX
+	graph@nodeAttr$Y <- nodeY	
+	# Label placement
+	edgeAttr(graph, "H_{S_1}", "H_{E_3}", "labelX") <- 200
+	edgeAttr(graph, "H_{S_1}", "H_{E_3}", "labelY") <- 100	
+	edgeAttr(graph, "H_{S_3}", "H_{E_1}", "labelX") <- 400
+	edgeAttr(graph, "H_{S_3}", "H_{E_1}", "labelY") <- 100	
+	attr(graph, "description") <- paste("Graph representing the procedure from Bretz et al. (2011) - Figure 2", 
+			"",
+			"Literature: Bauer P., Brannath W., Posch M.: Multiple testing for identifying effective and safe treatments. Biometrical Journal 2001; 43:605-616.",
+			"", 
+			"Bretz F., Maurer W., Brannath W., Posch M.: A graphical approach to sequentially rejective multiple test procedures. Statistics in Medicine 2009; 28:586-604. Figure 8.", sep="\n")
+	return(graph)	
+}
 
-graphFromHommelEtAl2007 <- function() {
+BretzEtAl2009a <- function() {
+	# M:
+	hnodes <- c("H_{11}","H_{21}","H_{12}","H_{22}","H_{13}","H_{23}")
+	m <- rbind(c(0,    0,  1, 0, 0, 0),
+			c(0,    0,  0, 1, 0, 0),
+			c(0,    0,  0, 0, 1, 0),
+			c(0,    0,  0, 0, 0, 1),
+			c(  0,  1,  0, 0, 0, 0),
+			c(  1,  0,  0, 0, 0, 0))
+	rownames(m) <- colnames(m) <- hnodes
+	# Graph creation
+	weights <- c(1/2, 1/2, 0, 0, 0, 0)
+	graph <- new("graphMCP", m=m, weights=weights)
+	# Visualization settings	
+	graph <- placeNodes(graph, nrow=3, ncol=2)	
+	# Label placement
+	attr(graph, "description") <- paste("Graph from Bretz et al. (2009) - Figure 14", 
+			"",
+			"Literature: Bretz F., Maurer W., Brannath W., Posch M.: A graphical approach to sequentially rejective multiple test procedures. Statistics in Medicine 2009; 28:586-604. Figure 14.", sep="\n")
+	return(graph)	
+}
+
+BretzEtAl2009b <- function() {
+	# M:
+	hnodes <- c("H_{11}","H_{21}","H_{12}","H_{22}","H_{13}","H_{23}")
+	m <- rbind(c(0,    1/2,  1/2, 0, 0, 0),
+			c(1/2,    0,  0, 1/2, 0, 0),
+			c(0,    0,  0, 1/2, 1/2, 0),
+			c(0,    0,  1/2, 0, 0, 1/2),
+			c(  0,  1,  0, 0, 0, 0),
+			c(  1,  0,  0, 0, 0, 0))
+	rownames(m) <- colnames(m) <- hnodes
+	# Graph creation
+	weights <- c(1/2, 1/2, 0, 0, 0, 0)
+	graph <- new("graphMCP", m=m, weights=weights)
+	# Visualization settings	
+	graph <- placeNodes(graph, nrow=3, ncol=2)	
+	edgeAttr(graph, "H_{12}", "H_{22}", "labelX") <- 200
+	edgeAttr(graph, "H_{12}", "H_{22}", "labelY") <- 260	
+	edgeAttr(graph, "H_{22}", "H_{12}", "labelX") <- 200
+	edgeAttr(graph, "H_{22}", "H_{12}", "labelY") <- 340	
+	# Label placement
+	attr(graph, "description") <- paste("Graph from Bretz et al. (2009) - Figure 14", 
+			"",
+			"Literature: Bretz F., Maurer W., Brannath W., Posch M.: A graphical approach to sequentially rejective multiple test procedures. Statistics in Medicine 2009; 28:586-604. Figure 14.", sep="\n")
+	return(graph)	
+}
+
+BretzEtAl2009c <- function() {
+	# M:
+	hnodes <- c("H_{11}","H_{21}","H_{12}","H_{22}","H_{13}","H_{23}")
+	m <- rbind(c(0,    1/2,  1/2, 0, 0, 0),
+			   c(0,    0,  "1-\\epsilon", "\\epsilon", 0, 0),
+			   c(0,    "1-\\epsilon",  0, 0, "\\epsilon", 0),
+			   c(0,    0,  0, 0, "1-\\epsilon", "\\epsilon"),
+			   c(  0,  0,  0, "1-\\epsilon", 0, "\\epsilon"),
+			   c(  0,  0,  0, 0, 0, 0))
+	rownames(m) <- colnames(m) <- hnodes
+	# Graph creation
+	weights <- c(1, 0, 0, 0, 0, 0)
+	graph <- new("graphMCP", m=m, weights=weights)
+	# Visualization settings	
+	nodeX <- c(200, 300, 100, 300, 100, 200)
+	nodeY <- c(100, 200, 200, 300, 300, 400)
+	graph@nodeAttr$X <- nodeX
+	graph@nodeAttr$Y <- nodeY	
+	# Label placement
+	attr(graph, "description") <- paste("Graph from Bretz et al. (2009) - Figure 15", 
+			"",
+			"Literature: Bretz F., Maurer W., Brannath W., Posch M.: A graphical approach to sequentially rejective multiple test procedures. Statistics in Medicine 2009; 28:586-604. Figure 15.", sep="\n")
+	return(graph)	
+}
+
+HommelEtAl2007 <- function() {
 	# Nodes:
 	weights <- c(rep(1/3, 3), rep(0,4))	
 	hnodes <- c("E1", "QoL", "E2", "D1", "D2", "D3", "D4")
 	# Edges:
-	edges <- vector("list", length=7)
-	edges[[1]] <- list(edges="QoL", weights=1)
-	edges[[2]] <- list(edges=c("D1","D2","D3","D4"), weights=rep(1/4, 4))
-	edges[[3]] <- list(edges="QoL", weights=1)	
-	edges[[4]] <- list(edges=c("E1","E2"), weights=c(0, 0))
-	edges[[5]] <- list(edges=c("E1","E2"), weights=c(0, 0))
-	edges[[6]] <- list(edges=c("E1","E2"), weights=c(0, 0))
-	edges[[7]] <- list(edges=c("E1","E2"), weights=c(0, 0))
-	names(edges)<-hnodes
+	m <- rbind(                 
+		c("0",         "1", "0",         "0",                 "0",                 "0",                 "0"                ),
+		c("0",         "0", "0",         "0.25",              "0.25",              "0.25",              "0.25"             ),
+		c("0",         "1", "0",         "0",                 "0",                 "0",                 "0"                ),
+		c("\\epsilon", "0", "\\epsilon", "0",                 "1/3-2/3*\\epsilon", "1/3-2/3*\\epsilon", "1/3-2/3*\\epsilon"),
+		c("\\epsilon", "0", "\\epsilon", "1/3-2/3*\\epsilon", "0",                 "1/3-2/3*\\epsilon", "1/3-2/3*\\epsilon"),
+		c("\\epsilon", "0", "\\epsilon", "1/3-2/3*\\epsilon", "1/3-2/3*\\epsilon", "0",                 "1/3-2/3*\\epsilon"),
+		c("\\epsilon", "0", "\\epsilon", "1/3-2/3*\\epsilon", "1/3-2/3*\\epsilon", "1/3-2/3*\\epsilon", "0"))
+	rownames(m) <- colnames(m) <- hnodes
 	# Graph creation
-	graph <- new("graphMCP", nodes=hnodes, edgeL=edges, weights=weights)
+	graph <- new("graphMCP", m=m, weights=weights)
 	# Visualization settings
 	nodeX <- c(200, 400, 600, 100, 300, 500, 700)
 	nodeY <- c(100, 100, 100, 300, 300, 300, 300)
-	names(nodeX) <- hnodes
-	names(nodeY) <- hnodes
-	nodeRenderInfo(graph) <- list(nodeX=nodeX, nodeY=nodeY)
+	graph@nodeAttr$X <- nodeX
+	graph@nodeAttr$Y <- nodeY	
 	for (i in 1:4) {
 		n1 <- hnodes[3+i]
-		edgeData(graph, n1, "E1", "epsilon") <- list(1)
-		edgeData(graph, n1, "E2", "epsilon") <- list(1)
 		for (j in (1:4)[-i]) {
-			n2 <- hnodes[3+j]
-			graph <- addEdge(n1, n2, graph, 1/3)
-			edgeData(graph, n1, n2, "epsilon") <- list(-2/3)	
+			n2 <- hnodes[3+j]			
 			x <- ((i+j)*200-200)/2+sign(i-j)*30
 			y <- 300 + ((abs(i-j)-1)*60)+sign(i-j)*10+10
-			edgeData(graph, n1, n2, "labelX") <- x
-			edgeData(graph, n1, n2, "labelY") <- y
+			edgeAttr(graph, n1, n2, "labelX") <- x
+			edgeAttr(graph, n1, n2, "labelY") <- y
 		}
 	}
 	attr(graph, "description") <- paste("Graph representing the procedure from Hommel et al. (2007)", 
@@ -127,110 +217,225 @@ graphFromHommelEtAl2007 <- function() {
 			"If QoL is rejected, four secondary hypotheses D1, D2, D3 and D4 are also be tested.",
 			"",
 			"Literature: Hommel, G., Bretz, F. und Maurer, W. (2007). Powerful short-cuts for multiple testing procedures with special reference to gatekeeping strategies. Statistics in Medicine, 26(22), 4063-4073.", sep="\n")
+	attr(graph, "pvalues") <- c(0.097, 0.015, 0.005, 0.006, 0.004, 0.008, 0.04)
 	return(graph)	
 }
 
-graphForParallelGatekeeping <- function() {
+
+HommelEtAl2007Simple <- function() {
+	# Nodes:
+	weights <- c(rep(1/3, 3), rep(0,4))	
+	# Edges:
+	m <- structure(c(0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+					0, 0, 0, 0, 0.25, 0, 0, 0, 0, 0, 0, 0.25, 0, 0, 0, 0, 0, 0, 0.25, 
+					0, 0, 0, 0, 0, 0, 0.25, 0, 0, 0, 0, 0, 0), .Dim = c(7L, 7L), .Dimnames = list(
+					c("QoL", "E1", "E2", "D1", "D2", "D3", "D4"), c("QoL", "E1", 
+							"E2", "D1", "D2", "D3", "D4"))) 
+	# Graph creation
+	graph <- new("graphMCP", m=m, weights=weights)
+	# Visualization settings
+	nodeX <- c(200, 350, 450,  50, 150, 250, 350)
+	nodeY <- c(150, 150, 150, 350, 350, 350, 350)
+	graph@nodeAttr$X <- nodeX
+	graph@nodeAttr$Y <- nodeY
+	
+	edgeAttr(graph, "E2", "QoL", "labelX") <- 350
+	edgeAttr(graph, "E2", "QoL", "labelY") <- 100
+	
+	attr(graph, "description") <- paste("Simplified graph representing the procedure from Hommel et al. (2007)", 
+			"",
+			"In this clinical trial example three primary endpoints are investigated: QoL (Quality of Life score), E1 and E2.",
+			"If QoL is rejected, four secondary hypotheses D1, D2, D3 and D4 are also be tested.",
+			"",
+			"Literature: Hommel, G., Bretz, F. und Maurer, W. (2007). Powerful short-cuts for multiple testing procedures with special reference to gatekeeping strategies. Statistics in Medicine, 26(22), 4063-4073.", sep="\n")
+	attr(graph, "pvalues") <- c(0.015, 0.097, 0.005, 0.006, 0.004, 0.008, 0.04)
+	return(graph)	
+}
+
+parallelGatekeeping <- function() {
 	# Nodes:
 	weights <- rep(c(1/2,0), each=2)	
 	hnodes <- paste("H", 1:4, sep="")
 	# Edges:
-	edges <- vector("list", length=4)
-	edges[[1]] <- list(edges=c("H3","H4"), weights=rep(1/2, 2))
-	edges[[2]] <- list(edges=c("H3","H4"), weights=rep(1/2, 2))
-	edges[[3]] <- list(edges=c("H4"), weights=1)
-	edges[[4]] <- list(edges=c("H3"), weights=1)
-	names(edges)<-hnodes
+	m <- rbind(
+		c(0, 0, 0.5, 0.5),
+		c(0, 0, 0.5, 0.5),
+		c(0, 0, 0.0, 1.0),
+		c(0, 0, 1.0, 0.0))
+	rownames(m) <- colnames(m) <- hnodes 
 	# Graph creation
-	graph <- new("graphMCP", nodes=hnodes, edgeL=edges, weights=weights)
+	graph <- new("graphMCP", m=m, weights=weights)
 	# Visualization settings
 	nodeX <- rep(c(100, 300), 2)
 	nodeY <- rep(c(100, 300), each=2)
-	names(nodeX) <- hnodes
-	names(nodeY) <- hnodes
-	nodeRenderInfo(graph) <- list(nodeX=nodeX, nodeY=nodeY)
+	graph@nodeAttr$X <- nodeX
+	graph@nodeAttr$Y <- nodeY	
 	# Label placement
-	edgeData(graph, "H1", "H4", "labelX") <- 150
-	edgeData(graph, "H1", "H4", "labelY") <- 150
-	edgeData(graph, "H2", "H3", "labelX") <- 250
-	edgeData(graph, "H2", "H3", "labelY") <- 150
-	attr(graph, "description") <- paste("Graph representing a parallel gatekeeping procedure", 
+	edgeAttr(graph, "H1", "H4", "labelX") <- 150
+	edgeAttr(graph, "H1", "H4", "labelY") <- 150
+	edgeAttr(graph, "H2", "H3", "labelX") <- 250
+	edgeAttr(graph, "H2", "H3", "labelY") <- 150
+	attr(graph, "description") <- paste("Graph representing a parallel gatekeeping procedure from Dmitrienko et al. (2003) Table I", 
 			"",
 			"Literature: Dmitrienko, A., Offen, W., Westfall, P.H. (2003). Gatekeeping strategies for clinical trials that do not require all primary effects to be significant. Statistics in Medicine. 22, 2387-2400.", sep="\n")
 	return(graph)	
 }
 
-graphForImprovedParallelGatekeeping <- function() {
-	graph <- graphForParallelGatekeeping()
-	graph <- addEdge("H3", "H1", graph, 0)
-	edgeData(graph, "H3", "H1", "epsilon") <- list(1)	
-	graph <- addEdge("H4", "H2", graph, 0)
-	edgeData(graph, "H4", "H2", "epsilon") <- list(1)
-	edgeData(graph, "H3", "H4", "epsilon") <- list(-1)
-	edgeData(graph, "H4", "H3", "epsilon") <- list(-1)
+improvedParallelGatekeeping <- function() {
+	graph <- parallelGatekeeping()
+	graph <- setEdge("H3", "H1", graph, "\\epsilon")
+	graph <- setEdge("H4", "H2", graph, "\\epsilon")
+	graph <- setEdge("H3", "H4", graph, "1-\\epsilon")
+	graph <- setEdge("H4", "H3", graph, "1-\\epsilon")
+	edgeAttr(graph, "H1", "H3", "labelX") <- 100
+	edgeAttr(graph, "H1", "H3", "labelY") <- 200
+	edgeAttr(graph, "H2", "H4", "labelX") <- 300
+	edgeAttr(graph, "H2", "H4", "labelY") <- 200
+	edgeAttr(graph, "H3", "H1", "labelX") <-  70
+	edgeAttr(graph, "H3", "H1", "labelY") <- 200
+	edgeAttr(graph, "H4", "H2", "labelX") <- 330
+	edgeAttr(graph, "H4", "H2", "labelY") <- 200
 	attr(graph, "description") <- paste("Graph representing an improved parallel gatekeeping procedure", 
 			"",
 			"Literature: Bretz, F., Maurer, W., Brannath, W., Posch, M.: A graphical approach to sequentially rejective multiple test procedures. Statistics in Medicine 2009 vol. 28 issue 4 page 586-604. URL: http://www.meduniwien.ac.at/fwf_adaptive/papers/bretz_2009_22.pdf .", sep="\n")
 	return(graph)	
 }
 
-graph2FromBretzEtAl2011 <- function() {
-	# Nodes:
-	weights <- rep(c(1/2,0), each=2)	
-	hnodes <- paste("H", 1:4, sep="")
-	# Edges:
-	edges <- vector("list", length=4)
-	edges[[1]] <- list(edges=c("H2","H3"), weights=c(NaN, NaN)) # c(γ, 1-γ)
-	edges[[2]] <- list(edges=c("H1","H4"), weights=c(NaN, NaN)) # c(δ, 1-δ)
-	edges[[3]] <- list(edges=c("H2"), weights=1)
-	edges[[4]] <- list(edges=c("H1"), weights=1)
-	names(edges)<-hnodes
-	# Graph creation
-	graph <- new("graphMCP", nodes=hnodes, edgeL=edges, weights=weights)
-	# Set edge weights with variables
-	edgeData(graph, "H1", "H2", "variableWeight") <- "\\gamma"
-	edgeData(graph, "H1", "H3", "variableWeight") <- "1-\\gamma"
-	edgeData(graph, "H2", "H1", "variableWeight") <- "\\delta"
-	edgeData(graph, "H2", "H4", "variableWeight") <- "1-\\delta"
+fallback <- function(weights) {
+	if (missing(weights)) { stop("Please provide weights.") }
+	n <- length(weights)
+	hnodes <- paste("H", 1:n, sep="")
+	m <- matrix(0, nrow=n, ncol=n)
+	for (i in 2:n) {
+		m[i-1,i] <- 1
+	}
+	rownames(m) <- colnames(m) <- hnodes
+	graph <- new("graphMCP", m=m, weights=weights)
 	# Visualization settings
-	nodeX <- rep(c(100, 300), 2)
-	nodeY <- rep(c(100, 300), each=2)
-	names(nodeX) <- hnodes
-	names(nodeY) <- hnodes
-	nodeRenderInfo(graph) <- list(nodeX=nodeX, nodeY=nodeY)	
-	attr(graph, "description") <- paste("Graph representing the procedure from Bretz et al. (2011) - Figure 6", 
+	nodeX <- 50+(0:(n-1))*150
+	nodeY <- rep(100, n)
+	graph@nodeAttr$X <- nodeX
+	graph@nodeAttr$Y <- nodeY		
+	attr(graph, "description") <- paste("Graph representing the fixed sequence test", 
 			"",
-			"Literature: Bretz, F., Maurer, W. and Hommel, G. (2011), Test and power considerations for multiple endpoint analyses using sequentially rejective graphical procedures. Statistics in Medicine, 30: n/a.", sep="\n")
-	return(graph)	
-	
+			"Literature: Wiens B.L.: A fixed sequence Bonferroni procedure for testing multiple endpoints. Pharmaceutical Statistics 2003; 2: 211-215.",
+			"",
+			"Bretz F., Maurer W., Brannath W., Posch M.: A graphical approach to sequentially rejective multiple test procedures. Statistics in Medicine 2009; 28:586-604.", sep="\n")
+	return(graph)
 }
 
-graphFromHungEtWang2010 <- function() {
+fixedSequence <- function(n) {
+	if (missing(n)) { stop("Please provide the number of hypotheses as parameter n.") }
+	weights <- c(1, rep(0, n-1))
+	graph <- fallback(weights)		
+	attr(graph, "description") <- paste("Graph representing the fixed sequence test", 
+			"",
+			"Literature:  Maurer W., Hothorn L., Lehmacher W.: Multiple comparisons in drug clinical trials and preclinical assays: a-priori ordered hypotheses. In Biometrie in der chemisch-pharmazeutischen Industrie, Vollmar J (ed.). Fischer Verlag: Stuttgart, 1995; 3-18.",
+            "",
+			"Westfall P.H., Krishen A.: Optimally weighted, fixed sequence, and gatekeeping multiple testing procedures. Journal of Statistical Planning and Inference 2001; 99:25-40.", sep="\n")
+	return(graph)
+}
+
+simpleSuccessiveI <- function() {
+	graph <- generalSuccessive()
+	graph <- replaceVariables(graph, variables=list("\\\\gamma"=0, "\\\\delta"=0))
+	attr(graph, "description") <- paste("Simple successive graph from Maurer et al. (2011)", 
+			"",
+			"Literature: Maurer W., Glimm E., Bretz F.: Multiple and repeated testing of primary, co-primary and secondary hypotheses. Statistics in Biopharmaceutical Reserach 2011; (in press).",
+			"",
+			"F. Bretz, M. Posch, E. Glimm, F. Klinglmueller, W. Maurer, K. Rohmeyer (2011), Graphical approaches for multiple comparison procedures using weighted Bonferroni, Simes or parametric tests. To be published. Figure 12.", sep="\n")
+	return(graph)
+}
+
+simpleSuccessiveII <- function() {
+	graph <- generalSuccessive()
+	graph <- replaceVariables(graph, variables=list("\\\\gamma"=1/2, "\\\\delta"=1/2))
+	attr(graph, "description") <- paste("Simple successive graph from Maurer et al. (2011)", 
+			"",
+			"Literature: Maurer W., Glimm E., Bretz F.: Multiple and repeated testing of primary, co-primary and secondary hypotheses. Statistics in Biopharmaceutical Reserach 2011; (in press).", sep="\n")
+	return(graph)
+}
+
+truncatedHolm <- function() {
 	# Nodes:
-	weights <- rep(c(1/2,0), each=2)	
-	hnodes <- c("H_{1,NI}","H_{1,S}","H_{2,NI}","H_{2,S}")
+	weights <- c(1/2, 1/2, 0, 0)
+	hnodes <- paste("H", 1:4, sep="")
 	# Edges:
-	edges <- vector("list", length=4)
-	edges[[1]] <- list(edges=c("H_{1,S}","H_{2,NI}"), weights=c(NaN, NaN)) # c(nu, 1-nu)
-	edges[[2]] <- list(edges=c("H_{2,NI}","H_{2,S}"), weights=c(NaN, NaN)) # c(tau, 1-tau)
-	edges[[3]] <- list(edges=c("H_{1,S}","H_{2,S}"), weights=c(NaN, NaN))  # c(omega, 1-omega)
-	edges[[4]] <- list()
-	names(edges)<-hnodes
+	m <- rbind(
+			c("0",      "\\gamma","(1-\\gamma)/2", "(1-\\gamma)/2"),
+			c("\\gamma","0",      "(1-\\gamma)/2", "(1-\\gamma)/2"),
+			c("0",      "0",      "0",             "1"),       
+			c("0",      "0",      "1",             "0"))     
+	rownames(m) <- colnames(m) <- hnodes 
 	# Graph creation
-	graph <- new("graphMCP", nodes=hnodes, edgeL=edges, weights=weights)
-	# Set edge weights with variables
-	edgeData(graph, "H_{1,NI}", "H_{1,S}", "variableWeight") <- "\\nu"
-	edgeData(graph, "H_{1,NI}", "H_{2,NI}", "variableWeight") <- "1-\\nu"
-	edgeData(graph, "H_{1,S}", "H_{2,NI}", "variableWeight") <- "\\tau"
-	edgeData(graph, "H_{1,S}", "H_{2,S}", "variableWeight") <- "1-\\tau"
-	edgeData(graph, "H_{2,NI}", "H_{1,S}", "variableWeight") <- "\\omega"
-	edgeData(graph, "H_{2,NI}", "H_{2,S}", "variableWeight") <- "1-\\omega"
+	graph <- new("graphMCP", m=m, weights=weights)
 	# Visualization settings
 	nodeX <- rep(c(100, 300), 2)
 	nodeY <- rep(c(100, 300), each=2)
-	names(nodeX) <- hnodes
-	names(nodeY) <- hnodes
-	nodeRenderInfo(graph) <- list(nodeX=nodeX, nodeY=nodeY)
+	graph@nodeAttr$X <- nodeX
+	graph@nodeAttr$Y <- nodeY	
+	attr(graph, "description") <- paste("Example of the Truncated Holm Procedure", 
+			"",
+			"Literature: Dmitrienko A, Tamhane A, Wiens B. General multi-stage gatekeeping procedures. Biometrical Journal 2008; 50:667-677.",
+			"",
+			"F. Bretz, M. Posch, E. Glimm, F. Klinglmueller, W. Maurer, K. Rohmeyer (2011), Graphical approaches for multiple comparison procedures using weighted Bonferroni, Simes or parametric tests. To be published. Figure 5.", sep="\n")
+	return(graph)
+}
+
+generalSuccessive <- function(weights=c(1/2,1/2)) {
+	if (length(weights)!=2) stop("Please specify the weights for H1 and H2 and only these.")
+	# Nodes:
+	weights <- c(weights, 0, 0)
+	hnodes <- paste("H", 1:4, sep="")
+	# Edges:
+	m <- rbind(
+		c("0",      "\\gamma","1-\\gamma","0"),
+		c("\\delta","0",      "0",        "1-\\delta"),
+		c("0",      "1",      "0",        "0"),       
+		c("1",      "0",      "0",        "0"))     
+	rownames(m) <- colnames(m) <- hnodes 
+	# Graph creation
+	graph <- new("graphMCP", m=m, weights=weights)
+	# Visualization settings
+	nodeX <- rep(c(100, 300), 2)
+	nodeY <- rep(c(100, 300), each=2)
+	graph@nodeAttr$X <- nodeX
+	graph@nodeAttr$Y <- nodeY	
+	attr(graph, "description") <- paste("General successive graph from Bretz et al. (2011), Figure 6", 
+			"",
+			"Literature: Bretz, F., Maurer, W. and Hommel, G. (2011), Test and power considerations for multiple endpoint analyses using sequentially rejective graphical procedures. Statistics in Medicine, 30: n/a.", sep="\n")
+	return(graph)		
+}
+
+HuqueAloshEtBhore2011 <- function() {
+	graph <- HungEtWang2010()
+	graph <- replaceVariables(graph, variables=list("\\\\nu"=1/2, "\\\\omega"=1/2, "\\\\tau"=0))
+	rownames(graph@m) <- colnames(graph@m) <- paste("H", 1:4, sep="")
+	graph@m["H4","H2"] <- 1
+	attr(graph, "description") <- paste("Graph representing the procedure from Huque, Alosh and Bhore (2011)", 
+			"",
+			"Literature: Huque, M.F. and Alosh, M. and Bhore, R. (2011), Addressing Multiplicity Issues of a Composite Endpoint and Its Components in Clinical Trials. Journal of Biopharmaceutical Statistics, 21: 610-634.", sep="\n")
+	return(graph)	
+}
+
+
+HungEtWang2010 <- function() {
+	# Nodes:
+	weights <- c(1,0,0,0)	
+	hnodes <- c("H_{1,NI}","H_{1,S}","H_{2,NI}","H_{2,S}")
+	# Edges:
+	m <- rbind(  
+		c("0",     "\\nu",    "1-\\nu", "0"),        
+		c("0",     "0",       "\\tau",  "1-\\tau"),  
+		c("0",     "\\omega", "0",      "1-\\omega"),
+		c("0",     "0",       "0",      "0"))
+	rownames(m) <- colnames(m) <- hnodes 
+	# Graph creation
+	graph <- new("graphMCP", m=m, weights=weights)
+	nodeX <- rep(c(100, 300), 2)
+	nodeY <- rep(c(100, 300), each=2)
+	graph@nodeAttr$X <- nodeX
+	graph@nodeAttr$Y <- nodeY	
 	attr(graph, "description") <- paste("Graph representing the procedure from Hung and Wang (2010)",
 			"",
 			"H_{1,NI} : Non-inferiority of the primary endpoint",
@@ -242,26 +447,25 @@ graphFromHungEtWang2010 <- function() {
 	return(graph)
 }
 
-graphFromMaurerEtAl1995 <- function() {
+MaurerEtAl1995 <- function() {
 	# Nodes:
 	weights <- c(1,0,0,0,0)	
 	hnodes <- paste("H", 1:5, sep="")
 	# Edges:
-	edges <- vector("list", length=4)
-	edges[[1]] <- list(edges=c("H2"), weights=1)
-	edges[[2]] <- list(edges=c("H3"), weights=1)
-	edges[[3]] <- list(edges=c("H4","H5"), weights=c(1/2,1/2))
-	edges[[4]] <- list()#edges=c("H5"), weights=1)
-	edges[[5]] <- list()#edges=c("H4"), weights=1)
-	names(edges)<-hnodes
+	m <- rbind( 
+		c(0, 1, 0, 0.0, 0.0),
+		c(0, 0, 1, 0.0, 0.0),
+		c(0, 0, 0, 0.5, 0.5),
+		c(0, 0, 0, 0.0, 0.0),
+		c(0, 0, 0, 0.0, 0.0))
+	rownames(m) <- colnames(m) <- hnodes 
 	# Graph creation
-	graph <- new("graphMCP", nodes=hnodes, edgeL=edges, weights=weights)
+	graph <- new("graphMCP", m=m, weights=weights)
 	# Visualization settings
 	nodeX <- c(100, 200, 300, 400, 400)
 	nodeY <- c(100, 100, 100, 50, 150)
-	names(nodeX) <- hnodes
-	names(nodeY) <- hnodes
-	nodeRenderInfo(graph) <- list(nodeX=nodeX, nodeY=nodeY)
+	graph@nodeAttr$X <- nodeX
+	graph@nodeAttr$Y <- nodeY	
 	attr(graph, "description") <- paste("Graph representing a procedure in drug clinical trials (from Maurer et al. 1995, Scenario 1)",
 			"",
 			"In a univariate one-way design a drug A is compared against placebo and two positive control drugs B and C.",
@@ -298,7 +502,7 @@ cycleGraph <- function(nodes, weights) {
 	return(graph)
 }
 
-gatekeepingGraph <- function(n, type=c("serial", "parallel", "imporved parallel"), weights=rep(1/n, n)) {
+gatekeeping <- function(n, type=c("serial", "parallel", "imporved parallel"), weights=rep(1/n, n)) {
 	# Nodes:
 	hnodes <- paste("H", 1:(2*n), sep="")
 	# Edges:
@@ -312,9 +516,8 @@ gatekeepingGraph <- function(n, type=c("serial", "parallel", "imporved parallel"
 	# Visualization settings
 	nodeX <- c(100, 200, 300, 400, 400)
 	nodeY <- c(100, 100, 100, 50, 150)
-	names(nodeX) <- hnodes
-	names(nodeY) <- hnodes
-	nodeRenderInfo(graph) <- list(nodeX=nodeX, nodeY=nodeY)
+	graph@nodeAttr$X <- nodeX
+	graph@nodeAttr$Y <- nodeY
 	attr(graph, "description") <- paste("Graph representing ...",
 			"",
 			"Literature:", sep="\n")	
@@ -323,53 +526,62 @@ gatekeepingGraph <- function(n, type=c("serial", "parallel", "imporved parallel"
 
 exampleGraph <- function(graph, ...) {
 	switch(graph,
-			Hommel=graphFromHommelEtAl2007(),
-			Bretz=graphFromBretzEtAl2011(),
-			ParallelGatekeeping=graphForParallelGatekeeping(),
-			ImprovedParallelGatekeeping=graphForImprovedParallelGatekeeping(),
-			BonferroniHolm=BonferroniHolmGraph(...))
+			Hommel=HommelEtAl2007(),
+			Bretz=BretzEtAl2011(),
+			ParallelGatekeeping=parallelGatekeeping(),
+			ImprovedParallelGatekeeping=improvedParallelGatekeeping(),
+			BonferroniHolm=BonferroniHolm(...))
 }
 
-improvedFallbackGraphI <- function(weights=rep(1/3, 3)) {
+improvedFallbackI <- function(weights=rep(1/3, 3)) {
 	# Nodes:
 	hnodes <- paste("H", 1:3, sep="")
 	# Edges:
-	edges <- vector("list", length=3)
-	edges[[1]] <- list(edges=c("H2"), weights=1)
-	edges[[2]] <- list(edges=c("H3"), weights=1)
-	edges[[3]] <- list(edges=c("H1","H2"), weights=c(1/2,1/2))
-	names(edges)<-hnodes
+	m <- rbind( 
+		c(0.0, 1.0,  0),
+		c(0.0, 0.0,  1),
+		c(0.5, 0.5,  0))
+	rownames(m) <- colnames(m) <- hnodes 
 	# Graph creation
-	graph <- new("graphMCP", nodes=hnodes, edgeL=edges, weights=weights)	
+	graph <- new("graphMCP", m=m, weights=weights)
 	graph <- placeNodes(graph, nrow=1, ncol=3)
 	attr(graph, "description") <- paste("Improved Fallback Method I by Wiens & Dmitrienko",
 			"",
-			"Literature: B.L. Wiens, A. Dmitrienko (2005): The fallback procedure for evaluating a single family of hypotheses. Journal of Biopharmaceutical Statistics 15:929-942.", sep="\n")
-	edgeData(graph, "H3", "H1", "labelX") <- 300
-	edgeData(graph, "H3", "H1", "labelY") <- 200
+			"Literature: B.L. Wiens, A. Dmitrienko (2005): The fallback procedure for evaluating a single family of hypotheses. Journal of Biopharmaceutical Statistics 15:929-942.",
+			"",
+			"Bretz, F., Maurer, W. and Hommel, G. (2011), Test and power considerations for multiple endpoint analyses using sequentially rejective graphical procedures. Statistics in Medicine, 30: n/a.", sep="\n")
+	edgeAttr(graph, "H3", "H1", "labelX") <- 300
+	edgeAttr(graph, "H3", "H1", "labelY") <- 200
+	edgeAttr(graph, "H2", "H3", "labelX") <- 400
+	edgeAttr(graph, "H2", "H3", "labelY") <- 100
+	edgeAttr(graph, "H3", "H2", "labelX") <- 400
+	edgeAttr(graph, "H3", "H2", "labelY") <- 135	
 	return(graph)
 } 
 
-improvedFallbackGraphII <- function(weights=rep(1/3, 3)) {
+improvedFallbackII <- function(weights=rep(1/3, 3)) {
 	# Nodes:
 	hnodes <- paste("H", 1:3, sep="")
 	# Edges:
-	edges <- vector("list", length=3)
-	edges[[1]] <- list(edges=c("H2"), weights=1)
-	edges[[2]] <- list(edges=c("H1","H3"), weights=c(1,0))
-	edges[[3]] <- list(edges=c("H1"), weights=1)
-	names(edges)<-hnodes	
+	m <- rbind(         
+		c("0",           "1", "0"        ),
+		c("1-\\epsilon", "0", "\\epsilon"),
+		c("1",           "0", "0"        ))
+	rownames(m) <- colnames(m) <- hnodes 
 	# Graph creation
-	graph <- new("graphMCP", nodes=hnodes, edgeL=edges, weights=weights)
-	edgeData(graph, "H2", "H1", "epsilon") <- list(-1)
-	edgeData(graph, "H2", "H3", "epsilon") <- list(1)
+	graph <- new("graphMCP", m=m, weights=weights)
 	graph <- placeNodes(graph, nrow=1, ncol=3)
-	attr(graph, "description") <- paste("Improved Fallback Method II by Hommel & Bretz (?)",
+	attr(graph, "description") <- paste("Improved Fallback Method II by Hommel & Bretz",
 			"",
-			"Literature: Bretz, F., Maurer, W. and Hommel, G. (2011), Test and power considerations for multiple endpoint analyses using sequentially rejective graphical procedures. Statistics in Medicine, 30: n/a.",
-			"TODO: Check reference: G. Hommel, F. Bretz (2008): Aesthetics and power considerations in multiple testing - a contradiction? Biometrical Journal 50:657-666.", sep="\n")
-	edgeData(graph, "H3", "H1", "labelX") <- 300
-	edgeData(graph, "H3", "H1", "labelY") <- 200
+			"Literature: G. Hommel, F. Bretz (2008): Aesthetics and power considerations in multiple testing - a contradiction? Biometrical Journal 50:657-666.",
+			"",
+			"Bretz, F., Maurer, W. and Hommel, G. (2011), Test and power considerations for multiple endpoint analyses using sequentially rejective graphical procedures. Statistics in Medicine, 30: n/a.", sep="\n")
+	edgeAttr(graph, "H3", "H1", "labelX") <- 300
+	edgeAttr(graph, "H3", "H1", "labelY") <- 200
+	edgeAttr(graph, "H1", "H2", "labelX") <- 200
+	edgeAttr(graph, "H1", "H2", "labelY") <- 100
+	edgeAttr(graph, "H2", "H1", "labelX") <- 200
+	edgeAttr(graph, "H2", "H1", "labelY") <- 135	
 	return(graph)
 } 
 
@@ -378,11 +590,11 @@ joinGraphs <- function(graph1, graph2, xOffset=0, yOffset=200) {
 	m2 <- graph2matrix(graph2)
 	m <- bdiagNA(m1,m2)
 	m[is.na(m)] <- 0
-	nNames <- c(nodes(graph1), nodes(graph2))
+	nNames <- c(getNodes(graph1), getNodes(graph2))
 	d <- duplicated(nNames)
 	if(any(d)) {
 		warning(paste(c("The two graphs have the following identical nodes: ", paste(nNames[d], collapse=", "), ". The nodes of the second graph will be renamed."), sep=""))
-		nodes2 <- nodes(graph2)
+		nodes2 <- getNodes(graph2)
 		i <- 1
 		for (x in nNames[d]) {
 			while (any(nNames==paste("H",i, sep=""))) {
@@ -391,7 +603,7 @@ joinGraphs <- function(graph1, graph2, xOffset=0, yOffset=200) {
 			nodes2[nodes2==x] <- paste("H",i, sep="")
 			i <- i + 1
 		}
-		nNames <- c(nodes(graph1), nodes2)
+		nNames <- c(getNodes(graph1), nodes2)
 	}
 	rownames(m) <- nNames
 	colnames(m) <- nNames
@@ -405,6 +617,7 @@ joinGraphs <- function(graph1, graph2, xOffset=0, yOffset=200) {
 	nodeY <- c(getYCoordinates(graph1), getYCoordinates(graph2) + yOffset) 
 	names(nodeX) <- nNames
 	names(nodeY) <- nNames
-	nodeRenderInfo(graph) <- list(nodeX=nodeX, nodeY=nodeY)
+	graph@nodeAttr$X <- nodeX
+	graph@nodeAttr$Y <- nodeY
 	return(graph)
 }

@@ -31,6 +31,9 @@ public class Node {
 
 	public static int r = 25;
 	
+	static DecimalFormat format = new DecimalFormat("#.####");
+	static DecimalFormat formatSmall = new DecimalFormat("#.###E0");
+	
 	int lastFontSize = 14;
 
 	public static void setRadius(int radius) {
@@ -73,6 +76,8 @@ public class Node {
 	public void paintYou(Graphics g) {
 		if (rejected && !Configuration.getInstance().getGeneralConfig().showRejected()) return;
 		Graphics2D g2d = (Graphics2D) g;
+		g2d.setFont(new Font("Arial", Font.PLAIN, (int) (12 * nl.getZoom())));		
+		FontRenderContext frc = g2d.getFontRenderContext();		
 		Rectangle2D rc;
 		g2d.setColor(getColor());
 		// if (this.fix) {	g2d.setColor(new Color(50, 255, 50)); }		
@@ -89,9 +94,15 @@ public class Node {
 				r * 2 * nl.getZoom());
 		g2d.draw(e);
 
-		if (!Configuration.getInstance().getGeneralConfig().useJLaTeXMath()) {
-			g2d.setFont(new Font("Arial", Font.PLAIN, (int) (12 * nl.getZoom())));
-			FontRenderContext frc = g2d.getFontRenderContext();
+		if (localPower != null) {			
+			String s = format.format(localPower);
+			rc = g2d.getFont().getStringBounds(s, frc);
+			g2d.drawString(s ,
+					(float) ((x + r) * nl.getZoom() - rc.getWidth() / 2),
+					(float) ((y + 2.5 * r) * nl.getZoom())); 
+		}
+		
+		if (!Configuration.getInstance().getGeneralConfig().useJLaTeXMath()) {			
 
 			rc = g2d.getFont().getStringBounds(name, frc);
 			g2d.drawString(name, 
@@ -106,7 +117,7 @@ public class Node {
 			if (lastFontSize != (int) (14 * nl.getZoom())) {
 				lastFontSize = (int) (14 * nl.getZoom());
 				iconWeight = Edge.getTeXIcon(this.nl.control.getGraphGUI(), stringW, lastFontSize);
-				TeXFormula formula = new TeXFormula("\\mathbf{"+name+"}"); 
+				TeXFormula formula = new TeXFormula("\\mathbf{"+name+"}");
 				iconName = formula.createTeXIcon(TeXConstants.ALIGN_CENTER, lastFontSize);
 			}
 			iconName.paintIcon(Edge.panel, g2d,
@@ -117,6 +128,7 @@ public class Node {
 					(int) ((x + r) * nl.getZoom() - iconWeight.getIconWidth() / 2), 
 					(int) ((y + 1.1 * r) * nl.getZoom()));
 		}
+		
 	}
 	
 	private String getWS() {		
@@ -140,9 +152,13 @@ public class Node {
 		if (!Configuration.getInstance().getGeneralConfig().showFractions()) {
 			stringW = format.format(w);
 		} else {
-			stringW = RControl.getFraction(w, 5);
-			if (stringW.length()>7) {
-				stringW = format.format(w);
+			if (weight!=0 && weight < Math.pow(0.1, 3)) {
+				stringW = formatSmall.format(weight);
+			} else {
+				stringW = RControl.getFraction(w, 5);
+				if (stringW.length()>7) {
+					stringW = "\\sim "+format.format(w);
+				}
 			}
 		}
 		
@@ -193,6 +209,12 @@ public class Node {
 	public void reject() {
 		color = Color.MAGENTA;
 		rejected = true;
+	}
+
+	Double localPower = null;
+	
+	public void setLocalPower(double d) {
+		localPower = d;	
 	}
 
 }

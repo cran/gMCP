@@ -13,6 +13,7 @@ import java.awt.event.MouseMotionListener;
 import java.awt.image.BufferedImage;
 import java.text.DecimalFormat;
 import java.util.Date;
+import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.Set;
@@ -39,6 +40,10 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 	protected Vector<Edge> edges = new Vector<Edge>();
 	protected Vector<Node> nodes = new Vector<Node>();
 	
+	public Vector<Node> getgetNodes() {
+		return nodes;
+	}
+
 	Node firstVertex;	
 	boolean firstVertexSelected = false;
 	
@@ -52,6 +57,8 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 	public boolean testingStarted = false;
 
 	double zoom = 1.00;
+	
+	static DecimalFormat format = new DecimalFormat("#.####");
 
 	public NetList(JLabel statusBar, GraphView graphview) {
 		this.statusBar = statusBar;
@@ -82,7 +89,7 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 		addNode(new Node(name, x, y, 0d, this));		
 	}
 
-	public void addEdge(Edge e) {
+	public void setEdge(Edge e) {
 		Edge old = null;
 		for (Edge e2 : edges) {
 			if (e2.from == e.from && e2.to == e.to) {
@@ -99,15 +106,15 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 		graphHasChanged();
 	}
 
-	public void addEdge(Node von, Node nach) {
-		addEdge(von, nach, 1d);		
+	public void setEdge(Node von, Node nach) {
+		setEdge(von, nach, 1d);		
 	}
 	
-	public void addEdge(Node von, Node nach, Double w) {	
-		addEdge(von, nach, new EdgeWeight(w));
+	public void setEdge(Node von, Node nach, Double w) {	
+		setEdge(von, nach, new EdgeWeight(w));
 	}
 
-	public void addEdge(Node von, Node nach, EdgeWeight w) {
+	public void setEdge(Node von, Node nach, EdgeWeight w) {
 		Integer x = null;
 		Integer y = null;
 		boolean curve = false;
@@ -282,27 +289,31 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 		return testingStarted;
 	}
 
-	public void loadGraph() {
+	public GraphMCP loadGraph() {
 		control.stopTesting();
 		reset();
 		this.updateGUI = false;
 		GraphMCP graph = new GraphMCP(initialGraph, this);
-		if (graph.getDescription()!=null) {
-			control.getDView().setDescription(graph.getDescription());
-		} else {
-			control.getDView().setDescription("");
-		}
 		control.getPView().restorePValues();
 		this.updateGUI = true;
 		graphHasChanged();
 		revalidate();
 		repaint();
+		return graph;
 	}
 
 	public void loadGraph(String string) {
 		boolean matrix = RControl.getR().eval("is.matrix("+string+")").asRLogical().getData()[0];
 		RControl.getR().eval(initialGraph + " <- placeNodes("+ (matrix?"matrix2graph(":"(")+ string + "))");
-		loadGraph();
+		GraphMCP graph = loadGraph();	
+		if (graph.getDescription()!=null) {
+			control.getDView().setDescription(graph.getDescription());
+		} else {
+			control.getDView().setDescription("");
+		}		
+		if (graph.pvalues!=null && graph.pvalues.length>1) {
+			control.getPView().setPValues(graph.pvalues);
+		}
 	}
 	
 	public void mouseClicked(MouseEvent e) {}
@@ -348,7 +359,7 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 				if (secondVertex == null || secondVertex == firstVertex) {
 					return;
 				}
-				addEdge(firstVertex, secondVertex);
+				setEdge(firstVertex, secondVertex);
 				newEdge = false;
 				firstVertexSelected = false;
 				statusBar.setText(GraphView.STATUSBAR_DEFAULT);
@@ -439,6 +450,29 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 		for (Edge edge : edges) {
 			edge.paintEdgeLabel(g);			
 		}
+		
+		if (expRejections != null && powAtlst1 != null && rejectAll != null) {
+			Graphics2D g2d = (Graphics2D) g;
+			g2d.setFont(new Font("Arial", Font.BOLD, (int) (12 * getZoom())));
+			
+			String s = "Expected number of rejections: " + format.format(expRejections);			
+			
+			g2d.drawString(s ,
+					(float) (( 10 ) * getZoom()),
+					(float) (( 20 ) * getZoom())); 
+			
+			s = "Prob. to reject at least one hyp.: " + format.format(powAtlst1);		
+			
+			g2d.drawString(s ,
+					(float) (( 10 ) * getZoom()),
+					(float) (( 20+30 ) * getZoom())); 
+			
+			s = "Prob. to reject all hypotheses: " + format.format(rejectAll);		
+			
+			g2d.drawString(s ,
+					(float) (( 10 ) * getZoom()),
+					(float) (( 20+30*2 ) * getZoom())); 
+		}
 	}
 	
 	/**
@@ -518,7 +552,11 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 			ht = vd.getHT();
 		} else if (variables.size()==1 && variables.contains("ε")){
 			ht.put("ε", Configuration.getInstance().getGeneralConfig().getEpsilon());
-		}
+		}		
+		graphName = RControl.getR().eval("make.names(\""+graphName+"\")").asRChar().getData()[0];
+		saveGraph(graphName, verbose, null);
+		RControl.getR().eval(graphName+"<- gMCP:::replaceVariables("+graphName+", variables="+getRVariableList(ht)+")");
+		loadGraph(graphName);
 		return saveGraph(graphName, verbose, ht);
 	}
 	
@@ -527,15 +565,26 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 		return saveGraph(graphName, verbose, new Hashtable<String,Double>());
 	}
 	
-	public String saveGraph(String graphName, boolean verbose, Hashtable<String,Double> ht) {
-		
-		graphName = RControl.getR().eval("make.names(\""+graphName+"\")").asRChar().getData()[0];
-		
+	public String getRVariableList(Hashtable<String,Double> ht) {
+		// For use in replaceVariables <-function(graph, variables=list())
+		String list = "list(";
+		Enumeration<String> keys = ht.keys();
+		for (; keys.hasMoreElements();) {
+			String key = keys.nextElement();
+			list += "\""+EdgeWeight.UTF2LaTeX(key.charAt(0)).replaceAll("\\\\", "\\\\\\\\")+"\"="+ht.get(key)+",";
+		}
+		list += "\""+"\\\\epsilon".replaceAll("\\\\", "\\\\\\\\")+"\"="+Configuration.getInstance().getGeneralConfig().getEpsilon()+",";
+		return list.substring(0, list.length()>5?list.length()-1:list.length())+")";			
+	}
+	
+	public String saveGraph(String graphName, boolean verbose, Hashtable<String,Double> ht) {		
+		graphName = RControl.getR().eval("make.names(\""+graphName+"\")").asRChar().getData()[0];		
 		String alpha = "";
 		String nodeStr = "";
 		String x = "";
 		String y = "";
 		for (Node n : nodes) {
+			//alpha += "\""+n.getWS() +"\",";
 			alpha += n.getWeight() +",";
 			nodeStr += "\""+n.getName() +"\","; 
 			x += n.getX() + ",";
@@ -549,54 +598,29 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 		RControl.getR().evalVoid(".gsrmtVar <- list()");
 		RControl.getR().evalVoid(".gsrmtVar$alpha <- c("+alpha+")");
 		RControl.getR().evalVoid(".gsrmtVar$hnodes <- c("+nodeStr+")");
-		RControl.getR().evalVoid(".gsrmtVar$edges <- vector(\"list\", length="+nodes.size()+")");
-		RControl.getR().evalVoid("names(.gsrmtVar$edges)<-.gsrmtVar$hnodes");
-		for (int i=nodes.size()-1; i>=0; i--) {
-			Node n = nodes.get(i);
-			String edgeL = "";
-			String weights = "";
-			for (Edge e : edges) {				
-				if (e.from == n) {
-					edgeL += "\""+e.to.getName()+"\",";
-					weights += e.getW(ht)[0] +",";
-				}
-			}
-			if (edgeL.length()!=0) {
-				edgeL = edgeL.substring(0, edgeL.length()-1);
-				weights = weights.substring(0, weights.length()-1);			
-				RControl.getR().evalVoid(".gsrmtVar$edges[["+(i+1)+"]] <- list(edges=c("+edgeL+"), weights=c("+weights+"))");
-			} else {
-				RControl.getR().evalVoid(".gsrmtVar$edges[["+(i+1)+"]] <- list(edges=character(0), weights=numeric(0))");
-			}
-		}		
-
-		RControl.getR().evalVoid(graphName+" <- new(\"graphMCP\", nodes=.gsrmtVar$hnodes, edgeL=.gsrmtVar$edges, weights=.gsrmtVar$alpha)");
-		//TODO remove this stupid workaround.
-		RControl.getR().evalVoid(graphName+" <- gMCP:::stupidWorkAround("+graphName+")");
+		RControl.getR().evalVoid(".gsrmtVar$m <- matrix(0, nrow="+nodes.size()+", ncol="+nodes.size()+")");
+		RControl.getR().evalVoid("rownames(.gsrmtVar$m) <- colnames(.gsrmtVar$m) <- .gsrmtVar$hnodes");
+		for (Edge e : edges) {
+			RControl.getR().evalVoid(".gsrmtVar$m[\""+e.from.getName()+"\",\""+e.to.getName()+"\"] <- \""+ e.getWS().replaceAll("\\\\", "\\\\\\\\") +"\"");
+		}
+		RControl.getR().evalVoid(graphName+" <- new(\"graphMCP\", m=.gsrmtVar$m, weights=.gsrmtVar$alpha)");
 		for (int i=nodes.size()-1; i>=0; i--) {
 			Node n = nodes.get(i);
 			if (n.isRejected()) {
-				RControl.getR().evalVoid("nodeData("+graphName+", \""+n.getName()+"\", \"rejected\") <- TRUE");
+				RControl.getR().evalVoid("nodeAttr("+graphName+", \""+n.getName()+"\", \"rejected\") <- TRUE");
 			}
 		}
-		RControl.getR().evalVoid(".gsrmtVar$nodeX <- c("+x+")");
-		RControl.getR().evalVoid(".gsrmtVar$nodeY <- c("+y+")");
-		RControl.getR().evalVoid("names(.gsrmtVar$nodeX) <- .gsrmtVar$hnodes");
-		RControl.getR().evalVoid("names(.gsrmtVar$nodeY) <- .gsrmtVar$hnodes");
-		RControl.getR().evalVoid("nodeRenderInfo("+graphName+") <- list(nodeX=.gsrmtVar$nodeX, nodeY=.gsrmtVar$nodeY)");
+		RControl.getR().evalVoid(graphName+"@nodeAttr$X <- c("+x+")");
+		RControl.getR().evalVoid(graphName+"@nodeAttr$Y <- c("+y+")");
 		for (Edge e : edges) {				
-			RControl.getR().evalVoid("edgeData("+graphName+", \""+e.from.getName()+"\", \""+e.to.getName()+"\", \"labelX\") <- "+(e.k1-Node.getRadius()));
-			RControl.getR().evalVoid("edgeData("+graphName+", \""+e.from.getName()+"\", \""+e.to.getName()+"\", \"labelY\") <- "+(e.k2-Node.getRadius()));
-			String eps = e.getEpsilonString(null);
-			if (eps!=null) {
-				RControl.getR().evalVoid("edgeData("+graphName+", \""+e.from.getName()+"\", \""+e.to.getName()+"\", \"epsilon\") <- list("+eps+")");
+			RControl.getR().evalVoid("edgeAttr("+graphName+", \""+e.from.getName()+"\", \""+e.to.getName()+"\", \"labelX\") <- "+(e.k1-Node.getRadius()));
+			RControl.getR().evalVoid("edgeAttr("+graphName+", \""+e.from.getName()+"\", \""+e.to.getName()+"\", \"labelY\") <- "+(e.k2-Node.getRadius()));
+			logger.debug("Weight is: "+e.getW(ht));
+			if (((Double)e.getW(ht)).isNaN()) {
+				RControl.getR().evalVoid("edgeAttr("+graphName+", \""+e.from.getName()+"\", \""+e.to.getName()+"\", \"variableWeight\") <- \""+e.getWS().replaceAll("\\\\", "\\\\\\\\")+"\"");
 			}
-			logger.debug("Weight is: "+e.getW(ht)[0]);
-			if (((Double)e.getW(ht)[0]).isNaN()) {
-				RControl.getR().evalVoid("edgeData("+graphName+", \""+e.from.getName()+"\", \""+e.to.getName()+"\", \"variableWeight\") <- \""+e.getWS().replaceAll("\\\\", "\\\\\\\\")+"\"");
-			}
-			if (e.getW(ht)[0]==0 && e.getW(ht).length==1) {
-				RControl.getR().evalVoid(graphName +" <- removeEdge(\""+e.from.getName()+"\", \""+e.to.getName()+"\","+graphName+")");
+			if (e.getW(ht)==0) {
+				RControl.getR().evalVoid(graphName +"@m[\""+e.from.getName()+"\", \""+e.to.getName()+"\"] <- 0");
 			}			
 		}	
 		RControl.getR().evalVoid("attr("+graphName+", \"description\") <- \""+ control.getDView().getDescription()+"\"");
@@ -643,6 +667,26 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 			}
 		}
 		return -1;
+	}
+
+	public String getGraphName() {
+		saveGraph(".tmpGraph", false);
+		return ".tmpGraph";
+	}
+
+	Double expRejections = null;
+	Double powAtlst1 = null;
+	Double rejectAll = null;
+	
+	public void setPower(double[] localPower, double expRejections,
+			double powAtlst1, double rejectAll) {
+		for (int i=0; i<localPower.length; i++) {
+			this.nodes.get(i).setLocalPower(localPower[i]);			
+		}
+		this.expRejections = expRejections;
+		this.powAtlst1 = powAtlst1;
+		this.rejectAll = rejectAll;
+		this.repaint();
 	}
 	
 }

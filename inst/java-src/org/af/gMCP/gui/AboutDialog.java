@@ -16,6 +16,7 @@ import javax.swing.text.StyleConstants;
 
 import org.af.commons.widgets.WidgetFactory;
 import org.af.commons.widgets.buttons.OKButtonPane;
+import org.af.gMCP.config.Configuration;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -31,7 +32,7 @@ public class AboutDialog extends JDialog implements ActionListener {
     
 	
     public AboutDialog(JFrame parent) {
-    	super(parent, "About gMCP-GUI");
+    	super(parent, "About gMCP-GUI "+Configuration.getInstance().getGeneralConfig().getVersionNumber());
 
         jtAbout.setStyledDocument(getDocument());
         jtAbout.setEditable(false);
@@ -51,13 +52,13 @@ public class AboutDialog extends JDialog implements ActionListener {
         logger.info("Creating About-Text.");
 		try {			
 			doc.insertString(doc.getLength(),					
-					"gMCP-GUI"+"\n\n", getH1());			
+					"gMCP-GUI "+Configuration.getInstance().getGeneralConfig().getVersionNumber()+"\n\n", getH1());			
 			doc.insertString(doc.getLength(),
 					"by Kornelius Rohmeyer is distributed under GPL>=2.0."+"\n\n", getT());			
 			doc.insertString(doc.getLength(), "This program uses the libraries log4j, JLaTeXMath, iText (2.1.4), jxlayer,\n swingworker, commons logging/lang, JRI and JGoodies Forms.\n", getT());
 			doc.setParagraphAttributes(0, doc.getLength(), getC(), true);
         } catch (BadLocationException ble) {
-
+        	logger.error("BadLocationException was thrown. Should never happen.", ble);
         }
     	return doc;
     }

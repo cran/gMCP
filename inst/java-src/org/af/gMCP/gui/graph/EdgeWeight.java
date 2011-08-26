@@ -21,7 +21,6 @@ public class EdgeWeight {
 	static DecimalFormat formatSmall = new DecimalFormat("#.###E0");
 	
 	public EdgeWeight(String weightStr) {
-		//weightStr =	weightStr.replace('e', 'ε');
 		this.weightStr = weightStr;
 	}
 	
@@ -39,7 +38,7 @@ public class EdgeWeight {
 				weightStr = format.format(weight);
 			}
 		} else {
-			if (weight!=0 && weight < Math.pow(0.1, Configuration.getInstance().getGeneralConfig().getDigits())) {
+			if (weight!=0 && weight < Math.pow(0.1, 3)) {
 				weightStr = formatSmall.format(weight);
 			} else {
 				weightStr = RControl.getFraction(weight, true);
@@ -51,10 +50,10 @@ public class EdgeWeight {
 		return weightStr;
 	}
 	
-	public double[] getWeight(Hashtable<String,Double> ht) {
+	public double getWeight(Hashtable<String,Double> ht) {
 		try {
 			String replaceStr = weightStr;
-			if (weight!=null) return weight;
+			if (weight!=null) return weight[0];
 			for (Enumeration<String> keys = ht.keys() ; keys.hasMoreElements() ;) {
 				String s = keys.nextElement();
 				for (int i=0; i <greek.length; i++) {
@@ -67,12 +66,11 @@ public class EdgeWeight {
 				String s = keys.nextElement();
 				replaceStr = replaceStr.replaceAll(s, ""+ht.get(s));				
 			}
-			replaceStr = replaceStr.replaceAll("\\\\epsilon", "epsilon");
-			weight = RControl.getR().eval("gMCP:::parseEpsPolynom(\""+replaceStr.replaceAll("\\\\", "\\\\\\\\")+"\")").asRNumeric().getData();
-			return weight;
+			weight = RControl.getR().eval(replaceStr).asRNumeric().getData();
+			return weight[0];
 		} catch (Exception e) {
-			logger.warn("Error parsing edge weight:\n"+e.getMessage());
-			return new double[] {Double.NaN};
+			//logger.warn("Error parsing edge weight:\n"+e.getMessage());
+			return Double.NaN;
 		}
 	}
 	
@@ -89,6 +87,13 @@ public class EdgeWeight {
 			'ο', 'π', 'ρ', 'σ', 'τ', 'υ', 'φ',
 			'χ', 'ψ', 'ω'
 	};
+	
+	public static String UTF2LaTeX(char greekC) {
+		for (int i=0; i<greek.length; i++) {
+			if (greekC == greek[i]) return greekLaTeX[i];
+		}
+		return "Error";
+	}
 	
 	public List<String> getVariables() {
 		String replaceStr = weightStr;
@@ -110,6 +115,15 @@ public class EdgeWeight {
 
 	public String getLaTeXStr() {
 		if (weight != null && weight.length==1) {
+			String weightStr;
+			if (weight[0] !=0 && weight[0] < Math.pow(0.1, 3.1)) {
+				weightStr = formatSmall.format(weight[0]);
+				if (weightStr.indexOf("E-")!=-1) {
+					weightStr = weightStr.replaceAll("E-", "}{10^{");
+					weightStr = "\\frac{"+weightStr+"}}";
+				}
+				return weightStr;
+			}
 			return RControl.getR().eval("gMCP:::getLaTeXFraction("+weight[0]+")").asRChar().getData()[0];
 		}
 		String replaceStr = weightStr;

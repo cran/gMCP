@@ -9,6 +9,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.URI;
+import java.util.Hashtable;
 import java.util.List;
 import java.util.Set;
 
@@ -27,7 +28,8 @@ import org.af.commons.logging.LoggingSystem;
 import org.af.commons.logging.widgets.DetailsDialog;
 import org.af.commons.tools.OSTools;
 import org.af.gMCP.config.Configuration;
-import org.af.gMCP.gui.dialogs.NumberOfHypotheses;
+import org.af.gMCP.gui.dialogs.ParameterDialog;
+import org.af.gMCP.gui.dialogs.PowerDialogParameterUncertainty;
 import org.af.gMCP.gui.dialogs.RObjectLoadingDialog;
 import org.af.gMCP.gui.dialogs.RearrangeNodesDialog;
 import org.af.gMCP.gui.dialogs.TextFileViewer;
@@ -60,7 +62,8 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
 		fmenu.add(makeMenuItem("Save Graph to RData file", "save graph"));		
 		fmenu.addSeparator();
 		fmenu.add(makeMenuItem("Export Graph to PNG Image", "export graph image", KeyEvent.VK_P));
-		fmenu.add(makeMenuItem("Export Graph to LaTeX File", "export graph latex", KeyEvent.VK_L));
+		fmenu.add(makeMenuItem("Export Graph to LaTeX File", "export graph latex", KeyEvent.VK_A));
+		fmenu.add(makeMenuItem("Show LaTeX Code for Graph", "show graph latex", KeyEvent.VK_C));
 		fmenu.addSeparator();
 		fmenu.add(makeMenuItem("Save LaTeX Report", "save latex report", KeyEvent.VK_R));
 		JMenuItem item = makeMenuItem("Save PDF Report", "save pdf");
@@ -77,8 +80,8 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
 
 		JMenu subMenu = new JMenu("Common test procedures for any number of hypotheses");		
 		subMenu.add(makeMenuItem("Bonferroni-Holm procedure", "bht"));
-		subMenu.add(makeMenuItem("Fixed sequence test", "fixedSequence", false));
-		subMenu.add(makeMenuItem("Fallback procedure", "fallback", false));
+		subMenu.add(makeMenuItem("Fixed sequence test", "fixedSequence"));
+		subMenu.add(makeMenuItem("Fallback procedure", "fallback"));
 		menu.add(subMenu);
 		
 		subMenu = new JMenu("3 unstructured hypotheses");
@@ -90,81 +93,44 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
 		subMenu.add(makeMenuItem("Parallel Gatekeeping with 4 Hypotheses", "pg"));
 		subMenu.add(makeMenuItem("Improved Parallel Gatekeeping with 4 Hypotheses", "pgi"));
 		subMenu.addSeparator();
-		subMenu.add(makeMenuItem("Truncated Holm procedure", "truncHolm", false));
+		subMenu.add(makeMenuItem("Truncated Holm procedure", "truncHolm"));
 		subMenu.addSeparator();
-		subMenu.add(makeMenuItem("General successive graph", "gSuccessive", false));
-		subMenu.add(makeMenuItem("Simple successive graph I", "successiveI", false));
-		subMenu.add(makeMenuItem("Simple successive graph II", "successiveII", false));
+		subMenu.add(makeMenuItem("General successive graph", "gSuccessive"));
+		subMenu.add(makeMenuItem("   Simple successive graph I from Maurer et al. (2011)", "successiveI"));
+		subMenu.add(makeMenuItem("   Simple successive graph II from Maurer et al. (2011)", "successiveII"));
 		subMenu.addSeparator();
 		subMenu.add(makeMenuItem("Graph from Hung and Wang (2010)", "hung"));
+		subMenu.add(makeMenuItem("Graph from Huque, Alosh and Bhore (2011)", "huque"));
+		menu.add(subMenu);
+
+		subMenu = new JMenu("3 primary & 3 secondary hypotheses");		
+		subMenu.add(makeMenuItem("Graph from Bauer et al. (2001)", "bauer"));
+		subMenu.add(makeMenuItem("Graph from Bretz et al. (2011)", "bretzEtAl"));
 		menu.add(subMenu);
 		
-		/*subMenu = new JMenu("3 primary & 2 secondary hypotheses");		
-		subMenu.add(makeMenuItem("Graph from Bauer et al. (2001)", "bauer", false));
-		subMenu.add(makeMenuItem("Graph from Bretz et al. (2011)", "bretEtAl4", false));
-		menu.add(subMenu);*/
+		subMenu = new JMenu("2 primary & 2 secondary & 2 tertiary hypotheses");		
+		subMenu.add(makeMenuItem("Graph from Bretz et al. (2009), Figure 14a", "bretzEtAl2009a"));
+		subMenu.add(makeMenuItem("Graph from Bretz et al. (2009), Figure 14b", "bretzEtAl2009b"));
+		subMenu.add(makeMenuItem("Graph from Bretz et al. (2009), Figure 15", "bretzEtAl2009c"));
+		menu.add(subMenu);
 		
 		subMenu = new JMenu("Miscellaneous");		
-		subMenu.add(makeMenuItem("Graph I from Bretz et al. (2011)", "bretzEtAl"));		
-		subMenu.add(makeMenuItem("Graph II from Bretz et al. (2011)", "bretzEtAl3"));
-		subMenu.addSeparator();
 		subMenu.add(makeMenuItem("Graph from Hommel et al. (2007)", "hommelEtAl"));
+		subMenu.add(makeMenuItem("Graph from Hommel et al. (2007) simplified", "hommelEtAlSimple"));
 		subMenu.addSeparator();
 		subMenu.add(makeMenuItem("Drug clinical trial example (serial gatekeeping) from Maurer et al. (1995)", "maurer1995"));
 		menu.add(subMenu);
-		/*
-		Common test procedures
-		  Bonferroni-Holm procedure [Input: "Number of hypotheses"] (1)
-		  Fixed sequence test [Input: "Number of hypotheses"] (2, 3)
-		  Fallback procedure [Input: "Number of hypotheses"; "Initial weights"] (4)
-		3 unstructured hypotheses
-		  Improved fallback procedure - 1 [Input: "Initial weights"] (5)
-		  Improved fallback procedure - 2 [Input: "Initial weights"] (6)
-		2 primary & 2 secondary hypotheses
-		  Parallel gatekeeper (7)
-		  Improved parallel gatekeeper (8)
-		  Truncated Holm procedure (9)
-		  General successive graph [Input: w, omega, tau] (10)
-		    Simple successive graph - 1 (11, 12)
-		    Simple successive graph - 2 (11)
-		  Hung and Wang (2010) [Input: omega, tau, nu] (13)
-		3 primary & 2 secondary hypotheses
-		  Bauer et al. (2001) (14)
-		  Bretz et al. (2011) (10)
-		2 primary & 3 secondary hypotheses
-		  Bretz et al. (2009) - 1 (8)
-		  Bretz et al. (2009) - 2 (8)
-		  Bretz et al. (2009) - 3 (8)
-		Others
-		  Hommel et al. (2007), simplified (15)
-		  
-References:
-(1) Holm S. A simple sequentally rejective multiple test procedure. Scandinavian Journal of Statistics 1979; 6:65–70.
-(2) Maurer W, Hothorn L, Lehmacher W. Multiple comparisons in drug clinical trials and preclinical assays: a-priori ordered hypotheses. In Biometrie in der chemisch-pharmazeutischen Industrie, Vollmar J (ed.). Fischer Verlag:
-Stuttgart, 1995; 3–18.
-(3) Westfall PH, Krishen A. Optimally weighted, fixed sequence, and gatekeeping multiple testing procedures. Journal of Statistical Planning and Inference 2001; 99:25–40.
-(4) Wiens BL. A fixed sequence Bonferroni procedure for testing multiple endpoints. Pharmaceutical Statistics 2003; 2:211–215.
-(5) Wiens BL, Dmitrienko A. The fallback procedure for evaluating a single family of hypotheses. Journal of Biopharmaceutical Statistics 2005; 15:929–942.
-(6) Hommel G, Bretz F. Aesthetics and power considerations in multiple testing—a contradiction? Biometrical Journal 2008; 50:657–666.
-(7) Dmitrienko A, Offen WW, Westfall PH. Gatekeeping strategies for clinical trials that do not require all primary effects to be significant. Statistics in Medicine 2003; 22:2387–2400.
-(8) Bretz F, Maurer W, Brannath W, Posch M. A graphical approach to sequentially rejective multiple test procedures. Statistics in Medicine 2009; 28:586--604.
-(9) Dmitrienko A, Tamhane A, Wiens B. General multi-stage gatekeeping procedures. Biometrical Journal 2008; 50:667–677.
-(10) Bretz F, Maurer W, Hommel G Test and power considerations for multiple endpoint analyses using sequentially rejective graphical procedures. Statistics in Medicine 2011; (in press).
-(11) Maurer W, Glimm E, Bretz F. Multiple and repeated testing of primary, co-primary and secondary hypotheses. Statistics in Biopharmaceutical Reserach 2011; (in press).
-(12) Bretz, Posch, Glimm, Klinglmueller, Maurer, Rohmeyer (2012) Graphical approaches for multiple comparison procedures using weighted Bonferroni, Simes or parametric tests. Biometrical Journal (in press).
-(13) Hung HMJ, Wang SJ. Challenges to multiple testing in clinical trials. Biometrical Journal 2010; (in press).
-(14) Bauer P, Brannath W, Posch M. Multiple testing for identifying effective and safe treatments. Biometrical Journal 2001; 43:605–616.
-(15) Hommel G, Bretz F, Maurer W. Powerful short-cuts for multiple testing procedures with special reference to gatekeeping strategies. Statistics in Medicine 2007; 26:4063–4073. 
-		   */
-
+		
 		add(menu);
 
 		menu = new JMenu("Analysis");
 		menu.setMnemonic(KeyEvent.VK_A);
 
 		menu.add(makeMenuItem("Graph analysis", "graphAnalysis"));
-		menu.addSeparator();
-		menu.add(makeMenuItem("Power analysis", "powerAnalysis"));		
+		if (Configuration.getInstance().getGeneralConfig().experimentalFeatures()) {
+			menu.addSeparator();
+			menu.add(makeMenuItem("Power analysis", "powerAnalysis"));		
+		}
 
 		add(menu);
 
@@ -182,6 +148,11 @@ Stuttgart, 1995; 3–18.
 			menu.add(makeMenuItem("Debug console", "debugConsole", KeyEvent.VK_D));
 		}
 		menu.setMnemonic(KeyEvent.VK_E);
+		if (Configuration.getInstance().getGeneralConfig().experimentalFeatures()) {
+			menu.addSeparator();
+			menu.add(makeMenuItem("Entangled Graphs", "entangledGraphs", false));
+			menu.add(makeMenuItem("Adaptive Designs", "adaptiveDesigns", false));
+		}
 		add(menu);
 
 		menu = new JMenu("Help");
@@ -203,7 +174,7 @@ Stuttgart, 1995; 3–18.
 	private void createLastUsed() {
 		List<String> graphs = Configuration.getInstance().getGeneralConfig().getLatestGraphs();
 		
-		for(int i=fmenu.getItemCount()-1; i>14; i--) {
+		for(int i=fmenu.getItemCount()-1; i>15; i--) {
 			fmenu.remove(i);
 		}
 		
@@ -306,6 +277,8 @@ Stuttgart, 1995; 3–18.
         	saveGraphImage();
         } else if (e.getActionCommand().equals("export graph latex")) {       	
         	exportLaTeXGraph();
+        } else if (e.getActionCommand().equals("show graph latex")) {       	
+        	showLaTeXGraph();
         } else if (e.getActionCommand().equals("save pdf")) {  
         	notYetSupported();
         	//savePDF();
@@ -317,25 +290,54 @@ Stuttgart, 1995; 3–18.
         	new RObjectLoadingDialog(control.getGraphGUI());
         	createLastUsed();        	
         } else if (e.getActionCommand().equals("bht")) {
-        	new NumberOfHypotheses(control.getGraphGUI(), this, "BonferroniHolmGraph");        	
+        	Hashtable<String,Object> ht = new Hashtable<String,Object>();
+        	ht.put("n", new int[] {1,4,10});
+        	new ParameterDialog(control.getGraphGUI(), ht, this, "BonferroniHolm");        	
+        } else if (e.getActionCommand().equals("fixedSequence")) {
+        	Hashtable<String,Object> ht = new Hashtable<String,Object>();
+        	ht.put("n", new int[] {1,4,20});
+        	new ParameterDialog(control.getGraphGUI(), ht, this, "fixedSequence");        	
+        }  else if (e.getActionCommand().equals("fallback")) {
+        	Hashtable<String,Object> ht = new Hashtable<String,Object>();
+        	ht.put("n", new int[] {1,4,20});
+        	ht.put("weights", new double[] {0.25, 0.25, 0.25, 0.25});
+        	new ParameterDialog(control.getGraphGUI(), ht, this, "fallback");        	
         } else if (e.getActionCommand().equals("pg")) {       	
-        	loadGraph("graphForParallelGatekeeping()");
+        	loadGraph("parallelGatekeeping()");
         } else if (e.getActionCommand().equals("pgi")) {       	
-        	loadGraph("graphForImprovedParallelGatekeeping()");
+        	loadGraph("improvedParallelGatekeeping()");
+        } else if (e.getActionCommand().equals("bauer")) {       	
+        	loadGraph("BauerEtAl2001()");
         } else if (e.getActionCommand().equals("bretzEtAl")) {       	
-        	loadGraph("graphFromBretzEtAl2011()");
-        } else if (e.getActionCommand().equals("bretzEtAl3")) {       	
-        	loadGraph("graph2FromBretzEtAl2011()");
-        } else if (e.getActionCommand().equals("hommelEtAl")) {       	
-        	loadGraph("graphFromHommelEtAl2007()");
+        	loadGraph("BretzEtAl2011()");
+        } else if (e.getActionCommand().equals("bretzEtAl2009a")) {       	
+        	loadGraph("BretzEtAl2009a()");
+        } else if (e.getActionCommand().equals("bretzEtAl2009b")) {       	
+        	loadGraph("BretzEtAl2009b()");
+        } else if (e.getActionCommand().equals("bretzEtAl2009c")) {       	
+        	loadGraph("BretzEtAl2009c()");
+        } else if (e.getActionCommand().equals("hommelEtAl")) {      	
+        	loadGraph("HommelEtAl2007()");
+        } else if (e.getActionCommand().equals("hommelEtAlSimple")) {       	
+        	loadGraph("HommelEtAl2007Simple()");
         } else if (e.getActionCommand().equals("hung")) { 	
-        	loadGraph("graphFromHungEtWang2010()");
+        	loadGraph("HungEtWang2010()");
+        } else if (e.getActionCommand().equals("huque")) { 	
+        	loadGraph("HuqueAloshEtBhore2011()");
         } else if (e.getActionCommand().equals("maurer1995")) {     	
-        	loadGraph("graphFromMaurerEtAl1995()");
+        	loadGraph("MaurerEtAl1995()");
+        } else if (e.getActionCommand().equals("truncHolm")) {     	
+        	loadGraph("truncatedHolm()");
+        } else if (e.getActionCommand().equals("gSuccessive")) {     	
+        	loadGraph("generalSuccessive()");
+        } else if (e.getActionCommand().equals("successiveI")) {     	
+        	loadGraph("simpleSuccessiveI()");
+        } else if (e.getActionCommand().equals("successiveII")) {     	
+        	loadGraph("simpleSuccessiveII()");
         } else if (e.getActionCommand().equals("fallbackI")) {     	
-        	loadGraph("improvedFallbackGraphI()");
+        	loadGraph("improvedFallbackI()");
         } else if (e.getActionCommand().equals("fallbackII")) {     	
-        	loadGraph("improvedFallbackGraphII()");
+        	loadGraph("improvedFallbackII()");
         } else if (e.getActionCommand().equals("showLog")) {    	
         	showLog();
         } else if (e.getActionCommand().equals("reportError")) {       	
@@ -372,7 +374,11 @@ Stuttgart, 1995; 3–18.
         	String text = RControl.getR().eval("graphAnalysis(.tmpGraph, file=tempfile())").asRChar().getData()[0];
         	new TextFileViewer(control.getMainFrame(), "Graph analysis", text);
         } else if (e.getActionCommand().equals("powerAnalysis")) {
-        	notYetSupported();
+        	if (control.getNL().getKnoten().size()==0) {
+        		JOptionPane.showMessageDialog(control.getMainFrame(), "Graph is empty!", "Graph is empty!", JOptionPane.ERROR_MESSAGE);
+        		return;
+        	}
+        	new PowerDialogParameterUncertainty(control.getMainFrame());
         } else if (e.getActionCommand().equals("load p-values from R")) {
         	VariableNameDialog vnd = new VariableNameDialog(control.getGraphGUI(), "");     
 			try {
@@ -449,8 +455,7 @@ Stuttgart, 1995; 3–18.
 						JOptionPane.showMessageDialog(control.getMainFrame(), "Please open and read the following file:\n"+f.getAbsolutePath(), "Could not find appropriate viewer", JOptionPane.WARNING_MESSAGE);
 					}
 				} catch (Exception e1) {
-					logger.error(e1.getMessage());
-					e1.printStackTrace();
+					logger.error(e1.getMessage(), e1);					
 					JOptionPane.showMessageDialog(control.getMainFrame(), "Please open and read the following file:\n"+f.getAbsolutePath(), "Could not find appropriate viewer", JOptionPane.WARNING_MESSAGE);
 				}
 
@@ -531,6 +536,11 @@ Stuttgart, 1995; 3–18.
 		writeLaTeX(control.getNL().getLaTeX());
 	}
 	
+	
+	public void showLaTeXGraph() {
+		new TextFileViewer(control.getGraphGUI(), "LaTeX code", control.getNL().getLaTeX());
+	}
+	
 	public String LATEX_BEGIN_DOCUMENT = "\\documentclass[11pt]{article}\n"+
 										 "\\usepackage{tikz}\n"+
 										 "\\usetikzlibrary{snakes,arrows,shapes}\n"+
@@ -553,7 +563,7 @@ Stuttgart, 1995; 3–18.
     			pr.makePDF(f);
     		} catch( Exception ex ) {
     			JOptionPane.showMessageDialog(this, "Saving pdf report to '" + f.getAbsolutePath() + "' failed: " + ex.getMessage(), "Saving failed.", JOptionPane.ERROR_MESSAGE);
-    			ex.printStackTrace();
+    			//ex.printStackTrace();
     		}
         }
 	}
@@ -606,6 +616,7 @@ Stuttgart, 1995; 3–18.
         	//((ControlMGraph) control).getNL().loadFromXML(f);
         	String filename = f.getAbsolutePath().replaceAll("\\\\", "\\\\\\\\"); 
     		String loadedGraph = RControl.getR().eval("load(file=\""+filename+"\")").asRChar().getData()[0];
+    		RControl.getR().eval(loadedGraph+ "<- gMCP:::updateGraphToNewClassDefinition("+loadedGraph+")");
     		loadGraph(loadedGraph);
     		Configuration.getInstance().getGeneralConfig().addGraph(f.getAbsolutePath());
         	createLastUsed();
@@ -617,6 +628,7 @@ Stuttgart, 1995; 3–18.
 	private void saveGraph() {
 		JFileChooser fc = new JFileChooser(Configuration.getInstance().getClassProperty(this.getClass(), "RObjDirectory"));		
         fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
+        fc.setDialogType(JFileChooser.SAVE_DIALOG);
         fc.setFileFilter(new FileFilter() {
 			public boolean accept(File f) {
 				if (f.isDirectory()) return true;

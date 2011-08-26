@@ -74,7 +74,7 @@
 
 \tableofcontents
 
-% Bibliotheken
+% Bibliotheken - Chunk 1
 <<echo=FALSE,results=hide>>=
 
 library(gMCP)
@@ -107,23 +107,12 @@ likely still change in future versions.
 
 \subsection{Installation}
 
-Open R and type %\texttt{install.packages("gMCP")} 
-the following commands into the R Console:
-
-%\scriptsize
-<<echo=TRUE,eval=F>>=
-
-source("http://www.bioconductor.org/biocLite.R")
-biocLite("graph")
-install.packages("gMCP")
-
-@
-%\normalsize
-
-Select an arbitrary mirror and gMCP will be downloaded and installed.
+Open R and type \texttt{install.packages("gMCP")}, 
+select an arbitrary mirror and gMCP will be downloaded and installed.
 
 From now on you can load the gMCP package by entering
 \texttt{library(gMCP)} into the R Console.
+The graphical user interface is started with the command \texttt{graphGUI()}.
 
 If you run into problems, see
 \url{http://cran.r-project.org/web/packages/gMCP/INSTALL} or write us
@@ -157,9 +146,10 @@ and edges have weights.
 
 \begin{figure}[ht]
   \centering
+% Chunk 2
 <<echo=FALSE,results=tex>>=
 
-graph <- BonferroniHolmGraph(3)
+graph <- BonferroniHolm(3)
 cat(graph2latex(graph, scale=0.7, fontsize="tiny", labelTikZ="near start,fill=blue!20"))
 
 @
@@ -190,9 +180,10 @@ edge weights.
 
 \begin{figure}[ht]
   \centering
+% Chunk 3
 <<echo=FALSE,results=tex>>=
 
-graph <- BonferroniHolmGraph(3)
+graph <- BonferroniHolm(3)
 cat(graph2latex(graph, scale=0.7, fontsize="tiny", nodeTikZ="minimum size=1.2cm"))
 cat("$\\downarrow$ reject $H_1$\\\\")
 graph <- rejectNode(graph, "H1")
@@ -210,6 +201,7 @@ cat(graph2latex(graph, scale=0.7, fontsize="tiny", nodeTikZ="minimum size=1.2cm"
 Let's reproduce this with the \texttt{gMCP} package. We start R and enter:
 
 \scriptsize
+% Chunk 4
 <<echo=TRUE, size=scriptsize>>=
 
 library(gMCP)
@@ -227,10 +219,11 @@ test procedure and can sequentially reject all three hypotheses.
 If we don't want to use the GUI we can also use R:
 
 \scriptsize
+% Chunk 5
 <<echo=TRUE, size=scriptsize>>=
 
 library(gMCP)
-graph <- BonferroniHolmGraph(3)
+graph <- BonferroniHolm(3)
 gMCP(graph, pvalues=c(0.01,0.07,0.02), alpha=0.05)
 
 @
@@ -262,21 +255,10 @@ must be created.
 
 \begin{figure}[ht]
   \centering   
+% Chunk 6
 <<echo=FALSE,results=tex>>=
 
-hnodes <- c("H11", "H21", "H31", "H12", "H22", "H32")
-weights <- c(1/3, 1/3, 1/3, 0, 0, 0)
-edges <- list()
-edges[["H11"]] <- list(edges=c("H21","H12"), weights=c(1/2, 1/2))
-edges[["H21"]] <- list(edges=c("H11","H31","H22"), weights=c(1/3, 1/3, 1/3))
-edges[["H31"]] <- list(edges=c("H21","H32"), weights=c(1/2, 1/2))
-edges[["H12"]] <- list(edges="H21", weights=1)
-edges[["H22"]] <- list(edges=c("H11","H31"), weights=c(1/2, 1/2))
-edges[["H32"]] <- list(edges="H21", weights=1)
-graph <- new("graphMCP", nodes=hnodes, edgeL=edges, weights=weights)
-nodeX <- c(H11=100, H21=300, H31=500, H12=100, H22=300, H32=500)
-nodeY <- c(H11=100, H21=100, H31=100, H12=300, H22=300, H32=300)
-nodeRenderInfo(graph) <- list(nodeX=nodeX, nodeY=nodeY)	
+graph <- BretzEtAl2011()
 cat(graph2latex(graph, scale=0.7, fontsize="tiny"))
 
 @
@@ -284,14 +266,6 @@ cat(graph2latex(graph, scale=0.7, fontsize="tiny"))
 \end{figure}
 
 \subsection{Using R}
-
-We build upon the package \texttt{graph} \cite{graph}, more precisely
-we declare a new class \texttt{graphMCP} that is a subclass of
-\texttt{graphNEL}\footnote{The \texttt{initialize} method of this subclass
-differs only in an extra argument \texttt{weights} for the nodes that
-specifies the initial allocation of the significance level alpha to the individual
-hypotheses.  Declaration of the nodes and edges is inherited from
-class \texttt{graphNEL}.}.
 
 The most convenient way to create a graph in R is to use the functions
 \texttt{matrix2graph}\index{matrix2graph} and
@@ -301,6 +275,7 @@ figure \ref{exampleGraphBretz}.
 
 
 \scriptsize
+% Chunk 7
 <<echo=TRUE, size=scriptsize>>=
 
 m <- rbind(H11=c(0,   0.5, 0,   0.5, 0,   0  ),
@@ -319,6 +294,7 @@ graph <- setWeights(graph, c(1/3, 1/3, 1/3, 0, 0, 0))
 Let's print the newly created graph:
 
 \scriptsize
+% Chunk 8
 <<echo=TRUE, size=scriptsize>>=
 
 print(graph)
@@ -332,11 +308,11 @@ x- and y-coordinates in the renderInfo.  (We are compatible to the
 renderInfo usage from package Rgraphviz \cite{Rgraphviz}.)
 
 \scriptsize
+% Chunk 9
 <<echo=TRUE, size=scriptsize>>=
 
-nodeX <- c(H11=100, H21=300, H31=500, H12=100, H22=300, H32=500)
-nodeY <- c(H11=100, H21=100, H31=100, H12=300, H22=300, H32=300)
-nodeRenderInfo(graph) <- list(nodeX=nodeX, nodeY=nodeY)	
+graph@nodeAttr$X <- c(H11=100, H21=300, H31=500, H12=100, H22=300, H32=500)
+graph@nodeAttr$Y <- c(H11=100, H21=100, H31=100, H12=300, H22=300, H32=300)	
 
 @
 \normalsize
@@ -345,6 +321,7 @@ For placement of the nodes in a matrix pattern, the function \texttt{placeNodes}
 The following code does the same as the three lines of R code above.  
 
 \scriptsize
+% Chunk 10
 <<echo=TRUE, size=scriptsize>>=
 
 graph <- placeNodes(graph, nrow=2)
@@ -362,6 +339,7 @@ Let's take a look at the graph in {\LaTeX} rendered with TikZ
 \scriptsize
 %\lstset{language=[LaTeX]TeX}
 %\begin{lstlisting}
+% Chunk 11
 <<echo=TRUE, size=scriptsize>>=
 
 cat(graph2latex(graph))
@@ -376,10 +354,11 @@ place the label for the edge from \texttt{H1} to \texttt{H2} at
 position (200, 80):
 
 \scriptsize
+% Chunk 12
 <<echo=TRUE, size=scriptsize>>=
 
-edgeData(graph, "H11", "H21", "labelX") <- 200
-edgeData(graph, "H11", "H21", "labelY") <- 80
+edgeAttr(graph, "H11", "H21", "labelX") <- 200
+edgeAttr(graph, "H11", "H21", "labelY") <- 80
 
 @
 \normalsize
@@ -400,6 +379,7 @@ edit.
 % available from the R command line.
 
 \scriptsize
+% Chunk 13
 <<echo=TRUE, size=scriptsize>>=
 
 graphGUI("graph")
@@ -451,9 +431,10 @@ You can either specify each rejection step yourself or simply use the
 method \texttt{gMCP}:
 
 \scriptsize
+% Chunk 14
 <<echo=TRUE,keep.source=TRUE, size=scriptsize>>=
 
-graph <- graphFromBretzEtAl2011()
+graph <- BretzEtAl2011()
 
 # We can reject a single node:
 print(rejectNode(graph, "H11"))
@@ -471,9 +452,11 @@ We can create a TikZ graphic from the last graph with
 
 \begin{figure}[ht]
   \centering   
+% Chunk 15
 <<echo=FALSE,results=tex>>=
 
-cat(graph2latex(result@graphs[[4]], scale=0.7, fontsize="tiny"))
+#TODO Enable this again.
+#cat(graph2latex(result@graphs[[4]], scale=0.7, fontsize="tiny"))
 
 @
   \caption{\label{finalstate}Final graph from the test procedure after rejection of $H_{21}$, $H_{31}$ and $H_{32}$.}
@@ -483,6 +466,7 @@ The command \texttt{gMCPReport}\index{report generation} generates a
 full report of the testing procedure:
 
 \scriptsize
+% Chunk 16
 <<echo=TRUE, size=scriptsize>>=
 
 gMCPReport(result, "Report.tex")
@@ -494,6 +478,7 @@ gMCPReport(result, "Report.tex")
 
 Also adjusted p-values and simultaneous confidence intervals can be computed.
 
+% Chunk 17
 <<echo=FALSE,results=hide>>=
 
 d1 <- c(1.68005156523844, 1.95566697423700, 0.00137860945822299, 0.660052238622464, 
@@ -536,6 +521,7 @@ $\Sexpr{format(pval[3])}$.  We want to adjust for multiple testing
 by using the Bonferroni-Holm-Procedure with $\alpha=0.025$.
 
 \scriptsize
+% Chunk 18
 <<echo=TRUE, keep.source=TRUE, size=scriptsize>>=
 
 # Estimates:
@@ -545,14 +531,14 @@ ssd <- c("H1"=0.8759528, "H2"=1.291310, "H3"=0.8570892)
 
 pval <- c(0.01260, 0.05154, 0.02124)/2
 
-simConfint(BonferroniHolmGraph(3), pvalues=pval, 
+simConfint(BonferroniHolm(3), pvalues=pval, 
 		confint=function(node, alpha) {
 			c(est[node]-qt(1-alpha,df=9)*ssd[node]/sqrt(10), Inf)
 		}, estimates=est, alpha=0.025, mu=0, alternative="greater")
 
 # Note that the sample standard deviations in the following call
 # will be calculated from the pvalues and estimates.
-simConfint(BonferroniHolmGraph(3), pvalues=pval, 
+simConfint(BonferroniHolm(3), pvalues=pval, 
 		confint="t", df=9, estimates=est, alpha=0.025, alternative="greater")
 
 @
@@ -602,10 +588,11 @@ e.g.\ \texttt{1-2*\textbackslash epsilon+1/3*\textbackslash epsilon\^{}2} for $1
 \begin{figure}[ht]
   \centering
   \begin{tikzpicture}[scale=0.7]
+% Chunk 19
 <<echo=FALSE,results=tex>>=
 
-cat(graph2latex(graphForParallelGatekeeping(), scale=0.7, fontsize="tiny", nodeTikZ="minimum size=1.2cm", tikzEnv=FALSE))
-cat(graph2latex(graphForImprovedParallelGatekeeping(), scale=0.7, fontsize="tiny", nodeTikZ="minimum size=1.2cm", tikzEnv=FALSE, offset=c(300, 0)))
+cat(graph2latex(parallelGatekeeping(), scale=0.7, fontsize="tiny", nodeTikZ="minimum size=1.2cm", tikzEnv=FALSE))
+cat(graph2latex(improvedParallelGatekeeping(), scale=0.7, fontsize="tiny", nodeTikZ="minimum size=1.2cm", tikzEnv=FALSE, offset=c(300, 0)))
 
 @
 \end{tikzpicture}
@@ -637,6 +624,7 @@ If $g_{lj}g_{jl}==1$ still $g_{lk}<-0$.
 
 
 \scriptsize
+% Chunk 20
 <<echo=TRUE, keep.source=TRUE, size=scriptsize>>=
 
 m <- rbind(H1=c(0,           0,           0.5,           0.5          ),
@@ -645,7 +633,7 @@ m <- rbind(H1=c(0,           0,           0.5,           0.5          ),
            H4=c(0,           "\\epsilon", "1-\\epsilon", 0            ))
 
 graph <- matrix2graph(m)
-#graph <- graphForImprovedParallelGatekeeping()
+#graph <- improvedParallelGatekeeping()
 graph
 substituteEps(graph, eps=0.001)
 
@@ -659,10 +647,11 @@ gMCP(graph, pvalues=c(0.02, 0.04, 0.01, 0.02), eps=0.001)
 No $\epsilon$-edges are allowed.
 
 \begin{figure}[ht]
-  \centering   
+  \centering
+% Chunk 21
 <<echo=FALSE,results=tex>>=
 
-cat(graph2latex(graph2FromBretzEtAl2011(), scale=0.7, fontsize="tiny"))
+cat(graph2latex(generalSuccessive(), scale=0.7, fontsize="tiny"))
 
 @
   \caption{\label{powergraph} Graph from Bretz et al. (2009)}
@@ -673,9 +662,10 @@ cat(graph2latex(graph2FromBretzEtAl2011(), scale=0.7, fontsize="tiny"))
 \includegraphics[width=5cm]{pictures/variableEditor.png}
 
 \scriptsize
+% Chunk 22
 <<echo=TRUE, keep.source=TRUE, size=scriptsize>>=
 
-graph <- graph2FromBretzEtAl2011()
+graph <- generalSuccessive()
 graph
 
 @
@@ -752,7 +742,8 @@ Let's start with this graph in figure \ref{uglygraph}:
 \normalsize
 
 \begin{figure}[ht]
-  \centering   
+  \centering
+% Chunk 23
 <<echo=FALSE,results=tex>>=
 
 cat(graph2latex(result@graphs[[3]], pvalues=pvalues, scale=0.7, fontsize="tiny"))
@@ -802,6 +793,7 @@ In this subsection we show how to use gMCP to reproduce the results of the paper
 \cite{bauer1998testing}
 
 \scriptsize
+% Chunk 24
 <<echo=TRUE, size=scriptsize>>=
 
 data(hydroquinone)
@@ -829,6 +821,7 @@ pvalues
 
 \begin{figure}[ht]
 \begin{center}
+% Chunk 25
 <<echo=FALSE,fig=TRUE,width=8,height=6>>=
 
 data(hydroquinone)

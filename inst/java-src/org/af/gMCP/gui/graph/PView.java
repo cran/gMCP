@@ -27,6 +27,7 @@ import org.af.commons.widgets.DesktopPaneBG;
 import org.af.gMCP.config.Configuration;
 import org.af.gMCP.gui.CreateGraphGUI;
 import org.af.gMCP.gui.RControl;
+import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -80,6 +81,11 @@ public class PView extends JPanel implements KeyListener, ActionListener {
 		pValues = Arrays.asList(pvalues);
 		restorePValues();
 	}
+	
+	public void setPValues(double[] pvalues) {
+		setPValues(ArrayUtils.toObject(pvalues));
+	}
+
 	
 	public void restorePValues() {
 		String debug = "Restoring : ";
@@ -239,8 +245,7 @@ public class PView extends JPanel implements KeyListener, ActionListener {
 			refresh = new JButton(new ImageIcon(ImageIO.read(DesktopPaneBG.class
 					.getResource("/org/af/gMCP/gui/graph/images/update24.png"))));
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			logger.error("IOError that should never happen.", e);
 		}
 		refresh.setToolTipText("search again for matrices in R");
 		

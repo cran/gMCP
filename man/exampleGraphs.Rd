@@ -1,16 +1,27 @@
 \name{Example Graphs}
 \alias{exampleGraph}
-\alias{BonferroniHolmGraph}
-\alias{graphFromBretzEtAl2011}
-\alias{graph2FromBretzEtAl2011}
-\alias{graphForParallelGatekeeping}
-\alias{graphForImprovedParallelGatekeeping}
-\alias{graphFromHommelEtAl2007}
-\alias{graphFromHungEtWang2010}
-\alias{graphFromMaurerEtAl1995}
-\alias{improvedFallbackGraphI}
-\alias{improvedFallbackGraphII}
+\alias{BonferroniHolm}
+\alias{BretzEtAl2011}
+\alias{parallelGatekeeping}
+\alias{improvedParallelGatekeeping}
+\alias{HommelEtAl2007}
+\alias{HommelEtAl2007Simple}
+\alias{HungEtWang2010}
+\alias{MaurerEtAl1995}
+\alias{improvedFallbackI}
+\alias{improvedFallbackII}
 \alias{cycleGraph}
+\alias{fixedSequence}
+\alias{generalSuccessive}
+\alias{simpleSuccessiveI}
+\alias{simpleSuccessiveII}
+\alias{truncatedHolm}
+\alias{fallback}
+\alias{HuqueAloshEtBhore2011}
+\alias{BauerEtAl2001}
+\alias{BretzEtAl2009a}
+\alias{BretzEtAl2009b}
+\alias{BretzEtAl2009c}
 \title{
 	Functions that create different example graphs
 }
@@ -21,17 +32,28 @@
 	You can look at the function body with \code{\link{body}} and see how the graph is built.
 }
 \usage{
-	BonferroniHolmGraph(n)
-	graphForParallelGatekeeping()
-	graphForImprovedParallelGatekeeping()
-	graphFromBretzEtAl2011()
-	graph2FromBretzEtAl2011()
-	graphFromHungEtWang2010()
-	graphFromHommelEtAl2007()
-	graphFromMaurerEtAl1995()
-	improvedFallbackGraphI(weights=rep(1/3, 3))
-	improvedFallbackGraphII(weights=rep(1/3, 3))
+	BonferroniHolm(n)
+	parallelGatekeeping()
+	improvedParallelGatekeeping()
+	BretzEtAl2011()
+	HungEtWang2010()
+	HuqueAloshEtBhore2011()
+	HommelEtAl2007()
+	HommelEtAl2007Simple()
+	MaurerEtAl1995()
+	improvedFallbackI(weights=rep(1/3, 3))
+	improvedFallbackII(weights=rep(1/3, 3))
 	cycleGraph(nodes, weights)
+	fixedSequence(n)
+	fallback(weights)
+	generalSuccessive(weights = c(1/2, 1/2))
+	simpleSuccessiveI()
+	simpleSuccessiveII()
+	truncatedHolm()
+	BauerEtAl2001()
+	BretzEtAl2009a()
+	BretzEtAl2009b()
+	BretzEtAl2009c()
 }
 
 \arguments{
@@ -47,38 +69,35 @@
 }
 \details{
   \describe{
-	\item{\code{BonferroniHolmGraph}}{
+	\item{\code{BonferroniHolm}}{
 		Returns a graph that represents a Bonferroni-Holm adjustment.
 		The result is a complete graph, where all nodes have the same weights and each edge weight is \eqn{\frac{1}{n-1}}{1/(n-1)}.
 	}
-	\item{\code{graphFromBretzEtAl2011}}{
+	\item{\code{BretzEtAl2011}}{
 		Graph in figure 2 from Bretz et al. See references (Bretz et al. 2011).
 	}
-	\item{\code{graph2FromBretzEtAl2011}}{
-		Graph in figure 6 from Bretz et al. See references (Bretz et al. 2011).
-	}
-	\item{\code{graphFromHommelEtAl2007}}{
+	\item{\code{HommelEtAl2007}}{
 		Graph from Hommel et al. See references (Hommel et al. 2007).
 	}
-	\item{\code{graphForParallelGatekeeping}}{
+	\item{\code{parallelGatekeeping}}{
 		Graph for parallel gatekeeping. See references (Dmitrienko et al. 2003).
 	}
-	\item{\code{graphForImprovedParallelGatekeeping}}{
+	\item{\code{improvedParallelGatekeeping}}{
 		Graph for improved parallel gatekeeping. See references (Hommel et al. 2007).
 	}
-	\item{\code{graphFromHungEtWang2010}}{
+	\item{\code{HungEtWang2010}}{
 	    Graph from Hung et Wang. See references (Hung et Wang 2010).
 	}
-	\item{\code{graphFromMaurerEtAl1995}}{
+	\item{\code{MaurerEtAl1995}}{
 	    Graph from Maurer et al. See references (Maurer et al. 1995).
 	}
 	\item{\code{cycleGraph}}{
 		Cycle graph. The weight \code{weights[i]} specifies the edge weight from node \eqn{i}{i} to node \eqn{i+1}{i+1} for \eqn{i=1,\ldots,n-1}{i=1,...,n-1} and \code{weight[n]} from node \eqn{n}{n} to node 1. 
 	}
-	\item{\code{improvedFallbackGraphI}}{
+	\item{\code{improvedFallbackI}}{
 	    Graph for the improved Fallback Procedure by Wiens & Dmitrienko. See references (Wiens et Dmitrienko 2005).
 	}
-	\item{\code{improvedFallbackGraphII}}{
+	\item{\code{improvedFallbackII}}{
 	    Graph for the improved Fallback Procedure by Hommel & Bretz. See references (Hommel et Bretz 2008).
 	}
   }	
@@ -112,7 +131,7 @@ Kornelius Rohmeyer \email{rohmeyer@small-projects.de}
 
 \examples{
 
-g <- BonferroniHolmGraph(5)
+g <- BonferroniHolm(5)
 
 \dontrun{
 # If Rgraphviz is installed, we can take a look at the graph:

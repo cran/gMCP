@@ -6,10 +6,10 @@ checkValidWeights <- function(weights) {
 		warning("Some of the weights are not real numbers. NA, NaN, Inf and -Inf are not supported.")
 	}
 	if(any(0 > weights | weights > 1 + .Machine$double.eps ^ 0.25)) {
-		stop("Invalid weights: weights must be between 0 and 1")
+		warning("Invalid weights: weights must be between 0 and 1")
 	}
-	if(sum(weights) > 1) {
-		stop("Invalid weights: the sum of all weights must be less than 1")
+	if(sum(weights) > 1 + .Machine$double.eps ^ 0.25) {
+		warning("Invalid weights: the sum of all weights must be less than 1")
 	}
 }
 
@@ -53,7 +53,7 @@ bdiagNA <- function(...) {
 		return(matrix(nrow=0, ncol=0))
 	if (nargs() == 1 && !is.list(...)) 
 		return(as.matrix(...))
-	asList <- if (nargs() == 1 && is.list(...)) ... else list(...)
+	asList <- if (nargs() == 1 && is.list(...)) list(...)[[1]] else list(...)
 	if (length(asList) == 1) 
 		return(as.matrix(asList[[1]]))
 	n <- 0
@@ -89,4 +89,8 @@ requireLibrary <- function(package) {
 			stop(paste("Required package ",package," should not be installed.", sep=""))
 		}
 	}
+}
+
+triangle <- function(min, peak, max) {
+	
 }

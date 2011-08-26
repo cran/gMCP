@@ -232,5 +232,16 @@ public class GeneralConfig extends SpecificConfig {
 		/* "", "*", "\\cdot", "\\times" */
 		setProperty("getTimesSymbol", s);
 	}
-	
+
+	public double getAccuracy() {
+		return Double.parseDouble(getProperty("fractionAccuracy", "0.000001"));		
+	}
+
+	public void setExperimental(boolean b) {
+		setProperty("experimentalFeatures", ""+b);
+	}
+	public boolean experimentalFeatures() {
+		return Boolean.parseBoolean(getProperty("experimentalFeatures", "true"));
+	}
+		
 }

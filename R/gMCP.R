@@ -1,14 +1,17 @@
 gMCP <- function(graph, pvalues, test, correlation, alpha=0.05, 
-		approxEps=TRUE, eps=10^(-3), ..., useC=FALSE, verbose=FALSE) {
-	sequence <- list(graph)
-	if (approxEps) {
+		approxEps=TRUE, eps=10^(-3), ..., useC=FALSE, verbose=FALSE) {	
+	if (approxEps && !is.numeric(graph@m)) {
 		graph <- substituteEps(graph, eps=eps)
 	}
-	if (length(pvalues)!=length(nodes(graph))) {
+	#if (!is.numeric(graph@m)) {
+	#	graph <- parse2numeric(graph) # TODO ask for variables
+	#}
+	sequence <- list(graph)
+	if (length(pvalues)!=length(getNodes(graph))) {
 		stop("Length of pvalues must equal number of nodes.")
 	}
 	if (is.null(names(pvalues))) {
-		names(pvalues) <- nodes(graph)
+		names(pvalues) <- getNodes(graph)
 	}
 	if (missing(test) && (missing(correlation) || length(pvalues)==1)) {
 		# Bonferroni-based test procedure
@@ -29,7 +32,8 @@ gMCP <- function(graph, pvalues, test, correlation, alpha=0.05,
 				graph <- rejectNode(graph, node, verbose)
 				sequence <- c(sequence, graph)
 			}	
-			return(new("gMCPResult", graphs=sequence, alpha=alpha, pvalues=pvalues, rejected=getRejected(graph), adjPValues=adjPValues(sequence[[1]], pvalues, verbose)@adjPValues))
+			adjPValues <- adjPValues(sequence[[1]], pvalues, verbose)@adjPValues
+			return(new("gMCPResult", graphs=sequence, alpha=alpha, pvalues=pvalues, rejected=getRejected(graph), adjPValues=adjPValues))
 		}
 	} else if (missing(test) && !missing(correlation)) {
 		# Calling the code from Florian
@@ -46,16 +50,18 @@ gMCP <- function(graph, pvalues, test, correlation, alpha=0.05,
 			Gm <- graph2matrix(graph)
 			w <- getWeights(graph)
 			if( all(w==0) ) {
+                adjP <- rep(1,length(w))
 				rejected <- rep(FALSE,length(w))
-				names(rejected) <- nodes(graph)
+				names(rejected) <- getNodes(graph)
+                names(adjP) <- getNodes(graph)
 			} else {
 				#myTest <- generateTest(Gm, w, correlation, alpha)
 				#zScores <- -qnorm(pvalues)
 				#rejected <- myTest(zScores)
-                                adjP <- generatePvals(Gm,w,correlation,pvalues)
-                                rejected <- adjP <= alpha
-                                names(adjP) <- nodes(graph)
-				names(rejected) <- nodes(graph)
+                adjP <- generatePvals(Gm,w,correlation,pvalues)
+                rejected <- adjP <= alpha
+                names(adjP) <- getNodes(graph)
+				names(rejected) <- getNodes(graph)
 			}
 			return(new("gMCPResult", graphs=sequence, alpha=alpha, pvalues=pvalues, rejected=rejected, adjPValues=adjP))
 		}
@@ -71,18 +77,18 @@ getBalancedDesign <- function (correlation, numberOfPValues) {
 }
 
 adjPValues <- function(graph, pvalues, verbose=FALSE) {
-	if (length(pvalues)!=length(nodes(graph))) {
+	if (length(pvalues)!=length(getNodes(graph))) {
 		stop("Length of pvalues must equal number of nodes.")
 	}
 	if (is.null(names(pvalues))) {
-		names(pvalues) <- nodes(graph)
+		names(pvalues) <- getNodes(graph)
 	}
 	# TODO for graphs with sum(weights)<1 (do we want to allow this) this will give wrong results
-	if (sum(getWeights(graph))>0) nodeData(graph, nodes(graph), "nodeWeight") <- getWeights(graph)/sum(getWeights(graph))
-	adjPValues <- rep(0, length(nodes(graph)))
-	names(adjPValues) <- nodes(graph)	
-	J <- nodes(graph)
-	names(J) <- nodes(graph)
+	if (sum(getWeights(graph))>0) setWeights(graph, getWeights(graph)/sum(getWeights(graph)), getNodes(graph))
+	adjPValues <- rep(0, length(getNodes(graph)))
+	names(adjPValues) <- getNodes(graph)	
+	J <- getNodes(graph)
+	names(J) <- getNodes(graph)
 	sequence <- list(graph)
 	pmax <- 0
 	while(length(J) >= 1) {
@@ -101,107 +107,30 @@ adjPValues <- function(graph, pvalues, verbose=FALSE) {
 }
 
 rejectNode <- function(graph, node, verbose=FALSE) {
-	edgesIn <- c()			
-	for (node2 in nodes(graph)) {
-		i <- which(names(edgeWeights(graph, node2)[[node2]])==node)
-		if (length(i)>0) {
-			edge <- edgeWeights(graph, node2)[[1]][i]
-			names(edge) <- node2
-			edgesIn <- c(edgesIn, edge)
+	weights <- graph@weights
+	graph@weights <- weights+weights[node]*graph@m[node,]
+	m <- graph@m	
+	for (i in getNodes(graph)) {
+		if (m[i, node]*m[node, i]<1) {
+			graph@m[i,] <- (m[i,]+m[i,node]*m[node,])/(1-m[i,node]*m[node,i]) 
+		} else {
+			graph@m[i,] <- 0
 		}
 	}
-	
-	edgesOut <- edgeWeights(graph, node)[[node]]
-	if (verbose) cat(paste("There are ",length(edgesIn)," incoming and ",length(edgesOut)," outgoing edges.\n",sep=""))
-	
-	keepAlpha <- TRUE
-	
-	graph2 <- graph
-	
-	#for (to in nodes(graph)[nodes(graph)!=node]) {
-	#	if ((getWeight(graph,node,to))>0) {
-	#		keepAlpha <- FALSE
-	#		nodeData(graph2, to, "nodeWeight") <- nodeData(graph, to, "nodeWeight")[[to]] + getWeight(graph,node,to) * nodeData(graph, node, "nodeWeight")[[node]]
-	#	}
-	#}	
-	
-	## The following code will be removed in 0.6-0.7! ##
-	if (all(TRUE == all.equal(unname(edgesOut), rep(0, length(edgesOut))))) {
-		if (verbose) cat("Alpha is passed via epsilon-edges.\n")
-		for (to in nodes(graph)[nodes(graph)!=node]) {	
-			numberOfEpsilonEdges <- sum(TRUE == all.equal(unname(edgesOut), rep(0, length(edgesOut))))
-			if (existsEdge(graph, node, to)) {
-				nodeData(graph2, to, "nodeWeight") <- nodeData(graph, to, "nodeWeight")[[to]] + nodeData(graph, node, "nodeWeight")[[node]] / numberOfEpsilonEdges
-				keepAlpha <- FALSE
-			}
-		}		
-	} else {
-		if (verbose) cat("Alpha is passed via non-epsilon-edges.\n")
-		for (to in nodes(graph)[nodes(graph)!=node]) {				
-			nodeData(graph2, to, "nodeWeight") <- nodeData(graph, to, "nodeWeight")[[to]] + getWeight(graph,node,to) * nodeData(graph, node, "nodeWeight")[[node]]				
-		}	
-		keepAlpha <- FALSE
-	}
-	
-	#################################################
-	
-	for (to in nodes(graph)[nodes(graph)!=node]) {						
-		for (from in nodes(graph)[nodes(graph)!=node]) {
-			if (from != to) {
-				enum <- (getWeight(graph,from,to)+getWeight(graph,from,node)*getWeight(graph,node,to))
-				denum <- (1-getWeight(graph,from,node)*getWeight(graph,node,from)) 
-				w <- enum / ifelse(denum==0, 1, denum)						
-				if (to %in% edges(graph)[[from]]) {
-					edgeData(graph2,from,to,"weight") <- w
-				} else {
-					if (!is.nan(w) & w>0) {
-						graph2 <- addEdge(from, to, graph2, w)
-					} else if (existsEdge(graph,from,to) || (existsEdge(graph,from,node) && existsEdge(graph,node,to))) {
-						graph2 <- addEdge(from, to, graph2, 0)
-					}
-				}								
-			}
-		}								
-	}
-	
-	graph <- graph2
-	
-	if (verbose) cat("Removing edges.\n")
-	for (to in names(edgesOut)) {
-		graph <- removeEdge(node, to, graph)
-	}
-	for (from in names(edgesIn)) {
-		graph <- removeEdge(from, node, graph)
-	}
-	if (!keepAlpha) {
-		nodeData(graph, node, "nodeWeight") <- 0
-	}
-	nodeData(graph, node, "rejected") <- TRUE	
+	diag(graph@m) <- 0
+	graph@m[node,] <- 0
+	graph@m[, node] <- 0
+	if (!all(m[node,]==0)) graph@weights[node] <- 0	
+	graph@nodeAttr$rejected[node] <- TRUE	
 	return(graph)
 }
 
 getRejectableNode <- function(graph, alpha, pvalues) {
 	x <- getWeights(graph)*alpha/pvalues
 	x[pvalues==0] <- 1
-	x[unlist(nodeData(graph, nodes(graph), "rejected"))] <- NaN
+	x[graph@nodeAttr$rejected] <- NaN
 	i <- which.max(x)
 	if (length(i)==0) return(NULL)
-	if (x[i]>1 | all.equal(unname(x[i]),1)[1]==TRUE) {return(nodes(graph)[i])}
+	if (x[i]>1 | all.equal(unname(x[i]),1)[1]==TRUE) {return(getNodes(graph)[i])}
 	return(NULL)	 
 }
-
-existsEdge <- function(graph, from, to) {
-	weight <- try(edgeData(graph,from,to,"weight"), silent = TRUE)
-	if (class(weight)=="try-error") {
-		return(FALSE)
-	}
-	return(TRUE)
-} 
-
-getWeight <- function(graph, from, to) {
-	weight <- try(edgeData(graph,from,to,"weight"), silent = TRUE)
-	if (class(weight)=="try-error") {
-		return(0)
-	}
-	return(weight[[1]])
-} 
