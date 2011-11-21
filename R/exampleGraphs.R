@@ -382,6 +382,14 @@ truncatedHolm <- function() {
 	return(graph)
 }
 
+# From Maurer, Glimm and Bretz 2011:
+# A graph generates a successive procedure if
+# - initially has weights 0 on all secondary hypotheses
+# - the only edges with positive weight leading into a secondary
+#   hypothesis are those originating at its parent primary hypotheses
+# - and there are no edges leading from a secondary hypothesis to
+#   another secondary hypothesis that has not the same parents.
+
 generalSuccessive <- function(weights=c(1/2,1/2)) {
 	if (length(weights)!=2) stop("Please specify the weights for H1 and H2 and only these.")
 	# Nodes:
@@ -491,14 +499,11 @@ MaurerEtAl1995 <- function() {
 cycleGraph <- function(nodes, weights) {
 	# Edges:
 	n <- length(nodes)
-	edges <- vector("list", length=n)
-	for (i in 1:n-1) {
-		edges[[i]] <- list(edges=nodes[i+1], weights=weights[i])
-	}	
-	edges[[n]] <- list(edges=nodes[1], weights=weights[n])
-	names(edges)<-nodes
+	m <- diag(n)
+	m <- rbind(m[2:n,],m[1,])
+	rownames(m) <- colnames(m) <- nodes 	
 	# Graph creation
-	graph <- new("graphMCP", nodes=nodes, edgeL=edges, weights=weights)
+	graph <- new("graphMCP", m=m, weights=weights)
 	return(graph)
 }
 
@@ -584,40 +589,3 @@ improvedFallbackII <- function(weights=rep(1/3, 3)) {
 	edgeAttr(graph, "H2", "H1", "labelY") <- 135	
 	return(graph)
 } 
-
-joinGraphs <- function(graph1, graph2, xOffset=0, yOffset=200) {
-	m1 <- graph2matrix(graph1)
-	m2 <- graph2matrix(graph2)
-	m <- bdiagNA(m1,m2)
-	m[is.na(m)] <- 0
-	nNames <- c(getNodes(graph1), getNodes(graph2))
-	d <- duplicated(nNames)
-	if(any(d)) {
-		warning(paste(c("The two graphs have the following identical nodes: ", paste(nNames[d], collapse=", "), ". The nodes of the second graph will be renamed."), sep=""))
-		nodes2 <- getNodes(graph2)
-		i <- 1
-		for (x in nNames[d]) {
-			while (any(nNames==paste("H",i, sep=""))) {
-				i <- i + 1
-			}
-			nodes2[nodes2==x] <- paste("H",i, sep="")
-			i <- i + 1
-		}
-		nNames <- c(getNodes(graph1), nodes2)
-	}
-	rownames(m) <- nNames
-	colnames(m) <- nNames
-	graph <- matrix2graph(m)	
-	weights <- c(getWeights(graph1), getWeights(graph2))
-	if (sum(weights)>1) {
-		weights <- weights / sum(weights)
-	}
-	graph <- setWeights(graph, weights=weights)
-	nodeX <- c(getXCoordinates(graph1), getXCoordinates(graph2) + xOffset) 
-	nodeY <- c(getYCoordinates(graph1), getYCoordinates(graph2) + yOffset) 
-	names(nodeX) <- nNames
-	names(nodeY) <- nNames
-	graph@nodeAttr$X <- nodeX
-	graph@nodeAttr$Y <- nodeY
-	return(graph)
-}

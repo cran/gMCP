@@ -183,14 +183,24 @@ setMethod("getRejected", c("gMCPResult"), function(object, node, ...) {
 			return(rejected)
 		})
 
-setGeneric("setRejected", function(object, rejected, node, ...) standardGeneric("setRejected"))
+setGeneric("setRejected", function(object, node, value) standardGeneric("setRejected"))
+setGeneric("setRejected<-", function(object, node, value) standardGeneric("setRejected<-"))
 
 setMethod("setRejected", c("graphMCP"),
-		function(object, rejected, node, ...) {
+		function(object, node, value) {
 			if (missing(node)) {
 				node <- getNodes(object)
 			}
-			object@nodeAttr$rejected[node] <- rejected			
+			object@nodeAttr$rejected[node] <- value			
+			return(object)
+		})
+
+setReplaceMethod("setRejected", c("graphMCP"),
+		function(object, node, value) {
+			if (missing(node)) {
+				node <- getNodes(object)
+			}
+			object@nodeAttr$rejected[node] <- value			
 			return(object)
 		})
 
@@ -339,6 +349,7 @@ setMethod("show","gPADInterim",
 			cat("Proportion of pre-planned measurements\n collected up to interim:\n")
 			v <- object@v
 			names(v) <- paste('H',1:n,sep='')
+                        print(v)
 			cat("Z-scores computed at interim\n")
 			z1 <- object@z1
 			names(z1) <- paste('H',1:n,sep='')

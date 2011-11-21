@@ -156,6 +156,14 @@ public class GeneralConfig extends SpecificConfig {
 		setProperty("checkOnline", ""+checkOnline);
 	}
 	
+	public boolean tellAboutCheckOnline() {
+		return Boolean.parseBoolean(getProperty("tellAboutCheckOnline", "false"));
+	}
+	
+	public void setTellAboutCheckOnline(boolean checkOnline) {
+		setProperty("tellAboutCheckOnline", ""+checkOnline);
+	}
+	
 	public boolean reminderNewVersion() {
 		return Boolean.parseBoolean(getProperty("reminderNewVersion", "true"));
 	}
@@ -242,6 +250,13 @@ public class GeneralConfig extends SpecificConfig {
 	}
 	public boolean experimentalFeatures() {
 		return Boolean.parseBoolean(getProperty("experimentalFeatures", "true"));
+	}
+
+	public void setVerbose(boolean b) {
+		setProperty("verbose", ""+b);
+	}
+	public boolean verbose() {
+		return Boolean.parseBoolean(getProperty("verbose", "true"));
 	}
 		
 }
