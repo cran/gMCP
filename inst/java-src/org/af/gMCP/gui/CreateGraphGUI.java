@@ -118,15 +118,19 @@ public class CreateGraphGUI extends JFrame implements WindowListener, AbortListe
 		}).start();
 		
 		javax.swing.SwingUtilities.invokeLater(new Runnable() {
-			public void run() {
-				 VersionComparator.getOnlineVersion();
+			public void run() {				
+				if (!Configuration.getInstance().getGeneralConfig().tellAboutCheckOnline()) {
+					new TellAboutOnlineUpate(null);
+					Configuration.getInstance().getGeneralConfig().setTellAboutCheckOnline(true);
+				}
+				new Thread(new Runnable() {
+					public void run() {
+						VersionComparator.getOnlineVersion();
+					}
+				}).start();				
 			}
 		});
 		
-		if (!Configuration.getInstance().getGeneralConfig().tellAboutCheckOnline()) {
-			new TellAboutOnlineUpate(this);
-			Configuration.getInstance().getGeneralConfig().setTellAboutCheckOnline(true);
-		}
 	}
 	
 	/**
@@ -165,7 +169,14 @@ public class CreateGraphGUI extends JFrame implements WindowListener, AbortListe
 
 	public void windowActivated(WindowEvent e) {}
 	public void windowClosed(WindowEvent e) {}
-	public void windowClosing(WindowEvent e) {}
+	/**
+	 * Closes the R console if we are in bundled mode. 
+	 */
+	public void windowClosing(WindowEvent e) {
+		if (RControl.getR().eval("exists(\".isBundled\")").asRLogical().getData()[0]) {
+			RControl.getR().eval("q(save=\"no\")");
+		}
+	}
 	public void windowDeactivated(WindowEvent e) {}
 	public void windowDeiconified(WindowEvent e) {}
 	public void windowIconified(WindowEvent e) {}

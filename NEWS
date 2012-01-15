@@ -1,3 +1,39 @@
+Version 0.7-3 (16-01-2012, Rev. 1057)
+=====================================
+
+- Function "subGraph" renamed to "subgraph" to avoid conflicts with
+  package graph.
+
+- Function "replaceVariables" exported and documented.
+
+- Corrected labels in confidence interval dialog (weights instead alpha). 
+
+- User submitted graphs are supported.
+
+- Improved debug information.
+
+- Dialog for loading of R objects gets "Cancel" button.
+
+- GPL notice is shown when the GUI is used for the first time
+
+- The bundled version closes the R console if the GUI is closed.
+
+- Fixed: Since 0.7-2 too much output is printed to the R console.
+
+- Fixed: Checking for updates happend on the event dispatch thread and
+  in rare cases the GUI did not respond any more as long as the method 
+  was trying to connect to the server.
+
+- Fixed: Some objects with epsilon edges from gMCP < 0.7 could not
+  be updated with function updateGraphToNewClassDefinition.
+  
+- Fixed: Since 0.7-1 graphGUI threw an error if the parameter graph is
+  a character vector and an graph object with an equal name
+  already existed.
+  
+- In addition to the RUnit tests gMCP is now also tested by JUnit tests.
+
+
 Version 0.7-2 (11-12-2011, Rev. 1016)
 =====================================
 
@@ -15,13 +51,17 @@ Version 0.7-2 (11-12-2011, Rev. 1016)
 - Improved drag'n'drop. 
   Also edge labels do not jump any more when double clicked.
 
+ 29 files changed, 178 insertions(+), 198 deletions(-)
+
 
 Version 0.7-1 (22-11-2011, Rev. 1001)
 =====================================
 
 - The GUI will (optionally) look for a newer version of 
   gMCP on CRAN.
-  
+
+- Simes test is available.
+
 - New function "subGraph" for the creation of subgraphs.
 
 - User defined power functions.

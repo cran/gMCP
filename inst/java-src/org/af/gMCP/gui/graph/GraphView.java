@@ -4,6 +4,7 @@ import java.awt.BorderLayout;
 import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.Date;
@@ -232,7 +233,7 @@ public class GraphView extends JPanel implements ActionListener {
 						}
 						boolean[] rejected = RControl.getR().eval(result+"@rejected").asRLogical().getData();
 						String output = null;
-						if (RControl.getR().eval("!is.null(attr("+result+", \"output\"))").asRLogical().getData()[0]) {
+						if (Configuration.getInstance().getGeneralConfig().verbose() && RControl.getR().eval("!is.null(attr("+result+", \"output\"))").asRLogical().getData()[0]) {
 							output = RControl.getR().eval("attr("+result+", \"output\")").asRChar().getData()[0];
 						}
 						parent.glassPane.stop();
@@ -354,11 +355,20 @@ public class GraphView extends JPanel implements ActionListener {
 		return ","+getPView().getPValuesString()+ correlation
 			+", alpha="+getPView().getTotalAlpha()
 			+", eps="+Configuration.getInstance().getGeneralConfig().getEpsilon()
-			+", verbose="+(Configuration.getInstance().getGeneralConfig().verbose()?"TRUE":"FALSE");
+			+", verbose="+(Configuration.getInstance().getGeneralConfig().verbose()?"42":"FALSE");
 	}
 
 	public DView getDView() {
 		return 	parent.getDView();	
+	}
+	
+	public void saveGraphImage(File file) {
+		BufferedImage img = getNL().getImage();
+		try {
+			ImageIO.write( img, "png", file );
+		} catch( Exception ex ) {
+			JOptionPane.showMessageDialog(this, "Saving image to '" + file.getAbsolutePath() + "' failed: " + ex.getMessage(), "Saving failed.", JOptionPane.ERROR_MESSAGE);
+		}
 	}
 	
 }

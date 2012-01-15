@@ -3,7 +3,6 @@ package org.af.gMCP.gui;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
-import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -13,7 +12,6 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.Set;
 
-import javax.imageio.ImageIO;
 import javax.swing.JFileChooser;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
@@ -28,6 +26,7 @@ import org.af.commons.logging.LoggingSystem;
 import org.af.commons.logging.widgets.DetailsDialog;
 import org.af.commons.tools.OSTools;
 import org.af.gMCP.config.Configuration;
+import org.af.gMCP.gui.dialogs.GraphSendToArchiveDialog;
 import org.af.gMCP.gui.dialogs.ParameterDialog;
 import org.af.gMCP.gui.dialogs.PowerDialogParameterUncertainty;
 import org.af.gMCP.gui.dialogs.RObjectLoadingDialog;
@@ -121,6 +120,8 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
 		subMenu.add(makeMenuItem("Drug clinical trial example (serial gatekeeping) from Maurer et al. (1995)", "maurer1995"));
 		menu.add(subMenu);
 		
+		menu.add(makeMenuItem("Browse archive of user submitted graphs", "userSubmitted"));
+		
 		add(menu);
 
 		menu = new JMenu("Analysis");
@@ -143,7 +144,7 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
 		menu.addSeparator();
 		menu.add(makeMenuItem("Log", "showLog", KeyEvent.VK_L));
 		menu.add(makeMenuItem("Report error", "reportError", KeyEvent.VK_R));
-		menu.add(makeMenuItem("Submit your own graph to gMCP archive", "submitGraph", false));
+		menu.add(makeMenuItem("Submit your own graph to gMCP archive", "submitGraph"));
 		if (System.getProperty("eclipse") != null) {		
 			menu.add(makeMenuItem("Debug console", "debugConsole", KeyEvent.VK_D));
 		}
@@ -365,6 +366,12 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
         	control.getMainFrame().repaint();
         } else if (e.getActionCommand().equals("debugConsole")) {
         	RControl.console.setVisible(true);
+        } else if (e.getActionCommand().equals("submitGraph")) {
+        	submitGraph();
+        } else if (e.getActionCommand().equals("userSubmitted")) {
+        	JOptionPane.showMessageDialog(control.getMainFrame(), "This is a brand new feature and there are no user submitted graphs yet.\n"+
+        			"Be the first to submit a graph:\n You find the option to do so in the \"Extras\" menu.", 
+					"No graphs available.", JOptionPane.INFORMATION_MESSAGE);
         } else if (e.getActionCommand().equals("graphAnalysis")) {
         	if (control.getNL().getNodes().size()==0) {
         		JOptionPane.showMessageDialog(control.getMainFrame(), "Graph is empty!", "Graph is empty!", JOptionPane.ERROR_MESSAGE);
@@ -384,7 +391,7 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
 			try {
 				double[] data = RControl.getR().eval(vnd.getName()).asRNumeric().getData();
 				if (data.length!=control.getNL().getNodes().size()) {
-					JOptionPane.showMessageDialog(this, "Number of hypotheses and values do not match.", 
+					JOptionPane.showMessageDialog(control.getMainFrame(), "Number of hypotheses and values do not match.", 
 							"Number of hypotheses and values do not match", JOptionPane.ERROR_MESSAGE);
 					return;
 				}
@@ -405,6 +412,10 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
         } 
 	}
 	
+	private void submitGraph() {
+		new GraphSendToArchiveDialog(control.getMainFrame(), control);		
+	}
+
 	private void showURL(String url) {
 		try {	
 			Method main = Class.forName("java.awt.Desktop").getDeclaredMethod("getDesktop");
@@ -571,7 +582,6 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
 
 	
 	private void saveGraphImage() {
-		BufferedImage img = control.getNL().getImage();
 		JFileChooser fc = new JFileChooser(Configuration.getInstance().getClassProperty(this.getClass(), "ImageDirectory"));		
         fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
         fc.setDialogType(JFileChooser.SAVE_DIALOG);
@@ -582,11 +592,7 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
             if (!f.getName().toLowerCase().endsWith(".png")) {
             	f = new File(f.getAbsolutePath()+".png");
             }
-            try {
-    			ImageIO.write( img, "png", f );
-    		} catch( Exception ex ) {
-    			JOptionPane.showMessageDialog(this, "Saving image to '" + f.getAbsolutePath() + "' failed: " + ex.getMessage(), "Saving failed.", JOptionPane.ERROR_MESSAGE);
-    		}
+            control.saveGraphImage(f);
         }		
 	}
 	

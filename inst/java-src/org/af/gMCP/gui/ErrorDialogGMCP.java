@@ -19,13 +19,13 @@ import org.apache.log4j.Logger;
 
 import com.jgoodies.forms.layout.FormLayout;
 
-public class ErrorDialogSGTK extends ErrorDialog {
+public class ErrorDialogGMCP extends ErrorDialog {
 
-    protected static Log logger = LogFactory.getLog(ErrorDialogSGTK.class);
+    protected static Log logger = LogFactory.getLog(ErrorDialogGMCP.class);
 
     protected ApplicationLog al;
 
-	public ErrorDialogSGTK(String msg, Object e, boolean fatal) {
+	public ErrorDialogGMCP(String msg, Object e, boolean fatal) {
 		super(msg, e, fatal);		
 	}
 
@@ -99,7 +99,7 @@ public class ErrorDialogSGTK extends ErrorDialog {
         return (FileAppender)Logger.getRootLogger().getAppender("READABLE_FILE");
     }
 
-    protected File makeLogFile(String fileName, String content) throws IOException{
+    public static File makeLogFile(String fileName, String content) throws IOException{
         File tempDir = new File(System.getProperty("java.io.tmpdir"));
         File output = new File(tempDir, fileName);
         FileWriter fw = new FileWriter(output);
