@@ -36,6 +36,7 @@ public class Edge {
 	public Node to;
 	public Node from;
 	public boolean fixed = false;
+	public Color color = Color.BLACK;
 	
 	NetList nl;
 	
@@ -57,13 +58,12 @@ public class Edge {
 		this.nl = nl;
 	}
 	
-	public Edge(Node von, Node nach, Double w, NetList nl, boolean curve) {
-		this(von, nach, w, nl);
-		int x1, x2, y1, y2;
-		x1 = von.getX() + Node.getRadius();
-		x2 = nach.getX() + Node.getRadius();
-		y1 = von.getY() + Node.getRadius();
-		y2 = nach.getY() + Node.getRadius();
+	public static int[] getK(Node from, Node to, boolean curve) {
+		int x1, x2, y1, y2, k1, k2;
+		x1 = from.getX() + Node.getRadius();
+		x2 = to.getX() + Node.getRadius();
+		y1 = from.getY() + Node.getRadius();
+		y2 = to.getY() + Node.getRadius();
 		if (curve) {
 			double d = Math.sqrt((x1-x2)*(x1-x2)+(y1-y2)*(y1-y2));
 			double y = y2-y1;
@@ -88,6 +88,14 @@ public class Edge {
 				k2 = y1 + (y2-y1)/2;
 			}
 		}
+		return new int[] {k1, k2};
+	}
+	
+	public Edge(Node from, Node to, Double w, NetList nl, boolean curve) {
+		this(from, to, w, nl);
+		int[] k = getK(from, to, curve);
+		k1 = k[0];
+		k2 = k[1];
 	}
 	
 	public Edge(Node von, Node nach, Double w, NetList nl, int k1, int k2) {
@@ -215,12 +223,13 @@ public class Edge {
 				g2d = (Graphics2D) g;
 			}
 			g2d = (Graphics2D) g;			
-
+			g2d.setColor(color);
 			GraphDrawHelper.drawEdge(g,	(int) (x1 * nl.getZoom()), (int) (y1 * nl.getZoom()), 
 					(int) (k1* nl.getZoom()),
 					(int) (k2 * nl.getZoom()),
 					(int) (x2 * nl.getZoom()), (int) (y2 * nl.getZoom()), 
 					(int) (8 * nl.getZoom()), 35, true);
+			g2d.setColor(Color.BLACK);
 		} 
 	}
 	
@@ -394,5 +403,23 @@ public class Edge {
 	
 	public String toString() {
 		return "edge from "+from+" to "+to;
+	}
+
+	public void setFixed(boolean fixed) {
+		this.fixed = fixed;		
+	}
+	
+	public boolean isFixed() {
+		return fixed;		
+	}
+	
+	public boolean isCurved() {
+		return curve;		
+	}
+	
+	public void move() {
+		int[] k = getK(from, to, curve);
+		k1 = k[0];
+		k2 = k[1];
 	}
 }

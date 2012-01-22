@@ -1,3 +1,31 @@
+
+Version 0.7-4 (22-01-2012, Rev. 1094)
+=====================================
+
+- Many layout improvements.
+
+- Edges have further attributes like color.
+
+- Experimental support for copying the graph to the system clip board.
+
+- For people who create graphs in R and set the layout in the GUI: 
+  If a node is dragged, edge weights also move except when they are "fixed".
+  A node is set fixed, if it is dragged itself. 
+  Saving and reloading a graph fixes all edges.
+
+- LookNFeel and font size is now saved between sessions.
+  
+- CI dialog remembers less / greater option
+
+- Thanks to .Rinstignore the file size of the installed packages is further reduced.
+
+- Fixed: plotCI did not draw the CIs if all finite points were the same.
+
+- Fixed: The bundled version closes the R console if the GUI is closed.
+  
+- Fixed: Report generation did not finished if no testing was performed beforehand.
+
+
 Version 0.7-3 (16-01-2012, Rev. 1057)
 =====================================
 
@@ -33,6 +61,8 @@ Version 0.7-3 (16-01-2012, Rev. 1057)
   
 - In addition to the RUnit tests gMCP is now also tested by JUnit tests.
 
+ 47 files changed, 362 insertions(+), 196 deletions(-)
+ 
 
 Version 0.7-2 (11-12-2011, Rev. 1016)
 =====================================

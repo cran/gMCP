@@ -8,7 +8,6 @@ import javax.swing.JDialog;
 import javax.swing.JOptionPane;
 import javax.swing.JTabbedPane;
 
-import org.af.commons.Localizer;
 import org.af.commons.errorhandling.ErrorHandler;
 import org.af.commons.widgets.WidgetFactory;
 import org.af.commons.widgets.buttons.OkApplyCancelButtonPane;
@@ -27,8 +26,9 @@ public class OptionsDialog extends JDialog implements ActionListener {
 	private static final Log logger = LogFactory.getLog(OptionsDialog.class);
 
 	private JTabbedPane tabbedPane;
-    private GeneralPanel generalPanel;
-    private PlotPanel plotPanel;
+    private GeneralPanel visualPanel;
+    private NumericPanel numericPanel;
+    private MiscPanel miscPanel;
     private OkApplyCancelButtonPane bp;
 
     private Configuration conf;
@@ -43,7 +43,7 @@ public class OptionsDialog extends JDialog implements ActionListener {
     	this.parent = p;
         this.conf = Configuration.getInstance();
         setModal(true);
-        setTitle(Localizer.getInstance().getString("SGTK_OPTIONS_OPTIONSDIALOG_TITLE"));
+        setTitle("Options");
 
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 
@@ -60,8 +60,9 @@ public class OptionsDialog extends JDialog implements ActionListener {
      */
     private void makeComponents() {
         tabbedPane = new JTabbedPane();
-        generalPanel = new GeneralPanel(parent, this);
-        plotPanel = new PlotPanel(conf);
+        visualPanel = new GeneralPanel(parent, this);
+        numericPanel = new NumericPanel(conf);
+        miscPanel = new MiscPanel(conf);        
         bp = new OkApplyCancelButtonPane();
     }
 
@@ -69,11 +70,9 @@ public class OptionsDialog extends JDialog implements ActionListener {
      * Do the layout.
      */
     private void doTheLayout() {
-        Localizer loc = Localizer.getInstance();
-        tabbedPane.addTab(loc.getString("SGTK_OPTIONS_OPTIONSDIALOG_GENERALTAB"),
-                generalPanel);
-        /*tabbedPane.addTab(loc.getString("SGTK_OPTIONS_OPTIONSDIALOG_PLOTTAB"),
-                plotPanel);*/
+        tabbedPane.addTab("Visual", visualPanel);
+        tabbedPane.addTab("Numeric", numericPanel);
+        tabbedPane.addTab("Misc", miscPanel);
         Container cp = getContentPane();
         cp.add(tabbedPane);
         cp = WidgetFactory.makeDialogPanelWithButtons(cp, bp, this);
@@ -89,8 +88,8 @@ public class OptionsDialog extends JDialog implements ActionListener {
         if ( (e.getActionCommand().equals(OkApplyCancelButtonPane.OK_CMD)) ||
         		(e.getActionCommand().equals(OkApplyCancelButtonPane.APPLY_CMD)) ) {
             try {
-            	generalPanel.setProperties();
-            	plotPanel.setProperties();
+            	visualPanel.setProperties();
+            	numericPanel.setProperties();
                 if  (e.getActionCommand().equals(OkApplyCancelButtonPane.OK_CMD)) {
                 	dispose();
                 }

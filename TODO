@@ -5,29 +5,58 @@ Critical:
 - Does Deducer interfere JavaGD? (When is .onLoad executed?)  
 - Variable handling on command line gMCP!
 - Make JavaGD only a suggest (Solaris and generally safer)
+- g <- HuqueAloshEtBhore2011()
+> g
+A graphMCP graph
+H1 (NA, weight=NA)
+H2 (NA, weight=NA)
+H3 (NA, weight=NA)
+H4 (NA, weight=NA)
+> gMCP(g, runif(4))
+Fehler in if (m[i, node] * m[node, i] < 1) { : Argument hat Länge 0
 
 High priority:
 ==============
-- Main GUI is waiting for CheckUpdate.
+- "Note that with the exceptions of INDEX, LICENSE/LICENCE and NEWS, information files at the top level
+  of the package will not be installed and so not be known to users of Windows and Mac OS X 
+  compiled packages (and not seen by those who use R CMD INSTALL or install.packages on the tarball). 
+  So any information files you wish an end user to see should be included in inst. 
+  Note that if the named exceptions also occur in inst, the versions in inst will be that seen in 
+  the installed package."
+- "The preferred location for vignette sources is now the directory
+  vignettes and not inst/doc: R CMD build will now re-build
+  vignettes in directory vignettes and copy the .Rnw (etc) files
+  and the corresponding PDFs to inst/doc.  Further files to be
+  copied to inst/doc can be specified _via_ the file
+  vignettes/.install_extras."
+- "The package environment is sealed, so you cannot use it to store
+  changing values.  Use a separate environment instead: there are
+  examples in package 'grDevices' for example."
+- "The preferred location for vignette sources is now directory
+  'vignettes' and not 'inst/doc'.  If you want to maintain compatibility
+  with R <= 2.13.x for the time being, do at least make use of a
+  .Rinstignore file to avoid installing anything other than the vignette
+  .Rnw (etc) and .pdf files, plus any other files needed for end-users
+  to run the vignette code.
+  
+  If you know a priori that the vignettes cannot be re-made on CRAN
+  (e.g. because you use unusual LaTeX files), set the BuildVignettes
+  field in the DESCRIPTION file to a false value.  (The R code in the
+  vignettes as extracted by Stangle still needs to be runnable.)"
 - Check for missing suggested packages (JavaGD, graph) 
   and ask on startup whether they should be installed and name the features that are otherwise missing.
 - Give feedback for old objects and missing graph package in GUI
 - Remove warnings: es gibt kein Paket names 'graph'
 - Some edge labels like for parallel gatekeeping are set to small values (0?)
 - On Windows: Autoresize of the adjacency matrix does often not work.
-- Sample sizes for correlation matrices
-- Test report creation - does not seem to work
 - "Reject and pass \alpha" does not make sense in the parametric case (actually it does, if we 
 - Option "Show fractions" has no influence on TextFields for weights etc
 - What happens if we start the GUI a second time?
 - Why does matrix(c(0,1/2,0,0),2) loose half an alpha?
 - Example graphs from Ferber?
-- In CI-Dialog (remember less / greater)
 - In CI-Dialog (initial weights instead of alpha are displayed - this are two errors)
 - Mark cell content (if one clicks and type, one often wants to overwrite)
 - Display edges > 1 and < 0. (Also: -1E0)
-- Make node and edge creation sticky until another button is clicked (but do not place nodes above other nodes)
-- Check LaTeX export with variables and epsilon polynoms.
 - Flag 1+epsilon>1 in line sum
 - round adjusted p-Values up
 - Think about "-Xrs" - see paragraph below.
@@ -39,8 +68,6 @@ High priority:
 - think about naming of rows, cols, weights … but I guess it'll be the advise to use just the mutator methods or if you want to avoid this overhead a warning that you should know what you are doing…
 - does something in Björns C code trigger the following false-positive:
 Possible MalWare 'W32/NewMalware-Generic-8d27-f554' found in '5832765_287X_AZ-D_PA3__gMCP.dll'. Heuristics score: 336 
-- remember focus on description vs. graph analysis
-- test whether description is always saved
 - More fairness regarding the Maurer et al. example ("improved" - what does the paper cover)
 - All Dialogs should have cancel buttons
 - LaTeX Dialog should give information about TikZ and needed usepackage etc. lines
@@ -48,7 +75,6 @@ Possible MalWare 'W32/NewMalware-Generic-8d27-f554' found in '5832765_287X_AZ-D_
 
 Medium priority:
 ================
-- SourceForDevelopment throws error.
 - improvedFallbackII() under Windows with GUI:
   Error in graph:::isValidAdjMat(adjMat, edgemode) : 
   negative values not allowed in adjacency matrix
@@ -60,10 +86,7 @@ Medium priority:
   mcp.c: In function ‘graphmult’:
   mcp.c:124:9: warning: unused variable ‘j’
 - https://twitter.com/#!/hadleywickham: "@revodavid noooooooooooo. don't use strings + parse + eval. use calls + substitute + eval #rstats (there's also an R news article on macros)"
-- readRDS/saveRDS instead of load/save?
-- If Error Report sending fails, give user the option to send the log files as zip file
 - Does Indefinite ProgressPanel slow the calculation significantly down ?!?
-- Improve visualization of CI (estimates should be a named vector - 0 estimates are often a strange choice - patch plotCII?)
 - graphAnalysis: Graph can be optimal despite the fact that some nodes are not accessible from others
 - Warn user when sum of edge weights is bigger than 1
 - Check mutator methods for errors (alpha > 1, edge weights > 1)
@@ -71,12 +94,8 @@ Medium priority:
 - Guide for usage under MacOS
 - Test the option for rounding how many digits we want to see.
 (search for DecimalFormat and replace it with getDecFormat())
-- Ask for saving graph when quitting
-- LookNFeel is not kept between sessions (also first call of options result in strange LookNFeel message)
-- Edge labels should be fixed and placed by user or free and adjust to moving nodes
 - Improve speed when loading graphs
 - Check for / think about conflicts: "JAVAGD_CLASS_NAME"="org/mutoss/gui/JavaGD"
-- placeNodes drops nodes to the top left if rows*columns is smaller than the number of nodes.
 
 Lade nötiges Paket: graph
 Warnmeldung:
@@ -86,14 +105,12 @@ In library(package, lib.loc = lib.loc, character.only = TRUE, logical.return = T
 
 Additional features / low priority:
 ===================================
-
-- What exactly are the consequences, if we set "Encoding: UTF-8" in the description file?
-  - Are there other possibilities to pretty-print the \epsilon, etc.? (Most likely not worth the work.)
+- Save ConfIntPlot as png/bmp or copy to system clip board
+- Copy graph to system clip board
 - Do we really need PolynomF as dependencies?
 - Don't create global variable like .tmpGraph etc.
 - Report generation in GUI (and respect the option whether to show rejected null hypothesis)
 - PNG export cuts edges in rare cases. (But already improved!)
-- Can we add a RUnit Test for Java importing Random Graphs and then exporting the same graph?
 - TikZ styles for rejected / rejectable nodes
 - further tests
 - Look at http://xmlgraphics.apache.org/fop/
@@ -103,7 +120,6 @@ Additional features / low priority:
 - Use of InfoNode Docking Windows? http://www.infonode.net/index.html?idw
   Would increase size by 717 kByte.
 - Whishlist dialog.
-- RMySQL as suggest?
 - suppressPackageStartupMessages
 
      ‘.First.lib’ is called when a package without a name space is
@@ -135,32 +151,6 @@ checking R code for possible problems ... NOTE
 2010-10-02 03:00:01.838 R[97724:613] Apple AWT Java VM was loaded on first thread -- can't start AWT. 
 
 -> reference to JGR or Deducer.
-
-@graph-package:
-
-How do I create a graphNEL object, where there is a node that has no out-going edges?
-I thought the following will do it:
-
-hnodes <- c("H1","H2")
-edges <- vector("list", length=2)
-edges[[1]] <- list(edges=c("H2"), weights=c(1.0))
-edges[[2]] <- list(edges=character(0), weights=numeric(0))
-# or "edges[[2]] <- list()" which gives the same result.
-names(edges)<-hnodes
-g <- new("graphNEL", nodes=hnodes, edgeL=edges, "directed")
-
-But the problem is, that g@edgeData@data[[1]]$weight is now a numeric with attribute "names".
-This makes problems, for example it confuses edgeWeights: 
-
-edgeWeights(g)
-$H1
-H2.H1
-        1 
-
-$H2
-numeric(0)
-
-In my understanding this should be "H2" instead of "H2.H1" like it would be when H2 has any outgoing edges.
 
 rJava: We had the following problem:
 
@@ -199,11 +189,6 @@ install.packages("gMCP")
 --- Please select a CRAN mirror for use in this session ---
 also installing the dependencies ‘mvtnorm’, ‘rJava’, ‘PolynomF’, ‘multcomp’, ‘graph’, ‘gtools’
 
-trying URL 'http://ftp5.gwdg.de/pub/misc/cran/bin/windows/contrib/2.13/mvtnorm_0.9-96.zip'
-Content type 'application/zip' length 555152 bytes (542 Kb)
-opened URL
-downloaded 542 Kb
-
 [...]
 
 trying URL 'http://ftp5.gwdg.de/pub/misc/cran/bin/windows/contrib/2.13/gMCP_0.6-1.zip'
@@ -221,27 +206,3 @@ Warning: unable to move temporary installation 'C:\Program Files\R\R-2.13.0\libr
 
 The downloaded packages are in
         C:\Documents and Settings\Student\Local Settings\Temp\RtmpBJn6oK\downloaded_packages
-        
-> library(gMCP)
-Error in library(gMCP) : there is no package called 'gMCP'
-> install.packages("gMCP")
-trying URL 'http://ftp5.gwdg.de/pub/misc/cran/bin/windows/contrib/2.13/gMCP_0.6-1.zip'
-Content type 'application/zip' length 4668375 bytes (4.5 Mb)
-opened URL
-downloaded 4.5 Mb
-
-package 'gMCP' successfully unpacked and MD5 sums checked
-
-The downloaded packages are in
-        C:\Documents and Settings\Student\Local Settings\Temp\RtmpBJn6oK\downloaded_packages
-> library(gMCP)
-Loading required package: rJava
-Loading required package: MASS
-Loading required package: PolynomF
-Loading required package: multcomp
-Loading required package: mvtnorm
-Loading required package: survival
-Loading required package: splines
-Loading required package: graph
-Loading required package: gtools
-> 

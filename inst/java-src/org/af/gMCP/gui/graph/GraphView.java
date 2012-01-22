@@ -2,6 +2,8 @@ package org.af.gMCP.gui.graph;
 
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
+import java.awt.Image;
+import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
@@ -17,6 +19,7 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.filechooser.FileFilter;
 
 import org.af.commons.errorhandling.ErrorHandler;
 import org.af.commons.widgets.DesktopPaneBG;
@@ -27,9 +30,12 @@ import org.af.gMCP.gui.datatable.DataTable;
 import org.af.gMCP.gui.dialogs.AdjustedPValueDialog;
 import org.af.gMCP.gui.dialogs.DialogConfIntEstVar;
 import org.af.gMCP.gui.dialogs.RejectedDialog;
+import org.af.gMCP.gui.dialogs.VariableNameDialog;
+import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jdesktop.swingworker.SwingWorker;
+import org.mutoss.gui.TransferableImage;
 
 public class GraphView extends JPanel implements ActionListener {
 
@@ -49,7 +55,7 @@ public class GraphView extends JPanel implements ActionListener {
 	JButton buttonStart;	
 	JButton buttonBack;
 	
-	String correlation;
+	String correlation = "";
 	public String result = ".gMCPResult_" + (new Date()).getTime();
 	public boolean resultUpToDate = false;
 	
@@ -352,10 +358,11 @@ public class GraphView extends JPanel implements ActionListener {
 	}
 
 	public String getGMCPOptions() {
-		return ","+getPView().getPValuesString()+ correlation
-			+", alpha="+getPView().getTotalAlpha()
-			+", eps="+Configuration.getInstance().getGeneralConfig().getEpsilon()
-			+", verbose="+(Configuration.getInstance().getGeneralConfig().verbose()?"42":"FALSE");
+		return ","+getPView().getPValuesString()
+				+ correlation
+				+", alpha="+getPView().getTotalAlpha()
+				+", eps="+Configuration.getInstance().getGeneralConfig().getEpsilon()
+				+", verbose="+(Configuration.getInstance().getGeneralConfig().verbose()?"42":"FALSE");
 	}
 
 	public DView getDView() {
@@ -371,4 +378,56 @@ public class GraphView extends JPanel implements ActionListener {
 		}
 	}
 	
+	public void saveGraph() {
+		JFileChooser fc = new JFileChooser(Configuration.getInstance().getClassProperty(this.getClass(), "RObjDirectory"));		
+        fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
+        fc.setDialogType(JFileChooser.SAVE_DIALOG);
+        fc.setFileFilter(new FileFilter() {
+			public boolean accept(File f) {
+				if (f.isDirectory()) return true;
+				return f.getName().toLowerCase().endsWith(".rdata");
+			}
+			public String getDescription () { return "RData files"; }  
+		});
+        fc.setDialogType(JFileChooser.SAVE_DIALOG);
+        int returnVal = fc.showOpenDialog(this);
+        if (returnVal == JFileChooser.APPROVE_OPTION) {
+            File f = fc.getSelectedFile();
+            Configuration.getInstance().setClassProperty(this.getClass(), "RObjDirectory", f.getParent());
+            if (!f.getName().toLowerCase().endsWith(".rdata")) {
+            	f = new File(f.getAbsolutePath()+".RData");
+            }
+            try {
+            	VariableNameDialog vnd = new VariableNameDialog(getGraphGUI(), getGraphName());            	
+            	String name = vnd.getName();
+            	name = getNL().saveGraph(name, false); 
+            	String filename = f.getAbsolutePath().replaceAll("\\\\", "\\\\\\\\");            	
+            	RControl.getR().eval("save("+name+", file=\""+filename+"\")");        		
+            	JOptionPane.showMessageDialog(getMainFrame(), "Exported graph to R object '"+name+"' and saved this to \n'" + f.getAbsolutePath() + "'.", "Saved graph", JOptionPane.INFORMATION_MESSAGE);
+            	Configuration.getInstance().getGeneralConfig().addGraph(f.getAbsolutePath());
+    		} catch( Exception ex ) {
+    			JOptionPane.showMessageDialog(getMainFrame(), "Saving graph to '" + f.getAbsolutePath() + "' failed: " + ex.getMessage(), "Saving failed", JOptionPane.ERROR_MESSAGE);
+    		}
+        }	
+	}
+
+	public void loadPValuesFromR() {
+		VariableNameDialog vnd = new VariableNameDialog(getGraphGUI());     
+		try {
+			double[] data = RControl.getR().eval(vnd.getName()).asRNumeric().getData();
+			if (data.length!=getNL().getNodes().size()) {
+				JOptionPane.showMessageDialog(getMainFrame(), "Number of hypotheses and values do not match.", 
+						"Number of hypotheses and values do not match", JOptionPane.ERROR_MESSAGE);
+				return;
+			}
+			getPView().setPValues(ArrayUtils.toObject(data));					
+		} catch (Exception ex) {
+			JOptionPane.showMessageDialog(this, "Error loading values from R:\n"+ex.getMessage(), 
+					"Error loading values from R", JOptionPane.ERROR_MESSAGE);
+		}		
+	}
+
+	public void copyGraphToClipboard() {
+		TransferableImage.copyImageToClipboard(getNL().getImage());
+	}
 }

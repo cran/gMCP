@@ -19,7 +19,6 @@ import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.filechooser.FileFilter;
 
-import org.af.commons.Localizer;
 import org.af.commons.errorhandling.ErrorHandler;
 import org.af.commons.io.FileTransfer;
 import org.af.commons.logging.LoggingSystem;
@@ -35,7 +34,6 @@ import org.af.gMCP.gui.dialogs.TextFileViewer;
 import org.af.gMCP.gui.dialogs.VariableNameDialog;
 import org.af.gMCP.gui.graph.GraphView;
 import org.af.gMCP.gui.options.OptionsDialog;
-import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jdesktop.swingworker.SwingWorker;
@@ -43,7 +41,6 @@ import org.jdesktop.swingworker.SwingWorker;
 public class MenuBarMGraph extends JMenuBar implements ActionListener {
 	
 	GraphView control;
-    protected Localizer localizer = Localizer.getInstance();
     private static final Log logger = LogFactory.getLog(MenuBarMGraph.class);
     JMenu fmenu = new JMenu("File");
 
@@ -59,9 +56,10 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
 		fmenu.addSeparator();
 		fmenu.add(makeMenuItem("Save Graph to R", "save graph to R", KeyEvent.VK_S));	
 		fmenu.add(makeMenuItem("Save Graph to RData file", "save graph"));		
-		fmenu.addSeparator();
-		fmenu.add(makeMenuItem("Export Graph to PNG Image", "export graph image", KeyEvent.VK_P));
+		fmenu.addSeparator();		
+		fmenu.add(makeMenuItem("Export Graph to PNG Image", "export graph image", KeyEvent.VK_P));		
 		fmenu.add(makeMenuItem("Export Graph to LaTeX File", "export graph latex", KeyEvent.VK_A));
+		fmenu.add(makeMenuItem("Copy Graph to Clip Board", "copy graph to clipboard"));
 		fmenu.add(makeMenuItem("Show LaTeX Code for Graph", "show graph latex", KeyEvent.VK_C));
 		fmenu.addSeparator();
 		fmenu.add(makeMenuItem("Save LaTeX Report", "save latex report", KeyEvent.VK_R));
@@ -175,7 +173,7 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
 	private void createLastUsed() {
 		List<String> graphs = Configuration.getInstance().getGeneralConfig().getLatestGraphs();
 		
-		for(int i=fmenu.getItemCount()-1; i>15; i--) {
+		for(int i=fmenu.getItemCount()-1; i>16; i--) {
 			fmenu.remove(i);
 		}
 		
@@ -239,7 +237,7 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
     }
     
     public void reportError() {    	
-        ErrorHandler.getInstance().makeErrDialog(localizer.getString("SGTK_MENU_EXTRAS_REPORT_ERROR"));
+        ErrorHandler.getInstance().makeErrDialog("Report Error");
     }
 
 	public void actionPerformed(ActionEvent e) {
@@ -264,7 +262,8 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
         } else if (e.getActionCommand().equals("new graph")) {
         	newGraph();			
         } else if (e.getActionCommand().equals("save graph")) {       	
-        	saveGraph();
+        	control.saveGraph();
+        	createLastUsed();
         } else if (e.getActionCommand().equals("save graph to R")) {
         	if (control.getNL().getNodes().size()==0) {
         		JOptionPane.showMessageDialog(control.getMainFrame(), "Will not save empty graph.", "Saving to R failed.", JOptionPane.ERROR_MESSAGE);
@@ -274,6 +273,8 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
         	String name = control.getNL().saveGraph(vnd.getName(), true);
         	Configuration.getInstance().getGeneralConfig().addGraph("R Object: "+name);
         	createLastUsed();
+        } else if (e.getActionCommand().equals("copy graph to clipboard")) {       	
+        	control.copyGraphToClipboard();
         } else if (e.getActionCommand().equals("export graph image")) {       	
         	saveGraphImage();
         } else if (e.getActionCommand().equals("export graph latex")) {       	
@@ -387,19 +388,7 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
         	}
         	new PowerDialogParameterUncertainty(control.getMainFrame());
         } else if (e.getActionCommand().equals("load p-values from R")) {
-        	VariableNameDialog vnd = new VariableNameDialog(control.getGraphGUI(), "");     
-			try {
-				double[] data = RControl.getR().eval(vnd.getName()).asRNumeric().getData();
-				if (data.length!=control.getNL().getNodes().size()) {
-					JOptionPane.showMessageDialog(control.getMainFrame(), "Number of hypotheses and values do not match.", 
-							"Number of hypotheses and values do not match", JOptionPane.ERROR_MESSAGE);
-					return;
-				}
-				control.getPView().setPValues(ArrayUtils.toObject(data));					
-			} catch (Exception ex) {
-				JOptionPane.showMessageDialog(this, "Error loading values from R:\n"+ex.getMessage(), 
-						"Error loading values from R", JOptionPane.ERROR_MESSAGE);
-			} 
+        	control.loadPValuesFromR(); 
         } else if (e.getActionCommand().equals("changeGraphLayout")) {
         	new RearrangeNodesDialog(control.getMainFrame());
         } else if (e.getActionCommand().equals("replaceVariables")) {
@@ -631,39 +620,7 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
 		}
 	}
 
-	private void saveGraph() {
-		JFileChooser fc = new JFileChooser(Configuration.getInstance().getClassProperty(this.getClass(), "RObjDirectory"));		
-        fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
-        fc.setDialogType(JFileChooser.SAVE_DIALOG);
-        fc.setFileFilter(new FileFilter() {
-			public boolean accept(File f) {
-				if (f.isDirectory()) return true;
-				return f.getName().toLowerCase().endsWith(".rdata");
-			}
-			public String getDescription () { return "RData files"; }  
-		});
-        fc.setDialogType(JFileChooser.SAVE_DIALOG);
-        int returnVal = fc.showOpenDialog(this);
-        if (returnVal == JFileChooser.APPROVE_OPTION) {
-            File f = fc.getSelectedFile();
-            Configuration.getInstance().setClassProperty(this.getClass(), "RObjDirectory", f.getParent());
-            if (!f.getName().toLowerCase().endsWith(".rdata")) {
-            	f = new File(f.getAbsolutePath()+".RData");
-            }
-            try {
-            	VariableNameDialog vnd = new VariableNameDialog(control.getGraphGUI(), control.getGraphName());            	
-            	String name = vnd.getName();
-            	name = control.getNL().saveGraph(name, false); 
-            	String filename = f.getAbsolutePath().replaceAll("\\\\", "\\\\\\\\");            	
-            	RControl.getR().eval("save("+name+", file=\""+filename+"\")");        		
-            	JOptionPane.showMessageDialog(control.getMainFrame(), "Exported graph to R object '"+name+"' and saved this to \n'" + f.getAbsolutePath() + "'.", "Saved graph", JOptionPane.INFORMATION_MESSAGE);
-            	Configuration.getInstance().getGeneralConfig().addGraph(f.getAbsolutePath());
-            	createLastUsed();
-    		} catch( Exception ex ) {
-    			JOptionPane.showMessageDialog(control.getMainFrame(), "Saving graph to '" + f.getAbsolutePath() + "' failed: " + ex.getMessage(), "Saving failed", JOptionPane.ERROR_MESSAGE);
-    		}
-        }	
-	}
+
 
 	protected JMenuItem makeMenuItem(String text, String action) {
         return makeMenuItem(text, action, true);

@@ -12,10 +12,13 @@ import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
+import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
+import javax.swing.UnsupportedLookAndFeelException;
 
-import org.af.commons.Localizer;
 import org.af.commons.errorhandling.ErrorHandler;
 import org.af.commons.widgets.InfiniteProgressPanel;
+import org.af.commons.widgets.WidgetFactory;
 import org.af.commons.widgets.InfiniteProgressPanel.AbortListener;
 import org.af.gMCP.config.Configuration;
 import org.af.gMCP.config.VersionComparator;
@@ -35,23 +38,26 @@ import org.rosuda.REngine.JRI.JRIEngine;
 
 public class CreateGraphGUI extends JFrame implements WindowListener, AbortListener {
 	
-	GraphView agc;
+	GraphView control;
 	PView pview;
 	DView dview;
 	DataFramePanel dfp;
 	public InfiniteProgressPanel glassPane;
 	protected static Log logger = LogFactory.getLog(CreateGraphGUI.class);
+	public boolean isGraphSaved = true;
+	
 	
 	public CreateGraphGUI(String graph, double[] pvalues, boolean debug, double grid, boolean experimentalFeatures) {
 		super("gMCP GUI");
 		Locale.setDefault(Locale.US);
 		JComponent.setDefaultLocale(Locale.US); 
 		RControl.getRControl(debug);
-		Localizer.getInstance().addResourceBundle("org.af.gMCP.gui.ResourceBundle");
 		if (grid>0) {
 			Configuration.getInstance().getGeneralConfig().setGridSize((int)grid);
 		}
 		Configuration.getInstance().getGeneralConfig().setExperimental(experimentalFeatures);
+		
+		/* Get and save R and gMCP version numbers */
 		try {		
 			Configuration.getInstance().getGeneralConfig().setRVersionNumber(RControl.getR().eval("paste(R.version$major,R.version$minor,sep=\".\")").asRChar().getData()[0]);
 			Configuration.getInstance().getGeneralConfig().setVersionNumber(RControl.getR().eval("gMCP:::gMCPVersion()").asRChar().getData()[0]);
@@ -60,23 +66,35 @@ public class CreateGraphGUI extends JFrame implements WindowListener, AbortListe
 			// This is no vital information and will fail for e.g. R 2.8.0, so no error handling here...
 			logger.warn("Package version could not be set:\n"+e.getMessage());
 		}
+		
+		/* Count the number of starts */
 		int n = Configuration.getInstance().getGeneralConfig().getNumberOfStarts();
 		Configuration.getInstance().getGeneralConfig().setNumberOfStarts(n+1);		
 		logger.info("gMCP start No. "+n+1);
 		
 		setIconImage((new ImageIcon(getClass().getResource("/org/af/gMCP/gui/graph/images/rjavaicon64.png"))).getImage());
+		try {
+			setLooknFeel();
+		} catch (Exception e1) {
+			JOptionPane.showMessageDialog(this, "Font size and Look'n'Feel could not be restored.", "Error restoring Look'n'Feel", JOptionPane.ERROR_MESSAGE);
+		}
 				
+		/* 
+		 * We want to check for unsaved changes and eventually quit the R console as well, 
+		 * so we implement the WindowListener interface and let windowClosing() do the work.
+		 */
+		setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
 		addWindowListener(this);
-
+		
 		pview = new PView(this);
 		dview = new DView(this);
 		dfp = new DataFramePanel(new RDataFrameRef());
-		agc = new GraphView(graph, this);  // NetList object is created here.	
-		setJMenuBar(new MenuBarMGraph(agc));		
+		control = new GraphView(graph, this);  // NetList object is created here.	
+		setJMenuBar(new MenuBarMGraph(control));		
 		makeContent();
 		
 		if (RControl.getR().eval("exists(\""+graph+"\")").asRLogical().getData()[0]) {
-			agc.getNL().loadGraph(graph);
+			control.getNL().loadGraph(graph);
 		}
 		
 		if (pvalues.length>0) getPView().setPValues(ArrayUtils.toObject(pvalues));
@@ -156,8 +174,8 @@ public class CreateGraphGUI extends JFrame implements WindowListener, AbortListe
 	JSplitPaneBugWorkAround splitPane2;
 	
 	private void makeContent() {
-		dfp.getTable().setDefaultEditor(EdgeWeight.class, new CellEditorE(agc, dfp.getTable()));
-		splitPane1 = new JSplitPaneBugWorkAround(JSplitPane.VERTICAL_SPLIT, agc, dview);		
+		dfp.getTable().setDefaultEditor(EdgeWeight.class, new CellEditorE(control, dfp.getTable()));
+		splitPane1 = new JSplitPaneBugWorkAround(JSplitPane.VERTICAL_SPLIT, control, dview);		
 		splitPane2 = new JSplitPaneBugWorkAround(JSplitPane.VERTICAL_SPLIT, new JScrollPane(dfp), new JScrollPane(pview));		
 		splitPane = new JSplitPaneBugWorkAround(JSplitPane.HORIZONTAL_SPLIT, splitPane1, splitPane2);		
 		getContentPane().add(splitPane);		
@@ -170,12 +188,22 @@ public class CreateGraphGUI extends JFrame implements WindowListener, AbortListe
 	public void windowActivated(WindowEvent e) {}
 	public void windowClosed(WindowEvent e) {}
 	/**
-	 * Closes the R console if we are in bundled mode. 
+	 * Closes the R console if we are in bundled mode and checks for unsaved changes. 
 	 */
 	public void windowClosing(WindowEvent e) {
-		if (RControl.getR().eval("exists(\".isBundled\")").asRLogical().getData()[0]) {
+		if (!isGraphSaved) {
+			int answer = JOptionPane.showConfirmDialog(this, "The current graph is not saved yet!\nDo you want to save it?", 
+					"Do you want to save the graph?",
+					JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE);
+			if (answer==JOptionPane.CANCEL_OPTION) return;
+			if (answer==JOptionPane.YES_OPTION) {
+				control.saveGraph();
+			}
+		}
+		if (RControl.getR().eval("exists(\".isBundle\")").asRLogical().getData()[0]) {
 			RControl.getR().eval("q(save=\"no\")");
 		}
+		dispose();
 	}
 	public void windowDeactivated(WindowEvent e) {}
 	public void windowDeiconified(WindowEvent e) {}
@@ -187,7 +215,7 @@ public class CreateGraphGUI extends JFrame implements WindowListener, AbortListe
 	}
 
 	public GraphView getGraphView() {		
-		return agc;
+		return control;
 	}
 
 	public DataTable getDataTable() {		
@@ -227,5 +255,12 @@ public class CreateGraphGUI extends JFrame implements WindowListener, AbortListe
 
 	public DView getDView() {		
 		return dview;
+	}
+	
+	private void setLooknFeel() throws ClassNotFoundException, IllegalAccessException,
+	InstantiationException, UnsupportedLookAndFeelException {
+		UIManager.setLookAndFeel(Configuration.getInstance().getJavaConfig().getLooknFeel());
+        WidgetFactory.setFontSizeGlobal(Configuration.getInstance().getGeneralConfig().getFontSize());
+		SwingUtilities.updateComponentTreeUI(this);
 	}
 }
