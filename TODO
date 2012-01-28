@@ -2,8 +2,7 @@ Critical:
 =========
 
 - Think about JavaGD devices. (User wants to plot in R Console etc.)
-- Does Deducer interfere JavaGD? (When is .onLoad executed?)  
-- Variable handling on command line gMCP!
+- Does Deducer interfere JavaGD? (When is .onLoad executed?)
 - Make JavaGD only a suggest (Solaris and generally safer)
 - g <- HuqueAloshEtBhore2011()
 > g
@@ -14,9 +13,23 @@ H3 (NA, weight=NA)
 H4 (NA, weight=NA)
 > gMCP(g, runif(4))
 Fehler in if (m[i, node] * m[node, i] < 1) { : Argument hat Länge 0
+- Check installed structure of Windows binary.
 
 High priority:
 ==============
+- graphTest's last.alphas at least contain strange NaN in some cases
+g <- parallelGatekeeping()
+graphTest(pvalues=c(0, 1, 0, 0), alpha=0.05, graph=graph)
+[...]
+attr(,"last.alphas")
+[1] NaN NaN   0   0
+
+- Give link to gMCP mailing list
+- HighRes option for PNG export
+
+- Update description / references in "Example Graphs"
+- graphTest renames hypotheses to H1...Hn or drops them completely in the output
+- Björns Mail
 - "Note that with the exceptions of INDEX, LICENSE/LICENCE and NEWS, information files at the top level
   of the package will not be installed and so not be known to users of Windows and Mac OS X 
   compiled packages (and not seen by those who use R CMD INSTALL or install.packages on the tarball). 
@@ -38,7 +51,6 @@ High priority:
   .Rinstignore file to avoid installing anything other than the vignette
   .Rnw (etc) and .pdf files, plus any other files needed for end-users
   to run the vignette code.
-  
   If you know a priori that the vignettes cannot be re-made on CRAN
   (e.g. because you use unusual LaTeX files), set the BuildVignettes
   field in the DESCRIPTION file to a false value.  (The R code in the
@@ -69,16 +81,12 @@ High priority:
 - does something in Björns C code trigger the following false-positive:
 Possible MalWare 'W32/NewMalware-Generic-8d27-f554' found in '5832765_287X_AZ-D_PA3__gMCP.dll'. Heuristics score: 336 
 - More fairness regarding the Maurer et al. example ("improved" - what does the paper cover)
-- All Dialogs should have cancel buttons
-- LaTeX Dialog should give information about TikZ and needed usepackage etc. lines
+- All Dialogs should have cancel / ok buttons
 - Capture verbose output
 
 Medium priority:
 ================
-- improvedFallbackII() under Windows with GUI:
-  Error in graph:::isValidAdjMat(adjMat, edgemode) : 
-  negative values not allowed in adjacency matrix
-  (not reproducable?)
+- graphAnalysis throws: negative values not allowed in adjacency matrix for e.g. improved parallel gatekeeping.
 - Contact Björn:
   ~/workspace/gMCP/pkg/gMCP/src$ gcc -I/usr/share/R/include -Wunused -fpic  -std=gnu99 -O3 -pipe  -g -c mcp.c -o mcp.o
   mcp.c: In function ‘graphproc’:
@@ -105,12 +113,11 @@ In library(package, lib.loc = lib.loc, character.only = TRUE, logical.return = T
 
 Additional features / low priority:
 ===================================
+- \gamma or \delta are pretty small on edges.
 - Save ConfIntPlot as png/bmp or copy to system clip board
-- Copy graph to system clip board
 - Do we really need PolynomF as dependencies?
 - Don't create global variable like .tmpGraph etc.
 - Report generation in GUI (and respect the option whether to show rejected null hypothesis)
-- PNG export cuts edges in rare cases. (But already improved!)
 - TikZ styles for rejected / rejectable nodes
 - further tests
 - Look at http://xmlgraphics.apache.org/fop/
@@ -118,7 +125,7 @@ Additional features / low priority:
   "unprotect(): only 0 protected items"
   Should be fixed now - but if we have time to spare, we could look further into this.
 - Use of InfoNode Docking Windows? http://www.infonode.net/index.html?idw
-  Would increase size by 717 kByte.
+  Would increase size by 717 kByte (and bind us to GPL=2)
 - Whishlist dialog.
 - suppressPackageStartupMessages
 

@@ -14,10 +14,28 @@ test.Simes <- function() {
 
 checkWeights <- function(graph, pvalues) {
 	# Compares the weights of the gMCP-R-code, gMCP-C-code, power-C-code and parametric-R-code
-	result <- gMCP(graph,  pvalues)
+	result <- gMCP(graph,  pvalues, keepWeights=FALSE)
 	rejected <- getRejected(result)
-	weights <- getWeights(result@graphs[[length(result@graphs)]])
+	weights <- getWeights(result)
 	
+	result2 <- gMCP(graph,  pvalues, useC=TRUE, keepWeights=FALSE)
+	rejected2 <- getRejected(result2)
+	weights2 <- getWeights(result2)
+	
+	checkEquals(rejected, rejected2)
+	checkEquals(weights, weights2)
+	
+	result <- gMCP(graph,  pvalues, keepWeights=TRUE)
+	rejected <- getRejected(result)
+	weights <- getWeights(result)	
+	
+	result3 <- graphTest(pvalues=pvalues, alpha=0.05, graph=substituteEps(graph))
+	m3 <- attr(result, "last.G")
+	weights3 <- attr(result3, "last.alphas") / 0.05
+	rejected3 <- result3!=0
+	
+	checkEquals(unname(rejected), unname(rejected3)) # TODO fix naming
+	#checkEquals(unname(weights), weights3) TODO check why NaNs occur
 }
 
 test.checkWeights <- function() {
@@ -46,7 +64,9 @@ test.checkWeights <- function() {
 	for (graph in graphs) {		
 		p <- gMCP:::permutations(length(getNodes(graph)))
 		for (i in 1:(dim(p)[1])) {
-			checkWeights(graph, p[i,])
+			pvalues <- p[i,]
+			pvalues[pvalues==0] <- 0.00001
+			checkWeights(graph, pvalues)
 		}
 	}
 }

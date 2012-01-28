@@ -34,8 +34,11 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 	private static final Log logger = LogFactory.getLog(NetList.class);
 	GraphView control;
 	
+	GraphMCP graph;
+	
 	int drag = -1;
 	int edrag = -1;
+	boolean unAnchor = false;
 	
 	protected Vector<Edge> edges = new Vector<Edge>();
 	protected Vector<Node> nodes = new Vector<Node>();
@@ -228,8 +231,8 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 				maxY = edge.getK2();
 		}		
 		
-		BufferedImage img = new BufferedImage((int) ((maxX + 2 * Node.getRadius() + 10) * getZoom()),
-				(int) ((maxY + 2 * Node.getRadius() + 10) * getZoom()), BufferedImage.TYPE_INT_ARGB);
+		BufferedImage img = new BufferedImage((int) ((maxX + 2 * Node.getRadius() + 400) * getZoom()),
+				(int) ((maxY + 2 * Node.getRadius() + 400) * getZoom()), BufferedImage.TYPE_INT_ARGB);
 		Graphics2D g = img.createGraphics();
 		
 		g.setStroke(new BasicStroke(Configuration.getInstance().getGeneralConfig().getLineWidth()));
@@ -244,10 +247,32 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 		for (Edge edge : edges) {
 			edge.paintEdgeLabel(g);			
 		}
+		
+		img = cutImage(img);
+		
 		return img;
 
 	}
 	
+	private BufferedImage cutImage(BufferedImage img) {
+		int minX = img.getWidth();
+		int minY = img.getHeight();
+		int maxX = 0;
+		int maxY = 0;
+		int offset = 5;
+		for (int x=0; x<img.getWidth(); x++) {
+			for(int y=0; y<img.getHeight(); y++) {
+				if (img.getRGB(x, y)!=0) {
+					if (x<minX) minX = x;
+					if (y<minY) minY = y;
+					if (x>maxX) maxX = x;
+					if (y>maxY) maxY = y;
+				}
+			}
+		}
+		return img.getSubimage(minX-offset, minY-offset, maxX-minX+2*offset, maxY-minY+2*offset);
+	}
+
 	public Vector<Node> getNodes() {
 		return nodes;
 	}
@@ -289,7 +314,7 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 		control.stopTesting();
 		reset();
 		this.updateGUI = false;
-		GraphMCP graph = new GraphMCP(initialGraph, this);
+		graph = new GraphMCP(initialGraph, this);
 		control.getPView().restorePValues();
 		this.updateGUI = true;
 		graphHasChanged();
@@ -301,7 +326,7 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 	public void loadGraph(String string) {
 		boolean matrix = RControl.getR().eval("is.matrix("+string+")").asRLogical().getData()[0];
 		RControl.getR().eval(initialGraph + " <- placeNodes("+ (matrix?"matrix2graph(":"(")+ string + "))");
-		GraphMCP graph = loadGraph();	
+		graph = loadGraph();	
 		if (graph.getDescription()!=null) {
 			control.getDView().setDescription(graph.getDescription());
 		} else {
@@ -317,6 +342,14 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 	public void mouseDragged(MouseEvent e) {
 		if (drag==-1 && edrag == -1) return;
 		if (drag!=-1) {
+			if (!unAnchor && Configuration.getInstance().getGeneralConfig().getUnAnchor()) { 
+				for (Edge edge : getEdges()) {
+					if (edge.from == nodes.get(drag) || edge.to == nodes.get(drag)) {
+						edge.fixed = false;
+					}
+				}
+				unAnchor = true;
+			}
 			nodes.get(drag).setX( (int) ((e.getX()+offset[0]) / (double) getZoom()));
 			nodes.get(drag).setY( (int) ((e.getY()+offset[1]) / (double) getZoom()));
 			placeUnfixedNodes(nodes.get(drag));
@@ -405,6 +438,7 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 		}
 		drag = -1;
 		edrag = -1;
+		unAnchor = false;
 	}
 	
 	/**
@@ -462,11 +496,13 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 					(float) (( 20+30*2 ) * getZoom())); 
 			
 			if (userDefined!=null) {
-				s = "User defined Power: " + format.format(userDefined);		
+				for (int i = 0; i<userDefined.length; i++) {
+					s = "User defined Power ("+userFunctions[i]+"): " + format.format(userDefined[i]);		
 
-				g2d.drawString(s ,
-						(float) (( 10 ) * getZoom()),
-						(float) (( 20+30*3 ) * getZoom()));
+					g2d.drawString(s ,
+							(float) (( 10 ) * getZoom()),
+							(float) (( 20+30*(3+i) ) * getZoom()));
+				}
 			}
 		}
 	}
@@ -599,7 +635,7 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 		RControl.getR().evalVoid(".gsrmtVar$m <- matrix(0, nrow="+nodes.size()+", ncol="+nodes.size()+")");
 		RControl.getR().evalVoid("rownames(.gsrmtVar$m) <- colnames(.gsrmtVar$m) <- .gsrmtVar$hnodes");
 		for (Edge e : edges) {
-			RControl.getR().evalVoid(".gsrmtVar$m[\""+e.from.getName()+"\",\""+e.to.getName()+"\"] <- \""+ e.getWS().replaceAll("\\\\", "\\\\\\\\") +"\"");
+			RControl.getR().evalVoid(".gsrmtVar$m[\""+e.from.getName()+"\",\""+e.to.getName()+"\"] <- \""+ e.getPreciseWeightStr().replaceAll("\\\\", "\\\\\\\\") +"\"");
 		}
 		RControl.getR().evalVoid(graphName+" <- new(\"graphMCP\", m=.gsrmtVar$m, weights=.gsrmtVar$alpha)");
 		for (int i=nodes.size()-1; i>=0; i--) {
@@ -675,10 +711,12 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 	Double expRejections = null;
 	Double powAtlst1 = null;
 	Double rejectAll = null;
-	Double userDefined = null;
+	Double[] userDefined = null;
+	String[] userFunctions = null;
 	
 	public void setPower(double[] localPower, Double expRejections,
-			Double powAtlst1, Double rejectAll, Double userDefined) {
+			Double powAtlst1, Double rejectAll, Double[] userDefined,
+			String[] functions) {
 		for (int i=0; i<localPower.length; i++) {
 			this.nodes.get(i).setLocalPower(localPower[i]);			
 		}
@@ -686,6 +724,7 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 		this.powAtlst1 = powAtlst1;
 		this.rejectAll = rejectAll;
 		this.userDefined = userDefined;
+		this.userFunctions = functions;
 		this.repaint();
 	}
 

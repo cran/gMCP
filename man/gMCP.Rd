@@ -9,7 +9,7 @@
 }
 \usage{
 	gMCP(graph, pvalues, test, correlation, alpha=0.05, 
-	     approxEps=TRUE, eps=10^(-3), ..., useC=FALSE, verbose=FALSE)
+	     approxEps=TRUE, eps=10^(-3), ..., useC=FALSE, verbose=FALSE, keepWeights=TRUE)
 }
 
 \arguments{
@@ -23,7 +23,9 @@
   	A test function. Will be supported in future versions.
   } 
   \item{correlation}{
-  	Correlation matrix, if the tests are correlated. Also valid are strings like \code{"Dunnett"}.
+  	Correlation matrix, if the tests are correlated. 
+  	Also valid are strings like \code{"Dunnett", "Tukey", "Sequen", "AVE", "Changepoint", "Williams", "Marcus", "McDermott", "UmbrellaWilliams", "GrandMean"}.
+  	In this case please add a numeric parameter \code{samplesize} that specifies the sample size of each group. 
   } 
   \item{alpha}{
   	A numeric specifying the maximal allowed type one error rate.
@@ -37,11 +39,19 @@
   \item{...}{
   	Test specific arguments can be given here.
   }   
-  \item{useC}{Logical scalar. If \code{TRUE} neither adjusted p-values nor intermediate graphs are returned,
-  		  but the calculation is sped up by using code written in C. THIS CODE IS NOT FOR PRODUCTIVE USE YET!
-  		  If approxEps is \code{FALSE} and the graph contains epsilon edges, a warning is thrown and \code{useC} will be ignored.}
-  \item{verbose}{Logical scalar. If \code{TRUE} verbose output is generated during
-          sequentially rejection steps.}  
+  \item{useC}{
+    Logical scalar. If \code{TRUE} neither adjusted p-values nor intermediate graphs are returned,
+  	but the calculation is sped up by using code written in C. THIS CODE IS NOT FOR PRODUCTIVE USE YET!
+  	If approxEps is \code{FALSE} and the graph contains epsilon edges, a warning is thrown and \code{useC} will be ignored.
+  }
+  \item{verbose}{
+    Logical scalar. If \code{TRUE} verbose output is generated during
+    sequentially rejection steps.
+  }
+  \item{keepWeights}{
+    Logical scalar. If \code{FALSE} the weight of a node without outgoing edges is set to 0 if it is removed.
+    Otherwise it keeps its weight.
+  }  
 }
 \details{
 	For details see the given references.
@@ -82,6 +92,7 @@ Kornelius Rohmeyer \email{rohmeyer@small-projects.de}
 
 \seealso{
 \code{\link{graphMCP}}
+\code{\link[multcomp:contrMat]{graphNEL}}
 }
 \examples{
 

@@ -81,11 +81,11 @@ bdiagNA <- function(...) {
 
 requireLibrary <- function(package) {
 	if(!require(package, character.only=TRUE)) {
-		answer <- readline(paste("Package ",package," is required - should we install it?", sep=""))
+		answer <- readline(paste("Package ",package," is required - should we install it (y/n)? ", sep=""))
 		if (substr(answer, 1, 1) %in% c("y","Y")) {
-			if (package %in% c("graph", "Rgraphviz")) {
-				biocLite <- function(x) {}
+			if (package %in% c("graph", "Rgraphviz")) {	
 				source("http://www.bioconductor.org/biocLite.R")
+				biocLite <- get("biocLite", envir=globalenv())
 				biocLite(package)
 			} else {
 				install.packages(package)
@@ -99,4 +99,23 @@ requireLibrary <- function(package) {
 
 triangle <- function(min, peak, max) {
 	
+}
+
+# Depending of the number of hypotheses it is calculated 
+# which standard designs could be a possibility and how many 
+# groups they would have.
+getAvailableStandardDesigns <- function(n) {
+	designs <- c()
+	numberOfGroups <- c()
+	possibleDesigns = c("Dunnett", "Tukey", "Sequen", "AVE", "Changepoint", "Williams", "Marcus", "McDermott", "UmbrellaWilliams", "GrandMean")
+	for (design in possibleDesigns) {
+		for (i in 2:n) {
+			m <- try(contrMat(n=rep(10, i), type=design), silent = TRUE)
+			if (!("try-error" %in% class(m)) && dim(m)[1]==n) {
+				designs <- c(designs, design)
+				numberOfGroups <- c(numberOfGroups, i)
+			}
+		}
+	}	
+	return(list(designs, numberOfGroups))
 }

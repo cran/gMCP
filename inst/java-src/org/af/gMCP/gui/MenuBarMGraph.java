@@ -1,5 +1,7 @@
 package org.af.gMCP.gui;
 
+import java.awt.Toolkit;
+import java.awt.datatransfer.StringSelection;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
@@ -149,8 +151,8 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
 		menu.setMnemonic(KeyEvent.VK_E);
 		if (Configuration.getInstance().getGeneralConfig().experimentalFeatures()) {
 			menu.addSeparator();
-			menu.add(makeMenuItem("Entangled Graphs", "entangledGraphs", false));
-			menu.add(makeMenuItem("Adaptive Designs", "adaptiveDesigns", false));
+			menu.add(makeMenuItem("Entangled Graphs", "entangledGraphs"));
+			menu.add(makeMenuItem("Adaptive Designs", "adaptiveDesigns"));
 		}
 		add(menu);
 
@@ -160,6 +162,7 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
 		menu.add(makeMenuItem("Introduction to gMCP", "showAppHelp", KeyEvent.VK_I));
 		menu.add(makeMenuItem("Weighted parametric tests defined by graphs", "showParametric", KeyEvent.VK_P));
 		menu.add(makeMenuItem("gMCP R Online Reference manual", "showManual", KeyEvent.VK_M));
+		menu.add(makeMenuItem("Paper about gMCP in the Biometrical Journal", "showPaper1", KeyEvent.VK_P));
 		menu.add(makeMenuItem("References", "showReferences", KeyEvent.VK_R));
 		//menu.add(makeMenuItem("Theoretical Background", "showAppHelp"));
 		/*menu.addSeparator();
@@ -352,6 +355,8 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
         	showFile("doc/parametric.pdf");       	 	
         } else if (e.getActionCommand().equals("showManual")) {
         	showURL("http://cran.at.r-project.org/web/packages/gMCP/gMCP.pdf");
+        } else if (e.getActionCommand().equals("showPaper1")) {
+        	showURL("http://onlinelibrary.wiley.com/doi/10.1002/bimj.201000239/full");
         } else if (e.getActionCommand().equals("showReferences")) {
         	showFile("References.html");
         } else if (e.getActionCommand().equals("showEpsDoc")) {
@@ -398,7 +403,11 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
         	}
         	control.getNL().saveGraphWithoutVariables(control.getNL().initialGraph, false);
         	control.getNL().loadGraph();
-        } 
+        }  else if (e.getActionCommand().equals("entangledGraphs")) {
+        	
+        }   else if (e.getActionCommand().equals("adaptiveDesigns")) {
+        	
+        }
 	}
 	
 	private void submitGraph() {
@@ -538,7 +547,10 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
 	
 	
 	public void showLaTeXGraph() {
-		new TextFileViewer(control.getGraphGUI(), "LaTeX code", control.getNL().getLaTeX());
+		String latexCode = control.getNL().getLaTeX();
+		Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(latexCode), null);		
+		new TextFileViewer(control.getGraphGUI(), "LaTeX code", latexCode, 
+				"Also add the following lines to the header of your LaTeX file:\n\\usepackage{tikz}\n\\usetikzlibrary{snakes,arrows,shapes}");
 	}
 	
 	public String LATEX_BEGIN_DOCUMENT = "\\documentclass[11pt]{article}\n"+

@@ -267,5 +267,52 @@ public class GeneralConfig extends SpecificConfig {
     public double getVariable(String variable) {
 		return Double.parseDouble(getProperty("Variable_"+variable, "0.5"));		
 	}
-		
+
+	public boolean exportTransparent() {
+		return Boolean.parseBoolean(getProperty("exportTransparent", "true"));
+	}
+
+	public void setExportTransparent(boolean b) {
+		setProperty("exportTransparent", ""+b);
+	}
+
+	public boolean getUnAnchor() {
+		return Boolean.parseBoolean(getProperty("unAnchor", "false"));
+	}
+	
+	public void setUnAnchor(boolean b) {
+		setProperty("unAnchor", ""+b);
+	}
+
+	public boolean simplify() {
+		return Boolean.parseBoolean(getProperty("simplify", "false"));
+	}
+
+	public int getDigits2() {
+		return Integer.parseInt(getProperty("digits2", "6"));		
+	}
+
+	public void setSimplify(boolean b) {
+		setProperty("simplify", ""+b);		
+	}
+
+	public void setDigits2(int digits2) {
+		setProperty("digits2", ""+digits2);
+	}
+
+	public Integer getNumberOfSimulations() {
+		return Integer.parseInt(getProperty("numberOfSimulations", "10000"));
+	}
+
+	public String getTypeOfRandom() {
+		return getProperty("typeOfRandom", "quasirandom");
+	}
+	
+	public void setNumberOfSimulations(int nr) {
+		setProperty("numberOfSimulations", ""+nr);
+	}
+	
+	public void setTypeOfRandom(String type) {
+		setProperty("typeOfRandom", ""+type);
+	}
 }
