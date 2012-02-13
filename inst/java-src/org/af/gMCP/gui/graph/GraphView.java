@@ -2,8 +2,6 @@ package org.af.gMCP.gui.graph;
 
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
-import java.awt.Image;
-import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
@@ -57,8 +55,8 @@ public class GraphView extends JPanel implements ActionListener {
 	
 	String correlation = "";
 	public String result = ".gMCPResult_" + (new Date()).getTime();
-	public boolean resultUpToDate = false;
-	
+	protected boolean resultUpToDate = false;
+
 	private static final Log logger = LogFactory.getLog(GraphView.class);
 	
 	public String getGraphName() {		
@@ -208,9 +206,9 @@ public class GraphView extends JPanel implements ActionListener {
 				SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
 					@Override
 					protected Void doInBackground() throws Exception {
-						if (!resultUpToDate) {
+						if (!isResultUpToDate()) {
 							RControl.getR().evalVoid(result+" <- gMCP("+getNL().initialGraph+getGMCPOptions()+")");
-							resultUpToDate = true;
+							setResultUpToDate(true);
 						}
 						double[] alpha = RControl.getR().eval(""+getPView().getTotalAlpha()+"*getWeights("+result+")").asRNumeric().getData();
 						boolean[] rejected = RControl.getR().eval("getRejected("+result+")").asRLogical().getData();
@@ -233,9 +231,9 @@ public class GraphView extends JPanel implements ActionListener {
 				SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
 					@Override
 					protected Void doInBackground() throws Exception {
-						if (!resultUpToDate) {
+						if (!isResultUpToDate()) {
 							RControl.getR().evalVoid(result+" <- gMCP("+getNL().initialGraph+getGMCPOptions()+")");
-							resultUpToDate = true;
+							setResultUpToDate(true);
 						}
 						boolean[] rejected = RControl.getR().eval(result+"@rejected").asRLogical().getData();
 						String output = null;
@@ -267,9 +265,9 @@ public class GraphView extends JPanel implements ActionListener {
 				SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
 					@Override
 					protected Void doInBackground() throws Exception {						
-						if (!resultUpToDate) {
+						if (!isResultUpToDate()) {
 							RControl.getR().evalVoid(result+" <- gMCP("+getNL().initialGraph+getGMCPOptions()+")");
-							resultUpToDate = true;
+							setResultUpToDate(true);
 						}
 						double[] adjPValues = RControl.getR().eval(result+"@adjPValues").asRNumeric().getData();
 						parent.glassPane.stop();
@@ -302,8 +300,8 @@ public class GraphView extends JPanel implements ActionListener {
 		}
 	}
 
-	public void startTesting() {	
-		if (getNL().testingStarted) return;
+	public void startTesting() {
+		if (getNL().testingStarted || !getPView().jrbNoCorrelation.isSelected()) return;
 		getPView().savePValues();
 		try {
 			getNL().startTesting();
@@ -429,5 +427,15 @@ public class GraphView extends JPanel implements ActionListener {
 
 	public void copyGraphToClipboard() {
 		TransferableImage.copyImageToClipboard(getNL().getImage());
+	}
+	
+	
+	public boolean isResultUpToDate() {
+		return resultUpToDate;
+	}
+
+	public void setResultUpToDate(boolean resultUpToDate) {
+		//statusBar.setText("Result up-to-date: "+resultUpToDate);
+		this.resultUpToDate = resultUpToDate;
 	}
 }

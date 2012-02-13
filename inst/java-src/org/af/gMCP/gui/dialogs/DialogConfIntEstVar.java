@@ -45,7 +45,7 @@ public class DialogConfIntEstVar extends JDialog implements ActionListener, Chan
 	
 	String[] dists = { "normal-distributed", "t-distributed" };
 	String[] alternatives = { /*"two.sided",*/ "less", "greater" };
-	JButton jbLoadEst = new JButton("Load µ from R");
+	JButton jbLoadEst = new JButton("Load mean from R");
 	JButton jbLoadSD = new JButton("Load sd from R");
 	
 	NetList nl;	
@@ -232,7 +232,7 @@ public class DialogConfIntEstVar extends JDialog implements ActionListener, Chan
 			panel.add(hypothesis, c);
 			c.gridx++;
 			
-			JLabel alpha = new JLabel("α="+format.format(node.getWeight()));
+			JLabel alpha = new JLabel(format.format(node.getWeight()));
 			this.alphaLabel.add(alpha);
 			panel.add(alpha, c);
 			c.gridx++;
@@ -293,7 +293,6 @@ public class DialogConfIntEstVar extends JDialog implements ActionListener, Chan
 		return panel;
 	}
 
-	@Override
 	public void actionPerformed(ActionEvent e) {
 		if (e.getSource().getClass().equals(JComboBox.class)) {
 			int i = dist.indexOf(e.getSource());
@@ -326,22 +325,18 @@ public class DialogConfIntEstVar extends JDialog implements ActionListener, Chan
 		calculateCI();
 	}
 
-	@Override
 	public void stateChanged(ChangeEvent e) {
 		calculateCI();	
 	}
 
-	@Override
 	public void changedUpdate(DocumentEvent e) {
 		calculateCI();		
 	}
 
-	@Override
 	public void insertUpdate(DocumentEvent e) {
 		calculateCI();			
 	}
 
-	@Override
 	public void removeUpdate(DocumentEvent e) {
 		calculateCI();			
 	}

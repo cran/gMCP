@@ -45,6 +45,7 @@
 \newcommand{\N}{\ensuremath{\mathbb{N}}\xspace}
 \newcommand{\sF}{\ensuremath{\mathcal{F}}\xspace}
 \newcommand{\Pot}{\ensuremath{\mathfrak{Pot}}\xspace}
+\newcommand{\kronecker}{\raisebox{1pt}{\ensuremath{\:\otimes\:}}}
 
 \DeclareMathOperator{\range}{range}
 
@@ -368,7 +369,7 @@ edgeAttr(graph, "H11", "H21", "labelY") <- 80
 The creation of \texttt{graphMCP} objects as seen in the last section 
 with basic R commands is very straight forward,
 but still takes some time and typos may occur.  More convenient for
-the average user is the use of the graphical user interface for
+the most users is the use of the graphical user interface for
 creating and editing MCP graphs that the \texttt{gMCP} package
 includes.
 
@@ -568,9 +569,41 @@ See \cite{Bretz11}.
 \end{figure}
 
 In the lower right panel with p-values, it is also possible to specify a known correlation between these values (see figure \ref{correlated}).
- 
 
 For further information please take a look at the vignette "\emph{Weighted parametric tests defined by graphs}".
+
+\section{Correlation matrix creation}\index{correlation matrix}
+
+The GUI features a dialog for easy creation of correlation matrices (see figure \ref{createCM1}).
+
+\begin{figure}[ht]
+  \centering    
+  \includegraphics[width=0.7\textwidth]{pictures/createCM1.png}      
+  \caption{\label{createCM1} You can configure many things in the option dialog.}
+\end{figure}
+
+
+
+If the entered matrix is not positive semidefinite, 
+i.e.\ negative eigen values exist, a warning is given.
+
+\[A \kronecker B\]
+
+Graph from Bretz et al. (2009) - Figure 14
+
+Literature: Bretz F., Maurer W., Brannath W., Posch M.: A graphical approach to sequentially rejective multiple test procedures. Statistics in Medicine 2009; 28:586-604. Figure 14.
+
+%\begin{figure}[ht]
+%  \centering    
+%  \includegraphics[width=0.7\textwidth]{pictures/createCM1.png}      
+%  \caption{\label{createCM2} You can configure many things in the option dialog.}
+%\end{figure}
+
+%\begin{figure}[ht]
+%  \centering    
+%  \includegraphics[width=0.7\textwidth]{pictures/createCM1.png}      
+%  \caption{\label{createCM3} You can configure many things in the option dialog.}
+%\end{figure}
 
 \section{Epsilon edges}\index{epsilon edges}
 
@@ -657,7 +690,35 @@ cat(graph2latex(generalSuccessive(), scale=0.7, fontsize="tiny"))
   \caption{\label{powergraph} Graph from Bretz et al. (2009)}
 \end{figure}
 
+\begin{figure}[ht]
+  \centering    
+  \includegraphics[width=9cm]{pictures/power.png}      
+  \caption{\label{power} Local power and some (trivial) user defined power functions.}
+\end{figure}
+
 \subsection{Variable edge weights}\index{edge weights!variable}
+
+Apart from latin letters the following greek letters can be used to name a variable:
+  
+$\backslash$alpha, $\backslash$beta, $\backslash$gamma, $\backslash$delta, 
+$\backslash$epsilon, $\backslash$zeta, $\backslash$eta, 
+$\backslash$theta, $\backslash$iota, $\backslash$kappa, $\backslash$lambda, 
+$\backslash$mu, $\backslash$nu, $\backslash$xi, 
+%$\backslash$omicron, 
+$\backslash$pi, $\backslash$rho, $\backslash$sigma, 
+$\backslash$tau, $\backslash$upsilon, $\backslash$phi,
+$\backslash$chi, $\backslash$psi, $\backslash$omega
+
+These result in $\alpha,\; \beta,\; \gamma,\; \delta,\; 
+\epsilon,\; \zeta,\; \eta,\; 
+\theta,\; \iota,\; \kappa,\; \lambda,\; 
+\mu,\; \nu,\; \xi,\; 
+%\omicron,\; 
+\pi,\; \rho,\; \sigma,\; 
+\tau,\; \upsilon,\; \phi,
+\chi,\; \psi,\; \omega$.
+
+Note that omicron is not allowed since it can not destinguished from the latin character "o". 
 
 \includegraphics[width=5cm]{pictures/variableEditor.png}
 
@@ -893,6 +954,23 @@ Let $\sum_{k=1}^m w_k = m$ and reject $H_0$ if
 \[p^{(j)}\leq\frac{\sum_{k=1}^jw_[{(k)}}{m}\cdot\alpha\quad\text{for some $1\leq j\leq m$}.\]
 
 \end{Theorem}
+
+\subsubsection*{Adjusted p-Values in the Simes Test}
+
+For each set $J\subset I$ we calculate
+\[m_J := \min\limits_{j\in J}\left(\frac{p_j}{\sum_{i\in J_j}w_i}\right),\quad J_j=\{k\in J\;|\; p_k\leq p_j\}.\]
+
+The weighted Simes Test rejects $H_J$ iff $m_J\leq\alpha$.
+%for some $j \in J$
+%\[p_j\leq\alpha \sum_{i\in J_j}w_i\]
+%or equivalent
+%\[\]
+
+In a closed testing procedure a hypothesis $H_j$ is rejected iff $H_J$ is rejected for each $J\subset I$ with $j\in J$.
+
+An adjusted p-pvalue $p'_j$ is defined as the minimal $\alpha$ so that the test to global level $\alpha$ rejects $H_j$.
+
+Therefore $p'_j=\text{max}(m_J\;|\;j\in J)$.
 
 \end{appendix}
 

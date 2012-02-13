@@ -1,3 +1,31 @@
+- Save power scenarios
+- H1 && H2 || !H3 (GUI)
+- Names & export functions
+- Move creation of correlation matrix to advanced creation dialog
+- Allow reordering of hypotheses - show always the names of the hypotheses (correlation)
+- CI Dialog testen!
+- Beim Ändern der Optionen unten im P-Panel muss das Result Objekt gelöscht werden!
+- Check in CI zu max(0, ..) bzw. min(0, ..) / means
+- keine p-Werte übernehmen
+- ability to save intermediate and final graphs
+- Document how to extract m, weights etc. 
+- Buttons to load R objects for power dialog.
+- Erben der Korrelationsmatrix vom Hauptfenster (warn if this is not the case?)
+- NCP anstatt mean bzw. Alternative zu mu, sigma und n
+- Scenarios for power
+- listen von Stichproben
+- Output von power calculations
+- positive Definitheit
+
+- test whether correlation is applicable:
+  - Simes test -> postitive regression dependence (warn)
+  - Dunnett -> ?
+- Sequentielle Power ist schwierig (basiert am Ende auf zu wenig Fallzahl der Simulation)
+- Corrleation matrix should parse 1/2
+- pvalues for Simes
+- verbose output for parametric tests
+- NA in correlation matrices
+
 Critical:
 =========
 
@@ -17,6 +45,11 @@ Fehler in if (m[i, node] * m[node, i] < 1) { : Argument hat Länge 0
 
 High priority:
 ==============
+
+- Graphs with variables should be set back to the version with variables.
+- An empty string for an edge weight creates a bug report window.
+- Show optional dialog when refresh button is pressed.
+- Check java.awt.Desktop.open in the newest Ubuntu (or is there something else wrong?)
 - graphTest's last.alphas at least contain strange NaN in some cases
 g <- parallelGatekeeping()
 graphTest(pvalues=c(0, 1, 0, 0), alpha=0.05, graph=graph)

@@ -1,7 +1,5 @@
 package org.af.gMCP.gui.dialogs;
 
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.List;
@@ -138,7 +136,6 @@ public class PowerDialogParameterUncertainty extends JDialog implements ActionLi
         setVisible(true);
 	}
 
-	@Override
 	public void actionPerformed(ActionEvent e) {
 		if (jtUserDefined.getText().length()>0) {
 			listModel.insertElementAt(jtUserDefined.getText(), 0);

@@ -264,18 +264,24 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
         	}
         } else if (e.getActionCommand().equals("new graph")) {
         	newGraph();			
-        } else if (e.getActionCommand().equals("save graph")) {       	
+        } else if (e.getActionCommand().equals("save graph")) {     
+        	if (control.getNL().getNodes().size()==0) {
+        		JOptionPane.showMessageDialog(control.getMainFrame(), "Will not save empty graph.", "Saving to R failed.", JOptionPane.ERROR_MESSAGE);
+        		return;
+        	}
         	control.saveGraph();
         	createLastUsed();
+        	control.getMainFrame().isGraphSaved = true;
         } else if (e.getActionCommand().equals("save graph to R")) {
         	if (control.getNL().getNodes().size()==0) {
         		JOptionPane.showMessageDialog(control.getMainFrame(), "Will not save empty graph.", "Saving to R failed.", JOptionPane.ERROR_MESSAGE);
         		return;
         	}
         	VariableNameDialog vnd = new VariableNameDialog(control.getGraphGUI(), control.getGraphName());
-        	String name = control.getNL().saveGraph(vnd.getName(), true);
+        	String name = control.getNL().saveGraph(vnd.getName(), true);        	    	
         	Configuration.getInstance().getGeneralConfig().addGraph("R Object: "+name);
         	createLastUsed();
+        	control.getMainFrame().isGraphSaved = true;
         } else if (e.getActionCommand().equals("copy graph to clipboard")) {       	
         	control.copyGraphToClipboard();
         } else if (e.getActionCommand().equals("export graph image")) {       	
@@ -502,9 +508,9 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
 		SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
 			@Override
 			protected Void doInBackground() throws Exception {
-				if (!control.resultUpToDate) {
+				if (!control.isResultUpToDate()) {
 					RControl.getR().evalVoid(control.result+" <- gMCP("+control.getNL().initialGraph+control.getGMCPOptions()+")");
-					control.resultUpToDate = true;
+					control.setResultUpToDate(true);
 				}
 				String filename = f.getAbsolutePath().replaceAll("\\\\", "\\\\\\\\");
 				RControl.getR().eval("gMCPReport("+control.result+", file=\""+filename+"\")");

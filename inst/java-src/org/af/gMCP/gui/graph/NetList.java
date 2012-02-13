@@ -154,7 +154,9 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 	public boolean updateGUI = true;
 
 	public void graphHasChanged() {
-		control.resultUpToDate = false;
+		expRejections = null; powAtlst1 = null; rejectAll = null; userDefined = null;
+		control.setResultUpToDate(false);
+		control.getMainFrame().isGraphSaved = false;
 		if (!updateGUI) return;
 		String analysis = null;
 		Set<String> variables = getAllVariables();
@@ -235,6 +237,11 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 				(int) ((maxY + 2 * Node.getRadius() + 400) * getZoom()), BufferedImage.TYPE_INT_ARGB);
 		Graphics2D g = img.createGraphics();
 		
+		if (!Configuration.getInstance().getGeneralConfig().exportTransparent()) {
+			g.setColor(Color.WHITE);
+			g.fillRect(0, 0, img.getWidth(), img.getHeight());			
+		}
+		
 		g.setStroke(new BasicStroke(Configuration.getInstance().getGeneralConfig().getLineWidth()));
 		g.setRenderingHint(RenderingHints.KEY_ANTIALIASING,	RenderingHints.VALUE_ANTIALIAS_ON);
 		
@@ -260,9 +267,10 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 		int maxX = 0;
 		int maxY = 0;
 		int offset = 5;
+		//System.out.println(img.getRGB(1, 1));
 		for (int x=0; x<img.getWidth(); x++) {
-			for(int y=0; y<img.getHeight(); y++) {
-				if (img.getRGB(x, y)!=0) {
+			for(int y=0; y<img.getHeight(); y++) {				
+				if (img.getRGB(x, y)!=0 && img.getRGB(x, y)!=-1) {
 					if (x<minX) minX = x;
 					if (y<minY) minY = y;
 					if (x>maxX) maxX = x;
@@ -560,6 +568,7 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 		zoom = 1.00;
 		control.getDView().setDescription("Enter a description for the graph.");
 		graphHasChanged();
+		control.getMainFrame().isGraphSaved = true;
 	}
 
 	public void saveGraph() {
@@ -658,6 +667,7 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 			}			
 		}	
 		RControl.getR().evalVoid("attr("+graphName+", \"description\") <- \""+ control.getDView().getDescription()+"\"");
+		RControl.getR().evalVoid("attr("+graphName+", \"pvalues\") <- "+ control.getPView().getPValuesString());
 		if (verbose) { JOptionPane.showMessageDialog(null, "The graph as been exported to R under ther variable name:\n\n"+graphName, "Saved as \""+graphName+"\"", JOptionPane.INFORMATION_MESSAGE); }
 		return graphName;
 	}
@@ -676,7 +686,7 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 		zoom = p;
 	}
 
-	public void startTesting() {
+	public void startTesting() {		
 		testingStarted = true;	
 		statusBar.setText("Reject nodes or reset to the initial graph for modifications.");
 	}

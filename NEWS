@@ -1,3 +1,30 @@
+
+Version 0.7-6 (13-02-2012, Rev. 1208)
+=====================================
+
+- JTable behaves slightly different now:
+  Whenever a cell gets the focus the CellEditor is opened.
+  Also already existing text is selected to make overwriting easier.
+  You can change this behavior in the options.
+
+- Fixed: With Java 5 it was sometimes hard to edit the cells of JTables.  
+
+- Fixed: NullpointerException when loading R objects.
+
+- Fixed (regression): greek characters were shown in the 
+  adjacency matix with leading backslash
+  
+- Fixed: In rare cases (i.e. only information about correlation was changed)
+  old results were displayed if reset was not used.
+
+- rqmvnorm does not set a seed by default.
+ 
+- If a graph is saved the p-values are automatically attached to the 
+  graphMCP objects as an attribute "pvalues".
+
+- New option: Should the exported image of a graph have 
+  an white or transparent background.
+
 Version 0.7-5 (29-01-2012, Rev. 1147)
 =====================================
 
@@ -21,6 +48,8 @@ Version 0.7-5 (29-01-2012, Rev. 1147)
 - Fixed: GUI was more prone to rounding errors
 
 - Fixed: Main vignette was missing in the binary zips
+
+52 files changed, 606 insertions(+), 212 deletions(-)
 
 
 Version 0.7-4 (22-01-2012, Rev. 1096)

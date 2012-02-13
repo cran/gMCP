@@ -1,9 +1,12 @@
 package org.af.gMCP.gui.datatable;
 
+import java.awt.Component;
 import java.awt.Dimension;
 
 import javax.swing.JTable;
+import javax.swing.JTextField;
 
+import org.af.gMCP.config.Configuration;
 import org.af.gMCP.gui.graph.EdgeWeight;
 
 public class DataTable extends JTable {
@@ -18,8 +21,9 @@ public class DataTable extends JTable {
         getColumnModel().setColumnSelectionAllowed(false);
         setRowSelectionAllowed(false);
         setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
-              
+        setDefaultEditor(EdgeWeight.class, new CellEditorE(null, this));
     	setDefaultRenderer(EdgeWeight.class, new EpsilonTableCellRenderer());
+    	putClientProperty("terminateEditOnFocusLost", Boolean.TRUE);
     }
 
     public DataTableModel getModel() {
@@ -30,9 +34,10 @@ public class DataTable extends JTable {
         getModel().fireTableStructureChanged();
     }
 
-    public Dimension getPreferredScrollableViewportSize() {
+   public Dimension getPreferredScrollableViewportSize() {
         Dimension size = super.getPreferredScrollableViewportSize();
-        return new Dimension(Math.min(getPreferredSize().width, size.width), size.height);
+        return new Dimension(Math.min(getPreferredSize().width, size.width), getPreferredSize().height);
+        //return new Dimension(getPreferredSize().width, getPreferredSize().height);
     }
 
     public boolean getScrollableTracksViewportWidth() {
@@ -48,4 +53,21 @@ public class DataTable extends JTable {
 	public void setTesting(boolean testing) {
 		getModel().setTesting(testing);
 	}
+	
+	public void changeSelection(final int row, final int column, boolean toggle, boolean extend) {
+		super.changeSelection(row, column, toggle, extend);
+		if (Configuration.getInstance().getGeneralConfig().focusEqualsEdit()) {		
+			editCellAt(row, column);
+			transferFocus();
+			Component editorComponent = getEditorComponent();
+			if (editorComponent instanceof JTextField) {
+				((JTextField) editorComponent).selectAll();
+			}
+		}
+    }
+	
+	public String getRMatrix() {
+		return getModel().getDataFrame().getRMatrix();
+	}
+	
 }

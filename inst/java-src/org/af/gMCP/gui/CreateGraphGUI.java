@@ -191,7 +191,7 @@ public class CreateGraphGUI extends JFrame implements WindowListener, AbortListe
 	 * Closes the R console if we are in bundled mode and checks for unsaved changes. 
 	 */
 	public void windowClosing(WindowEvent e) {
-		if (!isGraphSaved) {
+		if (!isGraphSaved && Configuration.getInstance().getGeneralConfig().askWhenGraphIsNotSaved()) {
 			int answer = JOptionPane.showConfirmDialog(this, "The current graph is not saved yet!\nDo you want to save it?", 
 					"Do you want to save the graph?",
 					JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE);
@@ -222,7 +222,6 @@ public class CreateGraphGUI extends JFrame implements WindowListener, AbortListe
 		return dfp.getTable();
 	}
 
-	@Override
 	public void abort() {
 		if (RControl.getR().getREngine().getClass() == JRIEngine.class) {
 			JRIEngine engine = (JRIEngine) RControl.getR().getREngine();

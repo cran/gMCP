@@ -109,7 +109,7 @@ getAvailableStandardDesigns <- function(n) {
 	numberOfGroups <- c()
 	possibleDesigns = c("Dunnett", "Tukey", "Sequen", "AVE", "Changepoint", "Williams", "Marcus", "McDermott", "UmbrellaWilliams", "GrandMean")
 	for (design in possibleDesigns) {
-		for (i in 2:n) {
+		for (i in 2:(2*n)) {
 			m <- try(contrMat(n=rep(10, i), type=design), silent = TRUE)
 			if (!("try-error" %in% class(m)) && dim(m)[1]==n) {
 				designs <- c(designs, design)
@@ -118,4 +118,12 @@ getAvailableStandardDesigns <- function(n) {
 		}
 	}	
 	return(list(designs, numberOfGroups))
+}
+
+getCorrMat <- function(n, type) {
+	m <- contrMat(n, type)
+	m <- m%*%t(m)
+	s <- diag(1/sqrt(diag(m)))
+	r <- s%*%m%*%s
+	return(as.numeric(r))
 }
