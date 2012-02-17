@@ -1,14 +1,9 @@
 - Save power scenarios
 - H1 && H2 || !H3 (GUI)
-- Names & export functions
-- Move creation of correlation matrix to advanced creation dialog
-- Allow reordering of hypotheses - show always the names of the hypotheses (correlation)
+- Export user defined functions and allow names for them
 - CI Dialog testen!
-- Beim Ändern der Optionen unten im P-Panel muss das Result Objekt gelöscht werden!
 - Check in CI zu max(0, ..) bzw. min(0, ..) / means
 - keine p-Werte übernehmen
-- ability to save intermediate and final graphs
-- Document how to extract m, weights etc. 
 - Buttons to load R objects for power dialog.
 - Erben der Korrelationsmatrix vom Hauptfenster (warn if this is not the case?)
 - NCP anstatt mean bzw. Alternative zu mu, sigma und n
@@ -16,15 +11,18 @@
 - listen von Stichproben
 - Output von power calculations
 - positive Definitheit
-
 - test whether correlation is applicable:
   - Simes test -> postitive regression dependence (warn)
   - Dunnett -> ?
 - Sequentielle Power ist schwierig (basiert am Ende auf zu wenig Fallzahl der Simulation)
 - Corrleation matrix should parse 1/2
-- pvalues for Simes
+- Export matrix with 1/2 as 0.5 but add label as attribute
 - verbose output for parametric tests
-- NA in correlation matrices
+- For the resulting graph a new option keepWeight
+  is introduced in the functions gMCP and rejectNode:
+  A node without outgoing edges is removed.
+  Should its weight become 0 or should it keep its weight?
+- Save labels as edge / node attributes?
 
 Critical:
 =========

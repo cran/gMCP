@@ -348,7 +348,11 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 	public void mouseClicked(MouseEvent e) {}
 
 	public void mouseDragged(MouseEvent e) {
-		if (drag==-1 && edrag == -1) return;
+		if (drag==-1 && edrag == -1) {
+			endPoint = new int[] {e.getX(), e.getY()};
+			repaint();
+			return;
+		}
 		if (drag!=-1) {
 			if (!unAnchor && Configuration.getInstance().getGeneralConfig().getUnAnchor()) { 
 				for (Edge edge : getEdges()) {
@@ -376,6 +380,8 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 	public void mouseMoved(MouseEvent e) {}
 
 	protected int[] offset;
+	protected int[] startingPoint = null;
+	protected int[] endPoint = null;
 	
 	public void mousePressed(MouseEvent e) {
 		//logger.debug("MousePressed at ("+e.getX()+","+ e.getY()+").");
@@ -437,6 +443,7 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 				}
 			}
 		}		
+		startingPoint = new int[] {e.getX(), e.getY()};
 		repaint();
 	}
 	
@@ -447,6 +454,7 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 		drag = -1;
 		edrag = -1;
 		unAnchor = false;
+		endPoint = null;
 	}
 	
 	/**
@@ -479,6 +487,18 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 		}
 		for (Edge edge : edges) {
 			edge.paintEdgeLabel(g);			
+		}
+		
+		if (endPoint!=null) {
+			int x = Math.min(startingPoint[0], endPoint[0]);
+			int y = Math.min(startingPoint[1], endPoint[1]);
+			int width = Math.abs(startingPoint[0] - endPoint[0]);
+			int height = Math.abs(startingPoint[1] - endPoint[1]);
+			((Graphics2D)g).setStroke(new BasicStroke(1));
+			((Graphics2D)g).setPaint(new Color(0, 0, 255, 30));			
+			((Graphics2D)g).fillRect(x, y, width, height);
+			((Graphics2D)g).setPaint(new Color(0, 0, 255));
+			((Graphics2D)g).drawRect(x, y, width, height);			
 		}
 		
 		if (expRejections != null && powAtlst1 != null && rejectAll != null) {
@@ -620,6 +640,14 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 		return list.substring(0, list.length()>5?list.length()-1:list.length())+")";			
 	}
 	
+	/**
+	 * Exports the current graph to R  
+	 * @param graphName variable name in R (will be processed with make.names)
+	 * @param verbose if true, a JOption MessageDialog will be shown stating the success
+	 * @param ht Hashtable that contains for latin and greek characters (as Strings)
+	 * the corresponding Double values. Should not be null, but can be empty.
+	 * @return
+	 */
 	public String saveGraph(String graphName, boolean verbose, Hashtable<String,Double> ht) {		
 		graphName = RControl.getR().eval("make.names(\""+graphName+"\")").asRChar().getData()[0];		
 		String alpha = "";
@@ -668,7 +696,7 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 		}	
 		RControl.getR().evalVoid("attr("+graphName+", \"description\") <- \""+ control.getDView().getDescription()+"\"");
 		RControl.getR().evalVoid("attr("+graphName+", \"pvalues\") <- "+ control.getPView().getPValuesString());
-		if (verbose) { JOptionPane.showMessageDialog(null, "The graph as been exported to R under ther variable name:\n\n"+graphName, "Saved as \""+graphName+"\"", JOptionPane.INFORMATION_MESSAGE); }
+		if (verbose) { JOptionPane.showMessageDialog(this, "The graph as been exported to R under ther variable name:\n\n"+graphName, "Saved as \""+graphName+"\"", JOptionPane.INFORMATION_MESSAGE); }
 		return graphName;
 	}
 	

@@ -211,11 +211,10 @@ public class PView extends JPanel implements KeyListener, ActionListener {
 	    jbLoadPValues.setEnabled(!b);
 	}
 
-	public String getPValuesString() {
-		savePValues();
+	public String getPValuesString() {		
 		String s = "c(";
-		for (double p : pValues) {
-			s += p+", ";
+		for (PPanel panel : panels) {		
+			s += panel.getP()+", ";
 		}
 		return s.substring(0, s.length()-2)+")";
 	}
@@ -252,7 +251,6 @@ public class PView extends JPanel implements KeyListener, ActionListener {
 	JButton createMatrix;
 	
 	protected JRadioButton jrbNoCorrelation = new JRadioButton("No Information about correlations");
-    //protected JRadioButton jrbStandardCorrelation = new JRadioButton("Select a standard correlation");
     protected JRadioButton jrbRCorrelation = new JRadioButton("Select an R correlation matrix");
     protected JRadioButton jrbSimes = new JRadioButton("Correlation applicable for Simes test (new feature that needs still testing)");
 
@@ -288,12 +286,10 @@ public class PView extends JPanel implements KeyListener, ActionListener {
 
 	    ButtonGroup group = new ButtonGroup();
 	    group.add(jrbNoCorrelation);
-	    //group.add(jrbStandardCorrelation);
 	    group.add(jrbRCorrelation);
 	    group.add(jrbSimes);
 
 	    jrbNoCorrelation.addActionListener(this);
-	    //jrbStandardCorrelation.addActionListener(this);
 	    jrbRCorrelation.addActionListener(this);
 	    jrbSimes.addActionListener(this);
 		
@@ -306,24 +302,18 @@ public class PView extends JPanel implements KeyListener, ActionListener {
 
         int row = 2;
         
-        correlatedPanel.add(jrbNoCorrelation,     cc.xyw(2, row, 5));     
+        correlatedPanel.add(jrbNoCorrelation,     cc.xyw(2, row, 7));     
         
         row += 2;
-        
-        /*correlatedPanel.add(jrbStandardCorrelation,     cc.xy(2, row));
-        correlatedPanel.add(jcbCorString, cc.xy(4, row));        
-        
-        row += 2;*/
         
         correlatedPanel.add(jrbRCorrelation,     cc.xy(2, row));
         correlatedPanel.add(jcbCorObject, cc.xy(4, row));
         correlatedPanel.add(refresh, cc.xy(6, row));  
         correlatedPanel.add(createMatrix, cc.xy(8, row));
-        createMatrix.setEnabled(Configuration.getInstance().getGeneralConfig().experimentalFeatures());
         
         row += 2;
         
-        correlatedPanel.add(jrbSimes,     cc.xyw(2, row, 5));
+        correlatedPanel.add(jrbSimes,     cc.xyw(2, row, 7));
                 
         refresh.addActionListener(this);
         createMatrix.addActionListener(this);
@@ -342,19 +332,21 @@ public class PView extends JPanel implements KeyListener, ActionListener {
 				parent.getGraphView().buttonConfInt.setEnabled(true);
 				parent.getGraphView().buttonadjPval.setEnabled(true);
 			}
-		/*}  else if (e.getSource()==jrbStandardCorrelation || e.getSource()==jrbRCorrelation) {
+		}  else if (e.getSource()==jrbRCorrelation) {
 			parent.getGraphView().buttonConfInt.setEnabled(false);
-			parent.getGraphView().buttonadjPval.setEnabled(true);*/
+			parent.getGraphView().buttonadjPval.setEnabled(true);
 		} else if (e.getSource()==jrbSimes) {
 			parent.getGraphView().buttonConfInt.setEnabled(false);
-			parent.getGraphView().buttonadjPval.setEnabled(false);
+			parent.getGraphView().buttonadjPval.setEnabled(true);
 		} else if (e.getSource()==jbLoadPValues) {
 			parent.getGraphView().loadPValuesFromR(); 
 		} else if (e.getSource()==createMatrix) {
 			if (parent.getGraphView().getNL().getNodes().size()<2) {
 				JOptionPane.showMessageDialog(parent, "Correlation makes only sense for more than one hypothesis.", "No correlation for one hypothesis", JOptionPane.ERROR_MESSAGE);
-			} else {
-				new MatrixCreationDialog(parent);
+			} else {				
+				String obj = jcbCorObject.getSelectedItem().toString();
+				String matrix = obj.endsWith("matrices found.")?null:obj;
+				new MatrixCreationDialog(parent, matrix);
 				refresh();
 			}
 		}
@@ -378,14 +370,6 @@ public class PView extends JPanel implements KeyListener, ActionListener {
 
 	public String getParameters() {
 		String param = "";
-		/* if (jrbStandardCorrelation.isSelected()) {
-			String s = jcbCorString.getSelectedItem().toString();
-			String design = s.substring(0, s.indexOf(" "));
-			String n = s.substring(s.indexOf("(")+1, s.indexOf("groups")-1);
-			logger.warn("Design: \""+design+"\", n=\""+n+"\"");
-			GroupDialog gd = new GroupDialog(parent, Integer.parseInt(n));
-			param = ", correlation=\""+design+"\", samplesize="+gd.getGroups();
-		} else */ 
 		if (jrbRCorrelation.isSelected()) {
 			param = ", correlation="+jcbCorObject.getSelectedItem()+"";
 		} else if (jrbSimes.isSelected()) {

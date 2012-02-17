@@ -1,4 +1,28 @@
 
+Version 0.7-7 (17-02-2012, Rev. 1236)
+=====================================
+
+- Fixed severe (but at least obvious) regression in 0.7-6: All p-values beyond the
+  first one were always immediately set to 0.
+
+- Simes test calculates also pvalues. An extra option adjPValues=TRUE is added to
+  the gMCP function. Setting this to FALSE will sometimes increase the speed 
+  (and memory consumption) of the Simes test significantly.
+
+- New wizard for the creation of correlation matrices.
+  
+- Reordering of hypotheses is possible (important for e.g. correlation matrices).
+  Java 5 users: Rearranging nodes with drag'n'drop does not yet work for you. 
+
+- If the entered matrix is not positive semidefinite, 
+  i.e. negative eigen values exist, a warning is given.
+
+- New S4 method getMatrix for getting the adjacency matrix from a graphMCP object.
+
+- Fixed regression in 0.7-6: CI and p-value buttons for parametric tests
+  were sometimes enabled and sometimes disabled.
+
+
 Version 0.7-6 (13-02-2012, Rev. 1208)
 =====================================
 
@@ -24,6 +48,9 @@ Version 0.7-6 (13-02-2012, Rev. 1208)
 
 - New option: Should the exported image of a graph have 
   an white or transparent background.
+
+63 files changed, 591 insertions(+), 277 deletions(-)
+
 
 Version 0.7-5 (29-01-2012, Rev. 1147)
 =====================================

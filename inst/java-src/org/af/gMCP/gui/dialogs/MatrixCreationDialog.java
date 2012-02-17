@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.lang.reflect.Constructor;
+import java.util.List;
 import java.util.Vector;
 
 import javax.swing.BorderFactory;
@@ -34,6 +35,7 @@ import org.af.gMCP.gui.datatable.RDataFrameRef;
 import org.af.gMCP.gui.graph.EdgeWeight;
 import org.af.gMCP.gui.graph.Node;
 import org.af.jhlir.call.RChar;
+import org.af.jhlir.call.RErrorException;
 import org.af.jhlir.call.RInteger;
 import org.af.jhlir.call.RList;
 import org.apache.commons.logging.Log;
@@ -59,7 +61,11 @@ public class MatrixCreationDialog extends JDialog implements ActionListener, Cha
     
     JTabbedPane tabbedPane = new JTabbedPane(); 
     
-	public MatrixCreationDialog(CreateGraphGUI parent) {
+    /**
+     * Constructor
+     * @param matrix String that specifies R object to be loaded.
+     */
+	public MatrixCreationDialog(CreateGraphGUI parent, String matrix) {
 		super(parent, "Specify correlation matrix", true);
 		setLocationRelativeTo(parent);
 		this.parent = parent;
@@ -71,7 +77,8 @@ public class MatrixCreationDialog extends JDialog implements ActionListener, Cha
 			df.setValue(df.getColumnCount()-1, df.getColumnCount()-1, new EdgeWeight(1));
 		}		
 		dfp = new DataFramePanel(df);
-		dfp.getTable().getModel().diagEditable = true;		
+		dfp.getTable().getModel().diagEditable = true;
+		dfp.getTable().getModel().setCheckRowSum(false);
 		
 		setUpTabbedPane();
 		getPossibleCorrelations();
@@ -98,6 +105,17 @@ public class MatrixCreationDialog extends JDialog implements ActionListener, Cha
 		getContentPane().add(warning, cc.xy(2, row));
 		getContentPane().add(ok, cc.xy(4, row));
 		
+		if (matrix !=null) {
+			DataTableModel m = dfp.getTable().getModel();
+			int n = m.getColumnCount();			
+			double[] result = RControl.getR().eval("as.numeric("+matrix+")").asRNumeric().getData();
+			for (int i=0; i<n; i++) {
+				for (int j=0; j<n; j++) {
+					m.setValueAt(new EdgeWeight(result[i*n+j]), i, j);
+				}
+			}
+		}
+		
         pack();
         setLocationRelativeTo(parent);
         setVisible(true);
@@ -110,12 +128,14 @@ public class MatrixCreationDialog extends JDialog implements ActionListener, Cha
 	}
 	
 	JButton reorder = new JButton("Apply reordering");
+	JButton toggleNA = new JButton("Change 0 in matrix to NA");
+	JButton resetDiag = new JButton("Reset to identity matrix");
 
 	private JPanel getSortPane() {
 		JPanel panel = new JPanel();		
 		
 		String cols = "5dlu, fill:pref:grow, 5dlu, fill:pref:grow, 5dlu";
-        String rows = "5dlu, pref, 5dlu, pref, 5dlu, fill:pref:grow, 5dlu, pref, 5dlu, pref, 5dlu";
+        String rows = "5dlu, pref, 5dlu, pref, 5dlu, pref, 5dlu, pref, 5dlu, fill:pref:grow, 5dlu, pref, 5dlu, pref, 5dlu";
 		
         panel.setLayout(new FormLayout(cols, rows));
         CellConstraints cc = new CellConstraints();
@@ -126,6 +146,16 @@ public class MatrixCreationDialog extends JDialog implements ActionListener, Cha
 		
 		panel.add(new JLabel("Save matrix as:"), cc.xy(2, row));
         panel.add(tfname, cc.xy(4, row));
+
+        row +=2;
+        
+        resetDiag.addActionListener(this);
+        panel.add(resetDiag, cc.xy(4, row));
+       
+        row +=2;
+        
+        toggleNA.addActionListener(this);
+        panel.add(toggleNA, cc.xy(4, row));
         
         row +=2;
         
@@ -157,6 +187,10 @@ public class MatrixCreationDialog extends JDialog implements ActionListener, Cha
         
         reorder.addActionListener(this);
         panel.add(reorder, cc.xy(4, row));
+        
+        row +=2;
+        
+        
         		
 		return panel;
 	}
@@ -208,6 +242,7 @@ public class MatrixCreationDialog extends JDialog implements ActionListener, Cha
 			df.setValue(df.getColumnCount()-1, df.getColumnCount()-1, new EdgeWeight(1));
 		}		
 		dfpDiag = new DataFramePanel(df);
+		dfpDiag.getTable().getModel().setCheckRowSum(false);
 		
 		panel.add(new JScrollPane(dfpDiag), cc.xyw(2, row, 3));
 		
@@ -240,6 +275,7 @@ public class MatrixCreationDialog extends JDialog implements ActionListener, Cha
 		
 		row += 2;
 		
+		applyTE.addActionListener(this);
 		panel.add(applyTE, cc.xyw(2, row, 3));
 		
 		return panel;
@@ -278,6 +314,7 @@ public class MatrixCreationDialog extends JDialog implements ActionListener, Cha
 			df.setValue(df.getColumnCount()-1, df.getColumnCount()-1, new EdgeWeight(1));
 		}		
 		dfpIntraCor = new DataFramePanel(df);
+		dfpIntraCor.getTable().getModel().setCheckRowSum(false);
 		
 		panel.add(new JScrollPane(dfpIntraCor), cc.xyw(2, row, 3));
 		
@@ -311,6 +348,7 @@ public class MatrixCreationDialog extends JDialog implements ActionListener, Cha
 			df.setValue(df.getColumnCount()-1, df.getColumnCount()-1, new EdgeWeight(1));
 		}		
 		dfpInterCor = new DataFramePanel(df);
+		dfpInterCor.getTable().getModel().setCheckRowSum(false);
 		
 		panel.add(new JScrollPane(dfpInterCor), cc.xyw(2, row, 3));
 		
@@ -335,10 +373,59 @@ public class MatrixCreationDialog extends JDialog implements ActionListener, Cha
 					m2.setValueAt(m.getValueAt(i, j), i+k-1, j+k-1);
 				}
 			}
+		} else if (e.getSource()==toggleNA) {
+			DataTableModel m2 = dfp.getTable().getModel();
+			int n = m2.getColumnCount();
+			for (int i=0; i<n; i++) {
+				for (int j=0; j<n; j++) {
+					if (m2.getValueAt(i, j).getWeight(null)==0) {
+						m2.setValueAt(new EdgeWeight("NA"), i, j);
+					}
+				}
+			}
 		} else if (e.getSource()==reorder) {
-			
+			nodes.removeAllElements();
+			for (int i=0; i<hypotheses.getModel().getSize(); i++) {
+				nodes.add((Node) hypotheses.getModel().getElementAt(i));
+			}			
+			createMDiag();
+			List<String> names = new Vector<String>();
+			for (Node n : nodes) {
+				names.add(n.getName());
+			}
+			dfp.getTable().getModel().getDataFrame().setNames(names);
+			dfp.getTable().update();
+		} else if (e.getSource()==resetDiag) {
+			DataTableModel m2 = dfp.getTable().getModel();
+			int n = m2.getColumnCount();
+			for (int i=0; i<n; i++) {
+				for (int j=0; j<n; j++) {
+					if (i==j) {
+						m2.setValueAt(new EdgeWeight(1), i, j);
+					} else {
+						m2.setValueAt(new EdgeWeight(0), i, j);
+					}
+				}
+			}
 		} else if (e.getSource()==applyTE) {
-			
+			DataTableModel m2 = dfp.getTable().getModel();
+			int n = m2.getColumnCount();
+			int a = dfpIntraCor.getTable().getRowCount();
+			int b = dfpInterCor.getTable().getRowCount();
+			if (a*b!=n) {
+				JOptionPane.showMessageDialog(this, "Wrong dimensions: "+a+"+"+b+"!="+n, "Wrong dimension", JOptionPane.ERROR_MESSAGE);
+				return;
+			}
+			double[] result = RControl.getR().eval("as.numeric(kronecker("
+					+ dfpInterCor.getTable().getRMatrix()
+					+","					
+					+ dfpIntraCor.getTable().getRMatrix()
+					+"))").asRNumeric().getData();
+			for (int i=0; i<n; i++) {
+				for (int j=0; j<n; j++) {
+					m2.setValueAt(new EdgeWeight(result[i*n+j]), i, j);
+				}
+			}
 		} else if (e.getSource()==jcbCorString2) {
 			if (jcbCorString2.getSelectedItem()==null || jcbCorString2.getSelectedItem().toString().equals(NO_SD)) return;
 			DataTableModel m = dfpDiag.getTable().getModel();
@@ -352,7 +439,11 @@ public class MatrixCreationDialog extends JDialog implements ActionListener, Cha
 			String s = jcbCorString.getSelectedItem().toString();
 			setMatrix(m, s, n);
 		}
-		warning.setText(RControl.getR().eval("gMCP:::checkPSD("+dfp.getTable().getRMatrix()+")").asRChar().getData()[0]);
+		try {
+			warning.setText(RControl.getR().eval("gMCP:::checkPSD("+dfp.getTable().getRMatrix()+")").asRChar().getData()[0]);
+		} catch (RErrorException error) {
+			warning.setText("Matrix could not be evaluated! Are all entries numeric?");
+		}
 	}
 
 	private void setMatrix(DataTableModel m, String s, int n) {
@@ -370,41 +461,53 @@ public class MatrixCreationDialog extends JDialog implements ActionListener, Cha
 
 	public void stateChanged(ChangeEvent e) {
 		if (e.getSource()==spinnerN || e.getSource()==spinnerN2) {
-			int n = Integer.parseInt(spinnerN.getModel().getValue().toString());
-			int j = Integer.parseInt(spinnerN2.getModel().getValue().toString());
-			DataTableModel m = dfpDiag.getTable().getModel();
-			m.removeAll();
-			if (n+j-1>nodes.size()) {
-				JOptionPane.showMessageDialog(parent, "The selected values "+n+"+"+j+" exceed the number of nodes+1.", "Impossible parameter combination", JOptionPane.ERROR_MESSAGE);
-				return;
-			}
-			for (int i=j-1; i<j-1+n; i++) {
-				m.addRowCol(nodes.get(i).getName());
-				m.setValueAt(new EdgeWeight(1), m.getColumnCount()-1, m.getColumnCount()-1);
-			}
+			createMDiag();
 			getPossibleCorrelations();
-		} else if (e.getSource()==spinnerNT) {			
-			int n = Integer.parseInt(spinnerNT.getModel().getValue().toString());
-			DataTableModel m = dfpIntraCor.getTable().getModel();
-			m.removeAll();
-			for (int i=0; i<n; i++) {
-				m.addRowCol("T"+(i+1));
-				m.setValueAt(new EdgeWeight(1), m.getColumnCount()-1, m.getColumnCount()-1);
-			}
+		} else if (e.getSource()==spinnerNT) {	
+			createMT();			
 			getPossibleCorrelations();
 		} else if (e.getSource()==spinnerNE) {
-			int n = Integer.parseInt(spinnerNE.getModel().getValue().toString());
-			DataTableModel m = dfpInterCor.getTable().getModel();
-			m.removeAll();
-			for (int i=0; i<n; i++) {
-				m.addRowCol("E"+(i+1));
-				m.setValueAt(new EdgeWeight(1), m.getColumnCount()-1, m.getColumnCount()-1);
-			}
+			createME();			
 			getPossibleCorrelations();
 		}
 		
 	}
 	
+	private void createMT() {
+		int n = Integer.parseInt(spinnerNT.getModel().getValue().toString());
+		DataTableModel m = dfpIntraCor.getTable().getModel();
+		m.removeAll();
+		for (int i=0; i<n; i++) {
+			m.addRowCol("T"+(i+1));
+			m.setValueAt(new EdgeWeight(1), m.getColumnCount()-1, m.getColumnCount()-1);
+		}
+	}
+
+	private void createME() {
+		int n = Integer.parseInt(spinnerNE.getModel().getValue().toString());
+		DataTableModel m = dfpInterCor.getTable().getModel();
+		m.removeAll();
+		for (int i=0; i<n; i++) {
+			m.addRowCol("E"+(i+1));
+			m.setValueAt(new EdgeWeight(1), m.getColumnCount()-1, m.getColumnCount()-1);
+		}
+	}
+
+	private void createMDiag() {
+		int n = Integer.parseInt(spinnerN.getModel().getValue().toString());
+		int j = Integer.parseInt(spinnerN2.getModel().getValue().toString());
+		DataTableModel m = dfpDiag.getTable().getModel();
+		m.removeAll();
+		if (n+j-1>nodes.size()) {
+			JOptionPane.showMessageDialog(parent, "The selected values "+n+"+"+j+" exceed the number of nodes+1.", "Impossible parameter combination", JOptionPane.ERROR_MESSAGE);
+			return;
+		}
+		for (int i=j-1; i<j-1+n; i++) {
+			m.addRowCol(nodes.get(i).getName());
+			m.setValueAt(new EdgeWeight(1), m.getColumnCount()-1, m.getColumnCount()-1);
+		}
+	}
+
 	protected JComboBox jcbCorString = new JComboBox(new String[] {NO_SD});
 	protected JComboBox jcbCorString2 = new JComboBox(new String[] {NO_SD});
 	
