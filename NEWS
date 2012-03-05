@@ -1,4 +1,26 @@
 
+Version 0.7-8 (06-03-2012, Rev. 1252)
+=====================================
+
+- Edges can be created by drag'n'drop. 
+  (Drag from the first node and drop on the second node.)
+  
+- Button to add edges stays pressed down until it is pressed again (or edges are added).
+  This allows faster creation of graphs with many nodes.
+
+- Fixed (unproblematic but annoying) NullPointerException with drag'n'drop
+  introduced in 0.7-7.
+
+- Fixed an error window popping up (but nothing was wrong at all) in the
+  rare case that while dragging an edge it was double clicked and deleted.
+  
+- If edge weights are NULL, the weightStr is set to "NULL" instead of 
+  throwing a RuntimeException.
+  
+- Fixed: Check for negative eigen values always resulted in the message
+  that the matrix can not be processed due to NA values.
+
+
 Version 0.7-7 (17-02-2012, Rev. 1236)
 =====================================
 
@@ -21,6 +43,8 @@ Version 0.7-7 (17-02-2012, Rev. 1236)
 
 - Fixed regression in 0.7-6: CI and p-value buttons for parametric tests
   were sometimes enabled and sometimes disabled.
+
+ 28 files changed, 467 insertions(+), 223 deletions(-)
 
 
 Version 0.7-6 (13-02-2012, Rev. 1208)
@@ -49,7 +73,7 @@ Version 0.7-6 (13-02-2012, Rev. 1208)
 - New option: Should the exported image of a graph have 
   an white or transparent background.
 
-63 files changed, 591 insertions(+), 277 deletions(-)
+ 63 files changed, 591 insertions(+), 277 deletions(-)
 
 
 Version 0.7-5 (29-01-2012, Rev. 1147)
@@ -76,7 +100,7 @@ Version 0.7-5 (29-01-2012, Rev. 1147)
 
 - Fixed: Main vignette was missing in the binary zips
 
-52 files changed, 606 insertions(+), 212 deletions(-)
+ 52 files changed, 606 insertions(+), 212 deletions(-)
 
 
 Version 0.7-4 (22-01-2012, Rev. 1096)

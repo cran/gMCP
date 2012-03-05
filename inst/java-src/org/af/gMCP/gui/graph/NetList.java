@@ -6,6 +6,7 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Point;
 import java.awt.RenderingHints;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
@@ -23,6 +24,7 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 
+import org.af.commons.images.GraphDrawHelper;
 import org.af.gMCP.config.Configuration;
 import org.af.gMCP.gui.RControl;
 import org.af.gMCP.gui.dialogs.VariableDialog;
@@ -127,7 +129,7 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 			if (edges.get(i).from == von && edges.get(i).to == nach) {
 				x = edges.get(i).getK1();
 				y = edges.get(i).getK2();
-				edges.remove(i);				
+				removeEdge(edges.get(i));				
 			}
 		}
 		if (!w.toString().equals("0")) {
@@ -348,7 +350,12 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 	public void mouseClicked(MouseEvent e) {}
 
 	public void mouseDragged(MouseEvent e) {
-		if (drag==-1 && edrag == -1) {
+		if (firstVertexSelected) {
+			arrowHeadPoint = e.getPoint();
+			repaint();
+			return;
+		}
+		if (drag==-1 && edrag == -1) { /* Dragging without objects creates a rectangular. */
 			endPoint = new int[] {e.getX(), e.getY()};
 			repaint();
 			return;
@@ -377,18 +384,28 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 
 	public void mouseExited(MouseEvent e) {}
 
-	public void mouseMoved(MouseEvent e) {}
+	Point arrowHeadPoint = null;
+	
+	public void mouseMoved(MouseEvent e) {
+		if (firstVertexSelected) {
+			arrowHeadPoint = e.getPoint();
+			repaint();
+		}
+	}
 
 	protected int[] offset;
 	protected int[] startingPoint = null;
 	protected int[] endPoint = null;
 	
 	public void mousePressed(MouseEvent e) {
+		if (e.getButton()==MouseEvent.BUTTON2) {
+			newVertex = false;
+			control.buttonNewVertex.setSelected(false);
+		}
 		//logger.debug("MousePressed at ("+e.getX()+","+ e.getY()+").");
-		if (newVertex) {
+		if (newVertex && vertexSelected(e.getX(), e.getY())==null) {
 			addDefaultNode((int)(e.getX() / getZoom()) - Node.r, 
 						(int) (e.getY() / getZoom()) - Node.r);
-			newVertex = false;
 			statusBar.setText(GraphView.STATUSBAR_DEFAULT);
 			repaint();
 			return;
@@ -407,6 +424,7 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 				}
 				setEdge(firstVertex, secondVertex);
 				newEdge = false;
+				arrowHeadPoint = null;
 				firstVertexSelected = false;
 				statusBar.setText(GraphView.STATUSBAR_DEFAULT);
 			}
@@ -448,13 +466,27 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 	}
 	
 	public void mouseReleased(MouseEvent e) {
-		if (edrag != -1) {
+		if (edrag != -1) {			
 			edges.get(edrag).setFixed(true);
 		}
 		drag = -1;
 		edrag = -1;
 		unAnchor = false;
 		endPoint = null;
+		if (newEdge && firstVertexSelected) {				
+			Node secondVertex = vertexSelected(e.getX(), e.getY());
+			if (secondVertex == null || secondVertex == firstVertex) {
+				return;
+			}
+			setEdge(firstVertex, secondVertex);
+			newEdge = false;
+			arrowHeadPoint = null;
+			firstVertexSelected = false;
+			statusBar.setText(GraphView.STATUSBAR_DEFAULT);
+
+			repaint();
+			return;
+		}
 	}
 	
 	/**
@@ -489,7 +521,7 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 			edge.paintEdgeLabel(g);			
 		}
 		
-		if (endPoint!=null) {
+		if (endPoint!=null && startingPoint!=null) {
 			int x = Math.min(startingPoint[0], endPoint[0]);
 			int y = Math.min(startingPoint[1], endPoint[1]);
 			int width = Math.abs(startingPoint[0] - endPoint[0]);
@@ -499,6 +531,23 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 			((Graphics2D)g).fillRect(x, y, width, height);
 			((Graphics2D)g).setPaint(new Color(0, 0, 255));
 			((Graphics2D)g).drawRect(x, y, width, height);			
+		}
+		
+		if (firstVertexSelected && firstVertex != null && arrowHeadPoint != null) {
+			double a1 = firstVertex.getX()+ Node.getRadius();
+			double a2 = firstVertex.getY()+ Node.getRadius();
+			double c1 = arrowHeadPoint.getX();
+			double c2 = arrowHeadPoint.getY();
+			if (!(firstVertex.inYou((int)c1, (int)c2))) {
+				double dx = a1 - c1;
+				double dy = a2 - c2;
+				double d = Math.sqrt(dx * dx + dy * dy);
+				a1 = a1 - ((Node.getRadius()*getZoom()) * dx / d);
+				a2 = a2 - ((Node.getRadius()*getZoom()) * dy / d);					
+				g.setColor(Color.DARK_GRAY);
+				GraphDrawHelper.malVollenPfeil(g, (int)a1, (int)a2, (int)c1, (int)c2, (int) (8 * getZoom()), 35);
+				g.setColor(Color.BLACK);
+			}
 		}
 		
 		if (expRejections != null && powAtlst1 != null && rejectAll != null) {
@@ -553,6 +602,7 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 			}
 		}
 		edges.remove(edge);
+		edrag = -1;
 		control.getDataTable().getModel().setValueAt(new EdgeWeight(0), getNodes().indexOf(edge.from), getNodes().indexOf(edge.to));
 		graphHasChanged();
 	}
