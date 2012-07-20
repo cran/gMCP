@@ -3,6 +3,7 @@ package org.af.gMCP.gui.dialogs;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.Vector;
@@ -21,8 +22,9 @@ public class RejectedDialog extends JDialog implements ActionListener {
 	JButton jb = new JButton("Ok");
 	
 	JTextArea jta = new JTextArea();
+	JTextArea jta2 = new JTextArea();
 	
-	public RejectedDialog(JFrame mainFrame, boolean[] rejected, Vector<Node> vector, String output) {
+	public RejectedDialog(JFrame mainFrame, boolean[] rejected, Vector<Node> vector, String output, String code) {
 		super(mainFrame, "Rejected Null Hypotheses");
 
 		getContentPane().setLayout(new GridBagLayout());
@@ -36,7 +38,7 @@ public class RejectedDialog extends JDialog implements ActionListener {
 		c.weightx=1; c.weighty=0;
 		
 		c.gridx=0; 
-		(getContentPane()).add(new JLabel("Hypostheses"), c);
+		(getContentPane()).add(new JLabel("Hypotheses"), c);
 		c.gridx=1;
 		(getContentPane()).add(new JLabel(""), c);
 		c.gridy++;		
@@ -48,8 +50,22 @@ public class RejectedDialog extends JDialog implements ActionListener {
 			c.gridy++;
 		}	
 
+		if (code != null) {
+			jta2.setText(code);
+			jta2.setMargin(new Insets(4,4,4,4));
+			c.gridx=0; c.gridwidth = 2;
+			getContentPane().add(new JLabel("R code for reproducing these results:"), c);
+			c.gridy++; c.weighty=1;
+			jta2.setFont(new Font("Monospaced", Font.PLAIN, 12));
+			jta2.setLineWrap(false);
+			//jta.setWrapStyleWord(true);
+			(getContentPane()).add(new JScrollPane(jta2), c);
+			c.gridy++;
+		}	
+		
 		if (output != null) {
 			jta.setText(output);
+			jta.setMargin(new Insets(4,4,4,4));
 			c.gridx=0; c.weighty=1; c.gridwidth = 2;
 			jta.setFont(new Font("Monospaced", Font.PLAIN, 12));
 			jta.setLineWrap(false);
@@ -62,12 +78,15 @@ public class RejectedDialog extends JDialog implements ActionListener {
 		jb.addActionListener(this);
 		(getContentPane()).add(jb, c);
 		
-		if (jta.getRows()> 2) {
+		if (jta.getRows()> 2 || jta2.getRows()> 2) {
 			//System.out.println("setSize!!!");
 			this.setSize(800, 600);
 		} else {
 			//System.out.println("pack");
 			pack();
+		}
+		if (getHeight()>800) {
+			setSize(800,800);
 		}
 		
 	    setLocationRelativeTo(mainFrame);

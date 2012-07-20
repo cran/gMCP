@@ -1,37 +1,5 @@
 graphAnalysis <- function(graph, file="") {
-	result <- ""
-	options(warn=-1)
-	if (require("graph", quietly=TRUE)) {
-		options(warn=0)
-		hnodes <- getNodes(graph)
-		graph <- as(new("graphAM", adjMat=graph@m, edgemode="directed"), "graphNEL")
-		accessible <- acc(graph, hnodes)
-		for (i in names(accessible)) {
-			missingNodes <- c()
-			for (n in nodes(graph)) {
-				if (!(n %in% names(accessible[[i]])) && n!=i) {
-					missingNodes <- c(missingNodes, n)
-				}			
-			}
-			if (length(missingNodes)!=0) {
-				result <- paste(result, "The following nodes are not accessible from '",i,"': ",
-						paste(missingNodes, collapse =", "), "\n", sep="")
-			}
-		}
-		if (result=="") {
-			result <- "Each node is accessible from each other node.\n"
-		} else {
-			
-		}
-	} else {
-		options(warn=0)
-		result <- paste("Install package \"graph\" for graph analysis:",
-				"",
-				"source(\"http://www.bioconductor.org/biocLite.R\")",
-				"biocLite(\"graph\")",
-				"",
-				"and restart R.", sep="\n");
-	}
+	result <- checkOptimal(graph, verbose=FALSE)
 	cat(result, file=file)
 	return(invisible(result))
 }
@@ -54,7 +22,7 @@ accessible <- function(graph, node) {
 	return(ac)
 }
 
-checkOptimal <- function (graph) {
+checkOptimal <- function (graph, verbose=TRUE) {
 	nodes <- getNodes(graph)[getWeights(graph)!=0]
 	s <- ""
 	for (n in nodes) {
@@ -62,12 +30,13 @@ checkOptimal <- function (graph) {
 		if (length(notAccessible)>0) {
 			if (s=="") {
 				s <- "The graph is not optimal.\nBy adding edges the test can be improved uniformly."
-				s <- paste(s, "Or set exhaustAlpha=TRUE to do an alpha exhaustive test as described in Bretz et al. (2011).", sep="\n")
+				#s <- paste(s, "Or set exhaustAlpha=TRUE to do an alpha exhaustive test as described in Bretz et al. (2011).\n", sep="\n")
 			}
-			s <- paste(s, paste("There is no path from node ",n, " to ", paste(notAccessible, collapse=", "), sep=""),"\n", sep="\n")
+			s <- paste(s, "There is no path from node ",n, " to ", paste(notAccessible, collapse=", "), "\n", sep="")
 		}
 	}
-	cat(s)
+	if (s=="") s <- "From each node with positive weight paths exist to all other nodes.\n"
+	if (verbose) cat(s)
 	return(s)
 }
 

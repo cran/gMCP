@@ -1,6 +1,17 @@
-## Adapted from the code from http://rwiki.sciviews.org/doku.php?id=developers:runit
-doUnitTestsForGMCP <- function(extended=FALSE) {
-	library(RUnit)
+## Adapted and extended from the code from http://rwiki.sciviews.org/doku.php?id=developers:runit
+unitTestsGMCP <- function(extended=FALSE, java=FALSE, interactive=FALSE, junitLibrary, outputPath) {
+	if(!require("RUnit", quietly=TRUE)) {
+		stop("Please install package RUnit to run the unit tests.")
+	}
+	if (extended) Sys.setenv(GMCP_UNIT_TESTS=paste(Sys.getenv("GMCP_UNIT_TESTS"),"extended"))
+	if (interactive) Sys.setenv(GMCP_UNIT_TESTS=paste(Sys.getenv("GMCP_UNIT_TESTS"),"interactive"))
+	if (missing(outputPath)) {
+		if (Sys.getenv("GMCP_UNIT_TEST_OPATH")=="") {
+			Sys.setenv(GMCP_UNIT_TEST_OPATH=getwd())
+		}
+	} else {
+		Sys.setenv(GMCP_UNIT_TEST_OPATH=outputPath)
+	}
 	pkg <- "gMCP" 
 	path <- system.file("unitTests", package=pkg)
 	cat("\nRunning unit tests\n")
@@ -32,4 +43,28 @@ doUnitTestsForGMCP <- function(extended=FALSE) {
 			fileName=paste(pathReport, "Summary.txt", sep=""))
 	printTextProtocol(tests, showDetails=TRUE,
 			fileName=paste(pathReport, ".txt", sep=""))
+	
+	if (java || "java" %in% strsplit(Sys.getenv("GMCP_UNIT_TESTS"),",")[[1]]) {
+		# Test whether junit*.jar is in classpath
+		if (!missing(junitLibrary)) {
+			.jaddClassPath(junitLibrary)
+		}
+		if (Sys.getenv("GMCP_JUNIT_LIBRARY")!="") {
+			.jaddClassPath(Sys.getenv("GMCP_JUNIT_LIBRARY"))
+		}
+		#testClass <- .jcall(.jnew("tests/RControlTest"), "Ljava/lang/Class;", method="getClass")
+		testClasses <- .jcall(.jnew("tests/TestSuite"), "[Ljava/lang/Class;", method="getClasses", evalArray=FALSE)
+		result <- try(.jcall("org.junit.runner.JUnitCore", "Lorg/junit/runner/Result;", method="runClasses", testClasses))
+		if (("try-error" %in% class(result))) {
+			cat("JUnit 4 is needed for JUnit tests (See http://www.junit.org/).")
+			stop("Please specify the path to junit 4 jar file via junitLibrary.")
+		}
+		if (.jcall(result, "I", "getFailureCount")>0) {
+			cat("------------------- JUNIT TEST SUMMARY --------------------\n\n")
+			cat(.jcall(.jnew("tests/TestSuite"), "S", method="getResultString", result))
+			stop(paste(.jcall(result, "I", "getFailureCount"),"failures in JUnit tests!"))
+		} else {
+			cat(.jcall(result, "I", "getRunCount"), " Java Unit Tests successful! (Runtime: ",.jcall(result, "J", "getRunTime")/1000," sec)")
+		}
+	}
 }

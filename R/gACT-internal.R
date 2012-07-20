@@ -1,16 +1,21 @@
-w.dunnet <- function(w,cr,al=.05,exhaust){
+w.dunnet <- function(w,cr,al=.05,exhaust, alternatives="less"){
   if(length(cr)>1){
     conn <- conn.comp(cr)
   } else {
     conn <- 1
-  }
+  }  
+  twosided <- alternatives==rep("two.sided", length(w))
   lconn <- sapply(conn,length)
   conn <- lapply(conn,as.numeric)
   
   error <- function(cb,w=w) {
     e <- sum(sapply(conn,function(edx){
       if(length(edx)>1){
-        return((1-pmvnorm(lower=-Inf,upper=qnorm(1-(w[edx]*cb*al)),corr=cr[edx,edx],abseps=10^-5)))
+        #return((1-pmvnorm(lower=-Inf,upper=qnorm(1-(w[edx]*cb*al)),corr=cr[edx,edx],abseps=10^-5)))
+		return((1-pmvnorm(
+				   lower=ifelse(twosided[edx],qnorm((w[edx]*cb*al)/2),-Inf),
+				   upper=ifelse(twosided[edx],qnorm(1-(w[edx]*cb*al)/2), qnorm(1-(w[edx]*cb*al))),
+				   corr=cr[edx,edx],abseps=10^-5)))
       } else {
         return((w[edx]*cb*al))
       }
@@ -23,21 +28,30 @@ w.dunnet <- function(w,cr,al=.05,exhaust){
   return(qnorm(1-(w*cb*al)))
 }
 
-p.dunnet <- function(p,cr,w,exhaust){
+p.dunnet <- function(p,cr,w,exhaust, alternatives="less"){
   if(length(cr)>1){
     conn <- conn.comp(cr)
   } else {
     conn <- 1
   }
+  twosided <- alternatives==rep("two.sided", length(w))
   lconn <- sapply(conn,length)
   conn <- lapply(conn,as.numeric)
   e <- sapply(1:length(p),function(i){
     sum(sapply(conn,function(edx){
       if(length(edx)>1){
-        if(!exhaust){
-          return((1-pmvnorm(lower=-Inf,upper=qnorm(1-pmin(1,(w[edx]*p[i]/(w[i]*sum(w))))),corr=cr[edx,edx],abseps=10^-5)))
+		  if(!exhaust){
+          # return((1-pmvnorm(lower=-Inf,upper=qnorm(1-pmin(1,(w[edx]*p[i]/(w[i]*sum(w))))),corr=cr[edx,edx],abseps=10^-5)))
+		  return((1-pmvnorm(
+				     lower=ifelse(twosided[edx],qnorm(pmin(1,(w[edx]*p[i]/(w[i]*sum(w))))/2),-Inf),
+					 upper=ifelse(twosided[edx],qnorm(1-pmin(1,(w[edx]*p[i]/(w[i]*sum(w))))/2),qnorm(1-pmin(1,(w[edx]*p[i]/(w[i]*sum(w)))))),
+					 corr=cr[edx,edx],abseps=10^-5)))
         } else {
-          return((1-pmvnorm(lower=-Inf,upper=qnorm(1-pmin(1,(w[edx]*p[i]/(w[i])))),corr=cr[edx,edx],abseps=10^-5)))
+		  # return((1-pmvnorm(lower=-Inf,upper=qnorm(1-pmin(1,(w[edx]*p[i]/(w[i])))),corr=cr[edx,edx],abseps=10^-5)))
+          return((1-pmvnorm(
+					  lower=ifelse(twosided[edx],qnorm(pmin(1,(w[edx]*p[i]/(w[i])))/2),-Inf),
+					  upper=ifelse(twosided[edx],qnorm(1-pmin(1,(w[edx]*p[i]/(w[i])))/2),qnorm(1-pmin(1,(w[edx]*p[i]/(w[i]))))),
+					  corr=cr[edx,edx],abseps=10^-5)))
         }
       } else {
         if(!exhaust){
@@ -52,7 +66,7 @@ p.dunnet <- function(p,cr,w,exhaust){
   e
 }
 
-pvals.dunnett <- function(h,cr,p,exhaust) {
+pvals.dunnett <- function(h,cr,p,exhaust, alternatives="less") {
 #  if(a > .5){
 #    stop("alpha levels above .5 are not supported")
 #  }
@@ -65,12 +79,12 @@ pvals.dunnett <- function(h,cr,p,exhaust) {
   if(length(e) == 0){
     return(zb)
   }
-  zb[e] <- p.dunnet(p[e],cr[e,e],w[e],exhaust)
+  zb[e] <- p.dunnet(p[e],cr[e,e],w[e],exhaust, alternatives=alternatives)
   zb[which(I>0 & !hw)] <- 1
   return(zb)
 }
 
-b.dunnett <- function(h,cr,a,exhaust) {
+b.dunnett <- function(h,cr,a,exhaust, alternatives="less") {
 #  if(a > .5){
 #    stop("alpha levels above .5 are not supported")
 #  }
@@ -83,7 +97,7 @@ b.dunnett <- function(h,cr,a,exhaust) {
   if(length(e) == 0){
     return(zb)
   }
-  zb[e] <- w.dunnet(w[e],cr[e,e],al=a,exhaust)
+  zb[e] <- w.dunnet(w[e],cr[e,e],al=a,exhaust, alternatives=alternatives)
   zb[which(I>0 & !hw)] <- Inf
   return(zb)
 }

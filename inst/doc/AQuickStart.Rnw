@@ -17,15 +17,6 @@
 \setlength{\parindent}{0mm}
 \setlength{\parskip}{1mm}
 \newcommand{\commentout}[1]{}
-\renewcommand{\theequation}{\thesection.\arabic{\equation}}
-\numberwithin{equation}{section}
-
-\newcommand{\C}{\ensuremath{\mathbb{C}}\xspace}
-\newcommand{\R}{\ensuremath{\mathbb{R}}\xspace}
-\newcommand{\Q}{\ensuremath{\mathbb{Q}}\xspace}
-\newcommand{\Z}{\ensuremath{\mathbb{Z}}\xspace}
-\newcommand{\NN}{\ensuremath{\mathbb{N}_0}\xspace}
-\newcommand{\N}{\ensuremath{\mathbb{N}}\xspace}
 
 \renewcommand{\epsilon}{\varepsilon}
 \pagestyle{empty}
@@ -62,20 +53,23 @@ graphGUI <- function(...) {invisible(NULL)}
 \end{minipage}
 \begin{minipage}{0.90\textwidth}
 
-This package provides functions and graphical user interfaces for graph based multiple test procedures.
-You can use this package completely from the R command line and also completely from the graphical user interface (GUI) without the need to know any R at all.
+This package provides functions and graphical user interfaces for graph based
+multiple test procedures.
+You can use this package completely from the R command line and also completely
+from the graphical user interface (GUI) without the need to know any R at all.
 This guick start guide only describes the steps to start the GUI.
 
 \end{minipage}
 
 \subsection*{Install and Start}
 
-If you not already have R then download the installer from the following URL and use it to install the latest version of R: \url{http://cran.r-project.org/bin/windows/base/release.htm}
+If you don't already have R on your system, you can download a bundled
+version of R and gMCP from \url{http://www.algorithm-forge.com/gMCP/bundle/}.
 
 \begin{minipage}{0.60\textwidth}
 
-Open R and type 
-\texttt{install.packages("gMCP")} into the R Console, select an arbitrary mirror and gMCP will be downloaded and installed.
+Otherwise open \href{http://cran.r-project.org/bin/windows/base/release.htm}{R}
+and type \texttt{install.packages("gMCP")} into the R Console, select an arbitrary mirror and gMCP will be downloaded and installed.
 
 From now on you can start the gMCP graphical user interface by entering the following commands into the R Console:
 

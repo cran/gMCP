@@ -38,6 +38,7 @@ public class Edge {
 	public Node from;
 	public boolean fixed = false;
 	public Color color = Color.BLACK;
+	public Integer linewidth = null;
 	
 	NetList nl;
 	
@@ -81,10 +82,10 @@ public class Edge {
 			k1 = x1 + (int)(Math.cos(alpha*(Math.PI*2)/360)*d/2);
 			k2 = y1 - (int)(Math.sin(alpha*(Math.PI*2)/360)*d/2);
 		} else {
-			if (Math.sqrt((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1))>200) { // For long edges a placement at the beginning is good.
+			if (Math.sqrt((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1))>150) { // For long edges a placement at the beginning is good.
 				k1 = x1 + (x2-x1)/4;
 				k2 = y1 + (y2-y1)/4;
-			} else {                 // But for short edges we prefer pleacement in the middle. 
+			} else {                 // But for short edges we prefer placement in the middle. 
 				k1 = x1 + (x2-x1)/2;
 				k2 = y1 + (y2-y1)/2;
 			}
@@ -221,12 +222,29 @@ public class Edge {
 			*/
 			g2d = (Graphics2D) g;			
 			g2d.setColor(color);
+			Stroke oldStroke = g2d.getStroke();
+			BasicStroke stroke = new BasicStroke(Configuration.getInstance().getGeneralConfig().getLineWidth());
+			if (linewidth!=null) {
+				stroke = new BasicStroke(linewidth);				
+			}
+			try {
+				if (ew.isEpsilon() && Configuration.getInstance().getGeneralConfig().markEpsilon()) {
+					float dash[] = { 5.0f };	
+					stroke = new BasicStroke(stroke.getLineWidth(),
+							BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 10.0f, dash, 0.0f);
+				}
+			} catch (Exception e) {
+				//TODO:
+				System.out.println("Error: "+e.getMessage());
+			}
+			g2d.setStroke(stroke);
 			drawEdge(g,	(int) (x1 * nl.getZoom()), (int) (y1 * nl.getZoom()), 
 					(int) (k1* nl.getZoom()),
 					(int) (k2 * nl.getZoom()),
 					(int) (x2 * nl.getZoom()), (int) (y2 * nl.getZoom()), 
 					(int) (8 * nl.getZoom()), 35, true);
 			g2d.setColor(Color.BLACK);
+			g2d.setStroke(oldStroke);
 		} 
 	}
 	
@@ -274,8 +292,7 @@ public class Edge {
 		// phi correction factor:
 		double r = Math.sqrt((m1-a1)*(m1-a1)+(m2-a2)*(m2-a2));
 		double phiCF = (Node.r*360*nl.getZoom())/(2*Math.PI*r);
-		
-		
+
 		if ((a1-m1)==0) {
 			phi1 = 90 + ((m2-a2>0)?0:180);
 		} else {

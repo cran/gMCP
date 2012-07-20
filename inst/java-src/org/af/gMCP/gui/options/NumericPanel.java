@@ -29,7 +29,7 @@ public class NumericPanel extends OptionsPanel implements ActionListener {
     private Configuration conf;
     private JTextField numberOfSimulations;
     private JComboBox randomNumbers;
-
+    private JComboBox parametricAlgo;
 
     public NumericPanel(Configuration conf) {
         this.conf = conf;
@@ -66,6 +66,9 @@ public class NumericPanel extends OptionsPanel implements ActionListener {
         
         randomNumbers = new JComboBox(new String[] {"quasirandom", "pseudorandom"});
         randomNumbers.setSelectedIndex(conf.getGeneralConfig().getTypeOfRandom().equals("quasirandom")?0:1);
+        
+        parametricAlgo = new JComboBox(new String[] {"Bretz2011", "simple-parametric"});
+        parametricAlgo.setSelectedIndex(conf.getGeneralConfig().getParametricTest().equals("Bretz2011")?0:1);
     }
 
     private void doTheLayout() {
@@ -87,6 +90,7 @@ public class NumericPanel extends OptionsPanel implements ActionListener {
         p1.add(new JLabel("Epsilon:"),     cc.xy(1, row));
         p1.add(jtfEps, cc.xy(3, row));        
         
+        /*TODO Enable if needed:
         row += 2;
         
         p1.add(tryToSimplify, cc.xyw(1, row, 3));
@@ -94,7 +98,8 @@ public class NumericPanel extends OptionsPanel implements ActionListener {
         row += 2;
         
         p1.add(new JLabel("Number of digits to assure:"),     cc.xy(1, row));
-        p1.add(jtfDigits, cc.xy(3, row));        
+        p1.add(jtfDigits, cc.xy(3, row));
+        */        
         
         row += 2;
         
@@ -109,6 +114,11 @@ public class NumericPanel extends OptionsPanel implements ActionListener {
         
         p1.add( new JLabel("Type of random numbers:"),     cc.xy(1, row));
         p1.add(randomNumbers, cc.xy(3, row));        
+        
+        row += 2;
+        
+        p1.add( new JLabel("Type of parametric test:"),     cc.xy(1, row));
+        p1.add(parametricAlgo, cc.xy(3, row));        
         
         add(p1);
     }
@@ -135,6 +145,7 @@ public class NumericPanel extends OptionsPanel implements ActionListener {
         	JOptionPane.showMessageDialog(this, "\""+numberOfSimulations.getText()+"\" is not a valid integer.", "Invalid input", JOptionPane.ERROR_MESSAGE);
         }
        	conf.getGeneralConfig().setTypeOfRandom(randomNumbers.getSelectedItem().toString());
+       	conf.getGeneralConfig().setParametricTest(randomNumbers.getSelectedItem().toString());
     }
 
 	public void actionPerformed(ActionEvent e) {

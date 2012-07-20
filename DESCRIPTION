@@ -1,7 +1,7 @@
 Package: gMCP
 Type: Package
 Title: Graph Based Multiple Comparison Procedures
-Version: 0.7-10
+Version: 0.7-11
 Author: Kornelius Rohmeyer, Florian Klinglmueller (parametric tests,
         adaptive designs), Bjoern Bornkamp (power simulations)
 Maintainer: Kornelius Rohmeyer <rohmeyer@small-projects.de>
@@ -14,6 +14,6 @@ Suggests: RUnit, Deducer, highlight (>= 0.2-3), graph (>= 1.20),
 SystemRequirements: Java (>= 5.0)
 License: GPL (>= 2)
 URL: http://gsrmtp.r-forge.r-project.org/
-Packaged: 2012-06-14 23:11:02 UTC; kornel
+Packaged: 2012-07-20 23:20:18 UTC; kornel
 Repository: CRAN
-Date/Publication: 2012-06-15 04:02:32
+Date/Publication: 2012-07-21 04:39:41

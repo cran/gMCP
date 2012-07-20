@@ -12,6 +12,7 @@ import java.util.Date;
 import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -21,9 +22,11 @@ import javax.swing.JToggleButton;
 import javax.swing.filechooser.FileFilter;
 
 import org.af.commons.errorhandling.ErrorHandler;
+import org.af.commons.tools.OSTools;
 import org.af.commons.widgets.DesktopPaneBG;
 import org.af.gMCP.config.Configuration;
 import org.af.gMCP.gui.CreateGraphGUI;
+import org.af.gMCP.gui.ErrorDialogGMCP;
 import org.af.gMCP.gui.RControl;
 import org.af.gMCP.gui.datatable.DataTable;
 import org.af.gMCP.gui.dialogs.AdjustedPValueDialog;
@@ -53,7 +56,8 @@ public class GraphView extends JPanel implements ActionListener {
 	JButton buttonConfInt;
 	JButton buttonStart;	
 	JButton buttonBack;
-	
+
+	String alternatives;
 	String correlation = "";
 	public String result = ".gMCPResult_" + (new Date()).getTime();
 	protected boolean resultUpToDate = false;
@@ -202,9 +206,11 @@ public class GraphView extends JPanel implements ActionListener {
 		} else if (e.getSource().equals(buttonConfInt)) {
 			if (!getNL().isTesting()) {
 				getPView().savePValues();
+				getNL().saveGraph(getNL().resetGraph, false);
 				getNL().saveGraphWithoutVariables(getNL().initialGraph, false);
 	        	getNL().loadGraph();
 	        	getPView().restorePValues();
+	        	showParamInfo();
 			}
 			if (getNL().getNodes().size()==0) {
 				JOptionPane.showMessageDialog(parent, "Please create first a graph.", "Please create first a graph.", JOptionPane.ERROR_MESSAGE);
@@ -215,42 +221,54 @@ public class GraphView extends JPanel implements ActionListener {
 				SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
 					@Override
 					protected Void doInBackground() throws Exception {
-						if (!isResultUpToDate()) {
-							RControl.getR().evalVoid(result+" <- gMCP("+getNL().initialGraph+getGMCPOptions()+")");
-							setResultUpToDate(true);
+						try {
+							if (!isResultUpToDate()) {
+								RControl.getR().evalVoid(result+" <- gMCP("+getNL().initialGraph+getGMCPOptions()+")");
+								rCode = RControl.getR().eval("gMCP:::createGMCPCall("+getNL().initialGraph+getGMCPOptions()+")").asRChar().getData()[0];
+								setResultUpToDate(true);
+							}
+							double[] alpha = RControl.getR().eval(""+getPView().getTotalAlpha()+"*getWeights("+result+")").asRNumeric().getData();
+							boolean[] rejected = RControl.getR().eval("getRejected("+result+")").asRLogical().getData();
+							parent.glassPane.stop();
+							new DialogConfIntEstVar(parent, nl, rejected, alpha);
+						} catch (Exception ex) {
+							ErrorHandler.getInstance().makeErrDialog(ex.getMessage(), ex);
 						}
-						double[] alpha = RControl.getR().eval(""+getPView().getTotalAlpha()+"*getWeights("+result+")").asRNumeric().getData();
-						boolean[] rejected = RControl.getR().eval("getRejected("+result+")").asRLogical().getData();
-						parent.glassPane.stop();
-						new DialogConfIntEstVar(parent, nl, rejected, alpha);
 						return null;
 					}  
 				};
 				worker.execute();				
 			}
 		} else if (e.getSource().equals(buttonStart)) {
-			if (!getNL().isTesting()) {
+			if (!getNL().isTesting()) {				
 				getPView().savePValues();
+				getNL().saveGraph(getNL().resetGraph, false);
 				getNL().saveGraphWithoutVariables(getNL().initialGraph, false);
 	        	getNL().loadGraph();
 	        	getPView().restorePValues();
+	        	showParamInfo();
 				parent.glassPane.start();				
 				startTesting();
 				correlation = parent.getPView().getParameters();
 				SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
 					@Override
 					protected Void doInBackground() throws Exception {
-						if (!isResultUpToDate()) {
-							RControl.getR().evalVoid(result+" <- gMCP("+getNL().initialGraph+getGMCPOptions()+")");
-							setResultUpToDate(true);
+						try {
+							if (!isResultUpToDate()) {
+								RControl.getR().evalVoid(result+" <- gMCP("+getNL().initialGraph+getGMCPOptions()+")");
+								rCode = RControl.getR().eval("gMCP:::createGMCPCall("+getNL().initialGraph+getGMCPOptions()+")").asRChar().getData()[0];
+								setResultUpToDate(true);
+							}
+							boolean[] rejected = RControl.getR().eval(result+"@rejected").asRLogical().getData();
+							String output = null;
+							if (Configuration.getInstance().getGeneralConfig().verbose() && RControl.getR().eval("!is.null(attr("+result+", \"output\"))").asRLogical().getData()[0]) {
+								output = RControl.getR().eval("attr("+result+", \"output\")").asRChar().getData()[0];
+							}
+							parent.glassPane.stop();
+							new RejectedDialog(parent, rejected, parent.getGraphView().getNL().getNodes(), output, rCode);
+						} catch (Exception ex) {
+							ErrorHandler.getInstance().makeErrDialog(ex.getMessage(), ex);
 						}
-						boolean[] rejected = RControl.getR().eval(result+"@rejected").asRLogical().getData();
-						String output = null;
-						if (Configuration.getInstance().getGeneralConfig().verbose() && RControl.getR().eval("!is.null(attr("+result+", \"output\"))").asRLogical().getData()[0]) {
-							output = RControl.getR().eval("attr("+result+", \"output\")").asRChar().getData()[0];
-						}
-						parent.glassPane.stop();
-						new RejectedDialog(parent, rejected, parent.getGraphView().getNL().getNodes(), output);
 						return null;
 					}  
 				};
@@ -264,23 +282,30 @@ public class GraphView extends JPanel implements ActionListener {
 			} else {
 				if (!getNL().isTesting()) {
 					getPView().savePValues();
+					getNL().saveGraph(getNL().resetGraph, false);
 					getNL().saveGraphWithoutVariables(getNL().initialGraph, false);
 		        	getNL().loadGraph();					
 					getPView().restorePValues();
+					showParamInfo();
 				}
 				parent.glassPane.start();
 				//startTesting();
 				correlation = parent.getPView().getParameters();
 				SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
 					@Override
-					protected Void doInBackground() throws Exception {						
-						if (!isResultUpToDate()) {
-							RControl.getR().evalVoid(result+" <- gMCP("+getNL().initialGraph+getGMCPOptions()+")");
-							setResultUpToDate(true);
-						}
-						double[] adjPValues = RControl.getR().eval(result+"@adjPValues").asRNumeric().getData();
-						parent.glassPane.stop();
-						new AdjustedPValueDialog(parent, getPView().pValues, adjPValues, getNL().getNodes());
+					protected Void doInBackground() throws Exception {
+						try {							
+							if (!isResultUpToDate()) {
+								RControl.getR().evalVoid(result+" <- gMCP("+getNL().initialGraph+getGMCPOptions()+")");
+								rCode = RControl.getR().eval("gMCP:::createGMCPCall("+getNL().initialGraph+getGMCPOptions()+")").asRChar().getData()[0];
+								setResultUpToDate(true);
+							}
+							double[] adjPValues = RControl.getR().eval(result+"@adjPValues").asRNumeric().getData();
+							parent.glassPane.stop();
+							new AdjustedPValueDialog(parent, getPView().pValues, adjPValues, getNL().getNodes());
+						} catch (Exception ex) {
+							ErrorHandler.getInstance().makeErrDialog(ex.getMessage(), ex);
+						} 
 						return null;
 					}  
 				};
@@ -288,12 +313,29 @@ public class GraphView extends JPanel implements ActionListener {
 			}
 		}
 	}
+	
+	String rCode = "";
+
+	private void showParamInfo() {
+		if (parent.getPView().jrbRCorrelation.isSelected()) {
+    		if (!Configuration.getInstance().getClassProperty(this.getClass(), "showParamInfo", "yes").equals("no")) {
+    			JCheckBox tellMeAgain = new JCheckBox("Don't show me this info again.");
+    			String message = "This test is appropriate if the p-values\n" +
+    					"belong to one-sided test-statistics with a joint\n" +
+    					"multivariate normal distribution under the null.";
+    			JOptionPane.showMessageDialog(parent, new Object[] {message, tellMeAgain}, "Info", JOptionPane.INFORMATION_MESSAGE);
+    			if (tellMeAgain.isSelected()) {
+    				Configuration.getInstance().setClassProperty(this.getClass(), "showParamInfo", "no");
+    			}
+    		}
+    	}
+	}
 
 	public void stopTesting() {
 		if (!getNL().testingStarted) return;
 		getNL().stopTesting();
 		getNL().reset();
-		getNL().loadGraph();
+		getNL().loadGraph(getNL().resetGraph);
 		getDataTable().setTesting(false);
 		getPView().restorePValues();
 		getPView().setTesting(false);
@@ -310,6 +352,7 @@ public class GraphView extends JPanel implements ActionListener {
 	}
 
 	public void startTesting() {
+		//getPView().savePValues();
 		if (getNL().testingStarted || !getPView().jrbNoCorrelation.isSelected()) return;
 		getPView().savePValues();
 		try {
@@ -369,7 +412,9 @@ public class GraphView extends JPanel implements ActionListener {
 				+ correlation
 				+", alpha="+getPView().getTotalAlpha()
 				+", eps="+Configuration.getInstance().getGeneralConfig().getEpsilon()
-				+", verbose="+(Configuration.getInstance().getGeneralConfig().verbose()?"42":"FALSE");
+				+", verbose="+(Configuration.getInstance().getGeneralConfig().verbose()?"TRUE":"FALSE"
+				//+", alternatives="+alternatives
+			    +", callFromGUI=TRUE");
 	}
 
 	public DView getDView() {
@@ -379,7 +424,7 @@ public class GraphView extends JPanel implements ActionListener {
 	public void saveGraphImage(File file) {
 		BufferedImage img = getNL().getImage();
 		try {
-			ImageIO.write( img, "png", file );
+			ImageIO.write(img, "png", file);
 		} catch( Exception ex ) {
 			JOptionPane.showMessageDialog(this, "Saving image to '" + file.getAbsolutePath() + "' failed: " + ex.getMessage(), "Saving failed.", JOptionPane.ERROR_MESSAGE);
 		}
@@ -434,6 +479,17 @@ public class GraphView extends JPanel implements ActionListener {
 	}
 
 	public void copyGraphToClipboard() {
+		if (OSTools.isLinux() && !Configuration.getInstance().getClassProperty(this.getClass(), "showClipboardInfo", "yes").equals("no")) {
+			String message = "An old bug from 2007 that is widely known but never\n" +
+					"fixed from Sun/Oracle in Java will most likely prevent this\n" +
+					"feature to work on a Linux machine.\n" +
+					"We are sorry…";
+			JCheckBox tellMeAgain = new JCheckBox("Don't show me this info again.");			
+			JOptionPane.showMessageDialog(parent, new Object[] {message, tellMeAgain}, "Will most likely not work under Linux", JOptionPane.WARNING_MESSAGE);
+			if (tellMeAgain.isSelected()) {
+				Configuration.getInstance().setClassProperty(this.getClass(), "showClipboardInfo", "no");
+			}
+		}
 		TransferableImage.copyImageToClipboard(getNL().getImage());
 	}
 	
@@ -445,5 +501,12 @@ public class GraphView extends JPanel implements ActionListener {
 	public void setResultUpToDate(boolean resultUpToDate) {
 		//statusBar.setText("Result up-to-date: "+resultUpToDate);
 		this.resultUpToDate = resultUpToDate;
+	}
+
+	public void renameNode(Node node, String name) {
+		int i = getNL().whichNode(node.getName());
+		parent.getPView().renameNode(i, name);
+		parent.getDataTable().renameNode(i, name);
+		node.setName(name);		
 	}
 }

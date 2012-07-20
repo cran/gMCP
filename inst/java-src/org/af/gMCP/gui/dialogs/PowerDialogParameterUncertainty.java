@@ -6,14 +6,15 @@ import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.List;
+import java.util.Set;
 import java.util.Vector;
 
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
 import javax.swing.JDialog;
-import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JList;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
@@ -38,6 +39,7 @@ public class PowerDialogParameterUncertainty extends JDialog implements ActionLi
     CreateGraphGUI parent;
     Vector<Node> nodes;
     List<JTextField> jtl, jtlMu, jtlN, jtlSigma;
+    List<JTextField> jtlVar = new Vector<JTextField>();
     JTextArea jta = new JTextArea();
     DataFramePanel dfp;
     JTextField jtUserDefined = new JTextField();
@@ -72,6 +74,13 @@ public class PowerDialogParameterUncertainty extends JDialog implements ActionLi
 		tPanel.addTab("Multiple NCP Settings", getMultiSettingPanel());
 		tPanel.addTab("Covariance Matrix", getCVPanel());
 		tPanel.addTab("User defined power function", getUserDefinedFunctions());
+		Set<String> variables = parent.getGraphView().getNL().getAllVariables();
+		if (!Configuration.getInstance().getGeneralConfig().useEpsApprox())	{
+			variables.remove("ε");
+		}
+		if (variables.size()>0) {
+			tPanel.addTab("Variables", getVariablePanel(variables));
+		}
 		
 		getContentPane().add(tPanel);
 		
@@ -356,21 +365,76 @@ public class PowerDialogParameterUncertainty extends JDialog implements ActionLi
 		
 		return mPanel;
 	}
+	
+	Object[] variables;
+	
+	public JPanel getVariablePanel(Set<String> v) {
+		JPanel vPanel = new JPanel();		
+		variables = v.toArray();
+		
+        String cols = "5dlu, pref, 5dlu, fill:pref:grow, 5dlu";
+        String rows = "5dlu, pref, 5dlu";
+        
+        for (Object s : variables) {
+        	rows += ", pref, 5dlu";
+        }
+        
+        FormLayout layout = new FormLayout(cols, rows);
+        vPanel.setLayout(layout);
+        CellConstraints cc = new CellConstraints();
+
+        int row = 2;
+        
+        jtlVar = new Vector<JTextField>();
+        
+        for (Object s : variables) {        	
+        	JTextField jt = new JTextField("0");
+        	if (s.equals("ε")) {
+        		jt.setText(""+Configuration.getInstance().getGeneralConfig().getEpsilon());
+        	} else {
+        		jt.setText(""+Configuration.getInstance().getGeneralConfig().getVariable(s.toString()));
+        	}
+        	vPanel.add(new JLabel("Value for '"+s+"':"), cc.xy(2, row));
+        	vPanel.add(jt, cc.xy(4, row));
+        	jtlVar.add(jt);        	
+        	
+        	row += 2;
+        }
+        
+        return vPanel;
+	}
+	
+	public String getVariables() {
+		if (jtlVar.size()>0) {
+			String s = ", variables=list("; 
+			for (int i=0; i<variables.length; i++) {
+				s = s + EdgeWeight.UTF2LaTeX(variables[i].toString().charAt(0))+" = "+ jtlVar.get(i).getText();
+				if (i!=variables.length-1) s = s + ", ";
+			}		
+			return s+")";
+		} else {
+			return "";
+		}
+	}
 
 	public void actionPerformed(ActionEvent e) {
 		if (e.getSource() == createCV) {			
-			MatrixCreationDialog mcd = new MatrixCreationDialog(parent, dfp.getTable().getRMatrix());
+			MatrixCreationDialog mcd = new MatrixCreationDialog(parent, dfp.getTable().getRMatrix(), MatrixCreationDialog.getNames(parent.getGraphView().getNL().getNodes()));
 			dfp.getTable().getModel().copy(mcd.dfp.getTable().getModel()); 
 			return;
 		}
 		if (e.getSource() == loadCV) {
 			VariableNameDialog vnd = new VariableNameDialog(parent);
-			double[] result = RControl.getR().eval("as.numeric("+vnd.getName()+")").asRNumeric().getData();
-			int n = nodes.size();
-			for (int i=0; i<n; i++) {
-				for (int j=0; j<n; j++) {
-					dfp.getTable().getModel().setValueAt(new EdgeWeight(result[i*n+j]), i, j);
+			try {
+				double[] result = RControl.getR().eval("as.numeric("+vnd.getName()+")").asRNumeric().getData();
+				int n = nodes.size();
+				for (int i=0; i<n; i++) {
+					for (int j=0; j<n; j++) {
+						dfp.getTable().getModel().setValueAt(new EdgeWeight(result[i*n+j]), i, j);
+					}
 				}
+			} catch (Exception exc) {
+				JOptionPane.showMessageDialog(this, "Could not load matrix \""+vnd.getName()+"\":\n"+exc.getMessage(), "Could not load matrix", JOptionPane.ERROR_MESSAGE);
 			}
 			return;
 		}
@@ -401,14 +465,15 @@ public class PowerDialogParameterUncertainty extends JDialog implements ActionLi
 		if (e.getSource()==jtUserDefined || e.getSource()==addAnother) {
 			return;
 		}
+		//Hashtable<String,Double> ht = getVariables();
 		String weights = parent.getGraphView().getNL().getGraphName() + "@weights";
 		double alpha = parent.getPView().getTotalAlpha();
 		String G = parent.getGraphView().getNL().getGraphName() + "@m";
 		double[] means = new double[nodes.size()];
 		String settings = null;
 		String userDefinedF = getUserDefined();
-		// TODO: Why exactly do we need this here and what happens if parse2numeric throws an error?
-		RControl.getR().eval(parent.getGraphView().getNL().getGraphName()+"<-gMCP:::parse2numeric("+parent.getGraphView().getNL().getGraphName()+")");
+		// TODO: Do we still need sometimes something as parse2numeric? I guess yes.
+		//RControl.getR().eval(parent.getGraphView().getNL().getGraphName()+"<-gMCP:::parse2numeric("+parent.getGraphView().getNL().getGraphName()+")");
 
 		if (e.getSource()==ok) { /** Single Setting */
 			for (int i=0; i<means.length; i++) {
@@ -448,6 +513,7 @@ public class PowerDialogParameterUncertainty extends JDialog implements ActionLi
 					+userDefinedF
 					+", nSim = "+Configuration.getInstance().getGeneralConfig().getNumberOfSimulations()
 					+", type = \""+Configuration.getInstance().getGeneralConfig().getTypeOfRandom()+"\""
+					+getVariables()
 					+")").asRChar().getData()[0];
 			new TextFileViewer(parent, "Power results", result, true);
 		}				

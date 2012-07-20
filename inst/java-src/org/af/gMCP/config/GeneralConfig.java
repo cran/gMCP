@@ -102,7 +102,7 @@ public class GeneralConfig extends SpecificConfig {
 	}
     
     public double getEpsilon() {
-		return Double.parseDouble(getProperty("epsilon", "0.001"));		
+		return Double.parseDouble(getProperty("epsilon", "0.0001"));		
 	}
     
 	public boolean showFractions() {		
@@ -319,6 +319,7 @@ public class GeneralConfig extends SpecificConfig {
 	public boolean focusEqualsEdit() {
 		return Boolean.parseBoolean(getProperty("focusEqualsEdit", "true"));
 	}
+	
 	public void setFocusEqualsEdit(boolean b) {
 		setProperty("focusEqualsEdit", ""+b);		
 	}
@@ -326,5 +327,20 @@ public class GeneralConfig extends SpecificConfig {
 	public boolean askWhenGraphIsNotSaved() {
 		return Boolean.parseBoolean(getProperty("askWhenGraphIsNotSaved", "false"));
 	}
+
+	public boolean markEpsilon() {
+		return Boolean.parseBoolean(getProperty("markEpsilon", "true"));
+	}
 	
+	public void setMarkEpsilon(boolean b) {
+		setProperty("markEpsilon", ""+b);		
+	}
+
+	public String getParametricTest() {
+		return getProperty("parametricTest", "Bretz2011");
+	}
+	
+	public void setParametricTest(String test) {
+		setProperty("parametricTest", test);
+	}
 }

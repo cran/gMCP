@@ -15,7 +15,7 @@ public class EdgeWeight {
 	
 	private static final Log logger = LogFactory.getLog(EdgeWeight.class);
 	
-	protected String weightStr = null; 
+	private String weightStr = null; 
 	protected double[] weight = null;
 	
 	static DecimalFormat formatSmall = new DecimalFormat("#.###E0");
@@ -50,6 +50,7 @@ public class EdgeWeight {
 				weightStr = RControl.getFraction(weight, true);
 			}
 		}	
+		isEpsilon = null;
 	}
 
 	public String toString() {
@@ -94,11 +95,13 @@ public class EdgeWeight {
 			'χ', 'ψ', 'ω'
 	};
 	
+	public final static String NO_GREEK_CHARACTER = "No greek character";
+	
 	public static String UTF2LaTeX(char greekC) {
 		for (int i=0; i<greek.length; i++) {
 			if (greekC == greek[i]) return greekLaTeX[i];
 		}
-		return "Error";
+		return ""+greekC;// NO_GREEK_CHARACTER;
 	}
 	
 	public List<String> getVariables() {
@@ -137,6 +140,19 @@ public class EdgeWeight {
 			replaceStr = replaceStr.replaceAll(""+greek[i], greekLaTeX[i]);
 		}
 		return replaceStr;
+	}
+
+	private Boolean isEpsilon = null;
+	
+	public boolean isEpsilon() {
+		try {
+			if (isEpsilon==null) {
+				isEpsilon = RControl.getR().eval("eval(parse(text=gsub(\"\\\\\\\\epsilon\", 0, \""+getPreciseWeightStr().replaceAll("\\\\", "\\\\\\\\")+"\")))==0").asRLogical().getData()[0];
+			}
+			return isEpsilon;
+		} catch (Exception e) {
+			return false;
+		}
 	}
 	
 }

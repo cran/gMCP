@@ -92,23 +92,26 @@ graphGUI <- function(...) {invisible(NULL)}
 \section{Introduction}
 
 This package provides functions and graphical user interfaces for
-graph based multiple test procedures. By defining weighted graphs one
+graph based multiple test procedures. By defining weighted directed graphs one
 also defines a weighting strategy for all subsets of null hypotheses.
 Weighted tests can be performed on these subsets and following the
 closed test procedure this leads to a multiple test procedure
 controlling the family wise error rate in the strong sense. In some
-cases shortcuts ar   e available, for example the weighted Bonferroni
-procedure leads to a sequentially rejective multiple test procedure.
+cases shortcuts are available, one example is the weighted Bonferroni
+procedure that leads to a sequentially rejective multiple test procedure.
 
 At all steps either graphical user interfaces or the R Console with S4
 objects and methods can be used.
 
-Please note that this is still an early release and the API will most
-likely still change in future versions.
+%Please note that this is still an early release and the API will most
+%likely still change in future versions.
 
 \subsection{Installation}
 
-Open R and type \texttt{install.packages("gMCP")}, 
+If you don't already have R on your system, you can download a bundled
+version of R and gMCP from \url{http://www.algorithm-forge.com/gMCP/bundle/}.
+
+Otherwise open R and type \texttt{install.packages("gMCP")}, 
 select an arbitrary mirror and gMCP will be downloaded and installed.
 
 Once it is installed, whenever you start R you can load the gMCP
@@ -117,9 +120,48 @@ graphical user interface is started with the command
 \texttt{graphGUI()}.
 
 If you run into problems, see
-\url{http://cran.r-project.org/web/packages/gMCP/INSTALL} or write us
+\url{http://cran.r-project.org/web/packages/gMCP/INSTALL} or please write us
 an email at
 \href{mailto:help@small-projects.de}{\texttt{help@small-projects.de}}.
+We are eager to help and to learn about existing problems. 
+
+\subsection{Basic Theoretical Background}
+
+Graph based multiple test procedures are closed test procedures, i.e.\ for a
+family $\{H_i\;|\; i\in I\}$, $I=\{1,\ldots,n\}$ of elementary hypotheses each
+intersection $\bigcap_{j\in J}H_j$, $J\subset I$ is tested with a local level
+$\alpha$ test. Following the closed testing principle one can derive a
+multiple test procedure that controls the family-wise error rate (FWER) at
+level $\alpha$.
+
+The local level $\alpha$ tests in gMCP are weighted tests, where the weights are
+derived from a directed weighted graph $G_I$. Examples of weigthed tests that are
+available in gMCP are the weighted Bonferroni, parametric and Simes tests.
+
+For each intersection $\bigcap_{j\in J}H_j$, $J\subset I$ a graph $G_J$ can be
+derived from $G_I$ and the weights for the weighted local test for
+$\bigcap_{j\in J}H_j$ are the weights of the nodes of $G_J$. To derive
+graph $G_J$ remove all nodes that are not in $J$ and update the edges
+of the graph according to Algorithm \ref{rmNodeAlg} (the order does not matter).
+For a more detailed version please take a look at \cite{Bretz11} that is freely
+available as OnlineOpen Article.
+
+\begin{algorithm}
+\caption{Removing node $i$, passing the weight and updating the graph edges}
+\label{rmNodeAlg}
+\begin{algorithmic}
+\FOR{$l \in I$} 
+  \STATE $w_l \gets w_l+w_i\cdot g_{il}$
+  \FOR{$k \in I$}    
+    \IF{$l \neq k$ \textbf{and} $g_{lj}\cdot g_{jl}\neq1$}
+      \STATE $g_{lk} \gets \frac{g_{lk}+g_{lj}\cdot g_{jk}}{1-g_{lj}\cdot g_{jl}}$
+    \ELSE
+      \STATE $g_{lk} \gets 0$
+    \ENDIF    
+  \ENDFOR
+\ENDFOR
+\end{algorithmic}
+\end{algorithm}
 
 \subsection{Example and diving in}
 
@@ -231,25 +273,6 @@ gMCP(graph, pvalues=c(0.01,0.07,0.02), alpha=0.05)
 @
 \normalsize
 
-\section{Basic Theoretical Background}
-
-\begin{algorithm}
-\caption{Removing node $i$, passing the weight and updating the graph edges}
-\label{rmNodeAlg}
-\begin{algorithmic}
-\FOR{$l \in I$} 
-  \STATE $w_l \gets w_l+w_i\cdot g_{il}$
-  \FOR{$k \in I$}    
-    \IF{$l \neq k$ \textbf{and} $g_{lj}\cdot g_{jl}\neq1$}
-      \STATE $g_{lk} \gets \frac{g_{lk}+g_{lj}\cdot g_{jk}}{1-g_{lj}\cdot g_{jl}}$
-    \ELSE
-      \STATE $g_{lk} \gets 0$
-    \ENDIF    
-  \ENDFOR
-\ENDFOR
-\end{algorithmic}
-\end{algorithm}
-
 \section{Creating Weighted Graphs}
 
 In the first step a graph that describes the multiple test procedures
@@ -323,7 +346,7 @@ graph@nodeAttr$Y <- c(H11=100, H21=100, H31=100, H12=300, H22=300, H32=300)
 
 For placement of the nodes in a matrix pattern, the function
 \texttt{placeNodes} is helpful. The following code does the same as
-the three lines of R code above.
+the two lines of R code above.
 
 \scriptsize
 % Chunk 10
@@ -338,8 +361,8 @@ Coordinates are interpretated as pixels in the GUI and big points in
 {\LaTeX} (72 bp = 1 inch).\index{coordinates}
 
 Let's take a look at the graph in {\LaTeX} rendered with TikZ
-\cite{TikZ}\index{TikZ} (you can see the compiled result in figure
-\ref{exampleGraphBretz}):
+\cite{TikZ}\index{TikZ} (figure
+\ref{exampleGraphBretz} shows the compiled result):
 
 \scriptsize
 %\lstset{language=[LaTeX]TeX}
@@ -367,7 +390,6 @@ edgeAttr(graph, "H11", "H21", "labelY") <- 80
 
 @
 \normalsize
-
 
 
 \subsection{Using the GUI}
@@ -462,8 +484,7 @@ We can create a TikZ graphic from the last graph with
 % Chunk 15
 <<echo=FALSE,results=tex>>=
 
-#TODO Enable this again.
-#cat(graph2latex(result@graphs[[4]], scale=0.7, fontsize="tiny"))
+cat(graph2latex(result@graphs[[4]], scale=0.7, fontsize="tiny"))
 
 @
   \caption{\label{finalstate}Final graph from the test procedure after rejection of $H_{21}$, $H_{31}$ and $H_{32}$.}
@@ -566,7 +587,8 @@ Use the following two buttons:
 
 See \cite{Bretz11}.
 
-\section{Weighted parametric tests}
+\section{Weighted parametric and Simes
+tests}\index{Simes-Procedure}\index{parametric test} 
 
 \begin{figure}[ht]
   \centering    
@@ -574,30 +596,40 @@ See \cite{Bretz11}.
   \caption{\label{correlated} You can also specify a correlation between the tests.}
 \end{figure}
 
-In the lower right panel with p-values, it is also possible to specify a known correlation between these values (see figure \ref{correlated}).
+In the lower right panel with p-values, it is also possible to specify a known
+correlation between the original test statistics (see figure
+\ref{correlated}). Either you can perform a Simes test or a weighted parametric
+tests as described in \cite{Bretz11}. For the later it is assumed that
+under the global null hypothesis $(\Phi^{-1}(1-p_1),\ldots,\Phi^{-1}(1-p_m))$ 
+follow a multivariate normal distribution with correlation matrix $\Sigma$ where
+$\Phi^{-1}$ denotes the inverse of the standard normal
+distribution function. For example, this is the case if $p_1,\ldots,
+  p_m$ are the raw p-values from one-sided $z$-tests for each of the
+elementary hypotheses where the correlation between z-test statistics
+is generated by an overlap in the observations (e.g. comparison with a
+common control, group-sequential analyses etc.). An application of the
+transformation $\Phi^{-1}(1-p_i)$ to raw p-values from a two-sided
+test will not in general lead to a multivariate normal
+distribution.
 
-For further information please take a look at the vignette "\emph{Weighted parametric tests defined by graphs}".
+For further information please take a look at the vignette
+"\href{http://cran.r-project.org/web/packages/gMCP/vignettes/parametric.pdf}{Weighted
+parametric tests defined by graphs}".
 
-\section{Correlation matrix creation}\index{correlation matrix}
+\subsection{Correlation matrix creation}\index{correlation matrix}
 
 The GUI features a dialog for easy creation of correlation matrices (see figure \ref{createCM1}).
 
 \begin{figure}[ht]
   \centering    
   \includegraphics[width=0.7\textwidth]{pictures/createCM1.png}      
-  \caption{\label{createCM1} You can configure many things in the option dialog.}
+  \caption{\label{createCM1} Dialog for specifying a correlation matrix.}
 \end{figure}
-
-
 
 If the entered matrix is not positive semidefinite, 
 i.e.\ negative eigen values exist, a warning is given.
 
-\[A \kronecker B\]
-
-Graph from Bretz et al. (2009) - Figure 14
-
-Literature: Bretz F., Maurer W., Brannath W., Posch M.: A graphical approach to sequentially rejective multiple test procedures. Statistics in Medicine 2009; 28:586-604. Figure 14.
+%\[A \kronecker B\]
 
 %\begin{figure}[ht]
 %  \centering    
@@ -683,8 +715,6 @@ gMCP(graph, pvalues=c(0.02, 0.04, 0.01, 0.02), eps=0.001)
 
 \section{Power Simulations}\index{power simulation}
 
-No $\epsilon$-edges are allowed.
-
 \begin{figure}[ht]
   \centering
 % Chunk 21
@@ -744,57 +774,90 @@ graph
 
 \subsection{Options}\index{options}
 
-This subsection is work in progress, but fortunately the options in
-figure \ref{optionsDialog} should be fairly self-explanatory.
-
-\begin{figure}[ht]
-  \centering    
-  \includegraphics[width=0.7\textwidth]{pictures/optionsDialog.png}      
-  \caption{\label{optionsDialog} You can configure many things in the option dialog.}
-\end{figure}
-
-\begin{figure}[ht]
-  \centering    
-  \includegraphics[width=0.7\textwidth]{pictures/optionsDialog2.png}      
-  \caption{\label{optionsDialog2} You can configure many things in the option dialog.}
-\end{figure}
-
-\begin{figure}[ht]
-  \centering    
-  \includegraphics[width=0.7\textwidth]{pictures/optionsDialog3.png}      
-  \caption{\label{optionsDialog3} You can configure many things in the option dialog.}
-\end{figure}
-
 \begin{description}
-  \item[Grid]
-  \item[Number of digits]
-  \item[Line width]
-  \item[Font Size]
-  \item[Look'n'Feel]    
-  \item[Colored image files and pdf reports]
-  \item[Show rejected nodes in GUI]
-  \item[Use JLaTeXMath] There are few reasons not to use the free Java
+  \item[Grid] For easier placement of nodes a grid can be used that aligns the
+  nodes to its intersections. You can specify a positive integer that sets the
+  grid size, i.e. the width in pixels between two proximate parallel
+  lines. If you set the grid size to 1 this would allow unrestricted placement
+  and therefore disables the grid.
+  \item[Number of digits] Number of digits to be shown at various places. In
+  this version not every part of the GUI will use this value, but this will
+  improve in further versions.
+  \item[Line width] Especially if you want to use exported PNG graphics in
+    other documents, you may want to adjust the line width of edges and nodes,
+    when borders look to thin or thick.
+  \item[Font Size] Font size of the text in the GUI widgets.
+  \item[Look'n'Feel] The way the widgets of a GUI look and how the behave
+    is called "look and feel" in Java. Depending on your operating
+    system and classpath several Look'n'Feel implementations may be available 
+    (e.g. Metal (Java default), Windows, Mac OS, Motif and/or System/GTK).
+    If you are used to a particular Look'n'Feel, you can select it here.
+    But if you have problems with the graphical interface, please try to use
+    the default Metal theme to check whether it could be a problem with the
+    selected Look'n'Feel.
+  \item[Colored image files and pdf reports] Colors are used to highlight
+    different conditions in the graph like hypotheses that could be rejected.
+    While these colors are helpful in the GUI, you perhaps prefer black and
+    white PNG image files and PDF reports.
+  \item[Show rejected nodes in GUI] When using the GUI to for stepwise rejection
+    of hypotheses, this options 
+  \item[Use JLaTeXMath] There are not many reasons not to use the free Java
     library JLaTeXMath to render numbers, symbols and formulas in the
     GUI. The option is mainly provided in case that errors occur
     displaying the numbers and formulas.
-  \item[Show fractions instead of decimal numbers]
-  \item[Use epsilon approximation] Not yet available in this version.
-  \item[Epsilon]
-  \item[Try to show fractions / rounded numbers]
-  \item[Number of digits to assure]
-  \item[Verbose output of algorithms]
-  \item[Monte Carlo sample size for power]
-  \item[Type of random numbers]
-  \item[Check online for updates]
-  \item[Export images with transparent background]
-  \item[If a node is dragged also all edges to this node follow]
+  \item[Show fractions instead of decimal numbers] Floating point numbers are used
+    for all calculations and values like $1/3$ would be normally shown as
+    $0.3333333$. When this option is active the method fractions from package
+    MASS is used to display fractions whenever the floating point numbers are
+    close to a fraction that looks right.  
+  \item[Use epsilon approximation] In this version this value can not be
+    changed. No calculations with infinitesimal small values are done but
+    instead the epsilon is approximated by a small real number.
+  \item[Epsilon] The small real value that should be used to approximate
+    the infinitesimal small epsilon. Default is $10^{-3}$.
+%  \item[Try to show fractions / rounded numbers] Floating point numbers are
+%   used for all calculations and values like $1/3$ would be normally shown as
+%    $0.3333333$. When this option is active the method fractions from package
+%    MASS is used to display fractions whenever the floating point numbers are
+%    close to a fraction that looks right.
+%  \item[Number of digits to assure] This is an option for displaying numbers
+%  and does not influence the calculations. As seen in the previous option
+%  description, we sometimes try to display fractions instead of floating point
+%  numbers. This option will assure that the shown fraction does not
+%  differ in more than the specified value from the floating point number.
+  \item[Verbose output of algorithms] If selected the algorithms produce a
+  verbose output that is shown in the GUI. For example the Simes test specifies
+  for each intersection of elementar hypotheses whether and why it could be
+  rejected.
+  \item[Monte Carlo sample size for power] The Monte Carlo sample size for power
+  calculations. Default is 10000.
+  \item[Type of random numbers] You can select quasirandom or pseudorandom
+  numbers for power calculations. The quasirandom option uses a randomized
+  Lattice rule, and should be more efficient than the pseudorandom option that
+  uses ordinary (pseudo) random numbers.
+  \item[Check online for updates] On start-up gMCP can check automatically
+    whether a new version of gMCP is available. Only your version of R (like
+    2.13.1), the version of gMCP (like 0.7-5) and a random number (to
+    distinguish different requests) are transmitted.
+  \item[Export images with transparent background] If checked the background of
+    exported PNG graphics will be transparent. Otherwise the graphs are
+    displayed on a white background.
+  \item[If a node is dragged also all edges to this node follow] If selected the
+    edges will always repositioned whenever a node is dragged. Otherwise only
+    newly added eges behave that way and edges that have been dragged themselves
+    are considered "anchored" and will stay with the edge weight label at the
+    same position.
   \item[Automatically enter the editing mode, whenever a table cell
-    gets the focus]
+    gets the focus] People are used to different behaviour of tables (mostly
+    depending on which spreadsheet applications they use regularly). If this
+    option is set to true it is easy to change the values of the cells but
+    navigating with arrow keys is hard since in the editing mode the right and
+    left key will move the cursor only in the currently selected cell.
 \end{description}
 
 \subsubsection{Privacy}
 
-The GUI is able to connect to our server to
+The GUI always asks before sending data to our server. It will do so to
 \begin{enumerate}
   \item check whether a new version of gMCP exists,  
   \item send a wishlist if the user chooses to,
@@ -951,22 +1014,42 @@ associated probability spaces.  For a family of null hypotheses
 $H_i\subset\Theta$, $i\in\{1,\ldots,n\}=:I$ a multiple test procedure
 $\phi$ is defined as a family of $(\sF, \Pot(\{0,1\}^n))$-measurable
 functions $\{\phi_J:\; \Omega \rightarrow \{0,1\}^n\;|\;J\subset I\}$.
+(We'll write $\phi_j$ for $\phi_\{j\}$). 
 
-\begin{Def}
+The family of hypotheses $\{H_i \;|\;i\in I\}$ is called
+\emph{closed}\index{closed family} if it is closed under intersection. 
+
+\begin{Def}[Familywise Error Rate]\index{familywise error rate}
   Let $H_J:=\bigcap_{j\in J} H_j$. The multiple test procedure $\phi$
   controls the \emph{familywise error rate at level $\alpha$ in the
     weak sense} if
   \[\forall \theta\in H_I: \; P_\theta(\phi_J=1\text{ for some }J\subset I)\leq\alpha.\]
   The multiple test procedure $\phi$ controls the \emph{familywise
     error rate at level $\alpha$ in the strong sense} if
-  \[\forall \theta\in\Theta: \; P_\theta(\phi_J=1\text{ and }\theta\in H_J\text{ for some }J\subset I)\leq\alpha.\]
+  \[\forall \theta\in\Theta: \; P_\theta\left(\max\limits_{J\subset I, \theta\in H_J}\phi_J=1\right)\leq\alpha.\]
+  %\[\forall \theta\in\Theta: \; P_\theta(\phi_J=1\text{ and }\theta\in H_J\text{ for some }J\subset I)\leq\alpha.\]
 \end{Def}
 
 This section is work in progress.
 
-\subsection{Closed testing principle}\index{Closed testing principle}
+%\subsection{Closed testing principle}\index{closed testing principle}
+\begin{Theorem}[Closed testing principle]\index{closed testing principle}
+ \cite{marcus1976closed}
+\end{Theorem}
 
-\subsection{Partitioning principle}\index{Partitioning principle}
+\begin{Def}[Coherence and Consonance]
+  A multiple test procedure is called \emph{consonant}\index{consonance} if 
+  \[\forall J\subset I:\; \left(\phi_J=1\;\Rightarrow\;\exists j\in J:\;\phi_j=1\right)\]
+  %or in other words if $\Cap_{j\in J}H_j$ can be rejected than there exists a $H_j$, $j\in J$ that is rejected. 
+
+  A multiple test procedure is called \emph{coherent}\index{coherence} if
+  \[\forall J,\,J'\subset I:\; \left(\phi_J=0\text{ and }J'\subset J\;\Rightarrow\;\phi_{J'}=0\right).\]
+
+  For further reading see
+  \cite{hochberg2009multiple} and \cite{gabriel1969simultaneous}.
+\end{Def}
+
+%\subsection{Partitioning principle}\index{partitioning principle}
 
 \begin{Def}
 
@@ -975,9 +1058,8 @@ This section is work in progress.
 \begin{Theorem}[Simes-Procedure]\index{Simes-Procedure} 
 Let $T_1, \ldots, T_m$
 be test statistics for $m\in\N$ null hypotheses $H_1, \ldots, H_m$ and
-$p_1, \ldots, p_m$ the associated p-values. Then the following test
-will control the familywise error rate at level $\alpha\in]0,1[$ in
-    the strong sense:
+$p_1, \ldots, p_m$ the associated p-values and $\alpha\in]0,1[$.
+%Then the following test will control the familywise error rate at level $\alpha\in]0,1[$ in the strong sense:
 
 Denote the ordered p-values by $p^{(1)}<p^{(2)}<\ldots<p^{(m)}$ 
 and the corresponding hypotheses by $H^{(1)},H^{(2)},\ldots, H^{(m)}$.
@@ -1030,15 +1112,14 @@ directed, weighted graphs with no self-loops and no parallel edges:
 
 Isomorphisms.
 
-\begin{Theorem}[Unimprovable graph] 
- Let $G=(V,E,w)$ be a graph with $\sum_{v\in V}w(v)=1$.
- If for all $v, v'\in V$, $v\neq v'$ with $w(v)>0$ a path from $v$ to $v'$
- exists, than there is no other graph with an uniformly better
- associated test statistic.
-\begin{Proof}
-\end{Proof}
-
-\end{Theorem}
+%\begin{Theorem}[Unimprovable graph] 
+% Let $G=(V,E,w)$ be a graph with $\sum_{v\in V}w(v)=1$.
+% If for all $v, v'\in V$, $v\neq v'$ with $w(v)>0$ a path from $v$ to $v'$
+% exists, than there is no other graph with an uniformly better
+% associated test statistic.
+%\begin{Proof}
+%\end{Proof}
+%\end{Theorem}
 
 \end{appendix}
 

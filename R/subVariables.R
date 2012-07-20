@@ -13,33 +13,45 @@ substituteEps <- function(graph, eps=10^(-3)) {
 	return(graph)
 }
 
-replaceVariables <-function(graph, variables=list()) {
+replaceVariables <-function(graph, variables=list(), ask=TRUE) {
 	greek <- c("alpha", "beta", "gamma", "delta", "epsilon", "zeta", "eta", 
 			"theta", "iota", "kappa", "lambda", "mu", "nu", "xi", 
 			"omicron", "pi", "rho", "sigma", "tau", "nu", "phi",
 			"chi", "psi", "omega")
-	
-	for (g in greek) {
-		if (length(grep(g, graph@m))!=0) {
+	shouldBeParsed2Numeric <- TRUE
+	if (is.matrix(graph)) { m <- graph } else {m <- graph@m}	
+	for (g in c(greek,  letters)) {
+		if (length(grep(g, m))!=0) {
 			if (is.null(answer <- variables[[g]])) {
-				if(interactive()) {
-					answer <- readline(paste("Value for variable ",g,"? ", sep=""))
+				if (ask) {
+					if(interactive()) {
+						answer <- readline(paste("Value for variable ",g,"? ", sep=""))
+					} else {
+						stop(paste("Value for variable",g,"not specified."))
+					}
 				} else {
-					stop(paste("Value for variable",g,"not specified."))
+					shouldBeParsed2Numeric <- FALSE
 				}
 			}
-			graph@m <- gsub(paste("\\\\", g, sep=""), answer, graph@m) 
+			if(!is.null(answer)) {
+				m <- gsub(paste(ifelse(nchar(g)==1,"","\\\\"), g, sep=""), answer, m)
+			}
 		}
 	}
+	if (is.matrix(graph)) return(parse2numeric(m))
+	graph@m <- m
 	return(parse2numeric(graph))
 }
 
 parse2numeric <- function(graph) {
-	m <- matrix(sapply(graph@m, function(x) {
+	if (is.matrix(graph)) { m <- graph } else {m <- graph@m}
+	names <- rownames(m)
+	m <- matrix(sapply(m, function(x) {
 						result <- try(eval(parse(text=x)), silent=TRUE);
 						ifelse(class(result)=="try-error",NA,result)
-					}), nrow=length(getNodes(graph)))
-	rownames(m) <- colnames(m) <- getNodes(graph)
+					}), nrow=dim(m)[1])
+	rownames(m) <- colnames(m) <- names
+	if (is.matrix(graph)) return(m)
 	graph@m <- m
 	return(graph)
 }

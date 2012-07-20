@@ -14,12 +14,13 @@ extractPower <- function(x, f=list()) {
 
 calcPower <- function(weights, alpha, G, mean = rep(0, nrow(sigma)),
                       sigma = diag(length(mean)), cr = NULL,
-                      nSim = 10000, seed = 4711, type = c("quasirandom", "pseudorandom"),
+                      nSim = 10000, seed = NULL, type = c("quasirandom", "pseudorandom"),
 					  f=list()) {
-  if (is.list(mean)) {
+	type <- match.arg(type)
+	print(G)
+	if (is.list(mean)) {
 	  result <- list()
 	  for (m in mean) {
-		  type <- match.arg(type)
 		  sims <- rqmvnorm(nSim, mean = m, sigma = sigma, seed = seed, type = type)
 		  pvals <- pnorm(sims, lower.tail = FALSE)
 		  out <- graphTest(pvals, weights, alpha, G, cr)
@@ -32,7 +33,6 @@ calcPower <- function(weights, alpha, G, mean = rep(0, nrow(sigma)),
 	  }
 	  return(result)
   } else {
-	  type <- match.arg(type)
 	  sims <- rqmvnorm(nSim, mean = mean, sigma = sigma, seed = seed, type = type)
 	  pvals <- pnorm(sims, lower.tail = FALSE)
 	  out <- graphTest(pvals, weights, alpha, G, cr)
@@ -43,7 +43,7 @@ calcPower <- function(weights, alpha, G, mean = rep(0, nrow(sigma)),
 calcMultiPower <- function(weights, alpha, G, muL, sigmaL, nL,
 		sigma = diag(length(muL[[1]])), cr = NULL,
 		nSim = 10000, seed = 4711, type = c("quasirandom", "pseudorandom"),
-		f=list()) {
+		f=list(), digits=4, variables=NULL) {
 	meanL <- list()
 	for (mu in muL) {
 		for (s in sigmaL) {
@@ -57,22 +57,64 @@ calcMultiPower <- function(weights, alpha, G, muL, sigmaL, nL,
 	sResult <- ""
 	g <- matrix2graph(G)
 	g <- setWeights(g, weights)
-	sResult <- paste(sResult, "Graph:",paste(capture.output(print(g)), collapse="\n"), sep="\n")
-	resultL <- calcPower(weights, alpha, G, mean = meanL, sigma, cr, nSim, seed, type, f)
+	if (is.null(variables)) {
+		sResult <- paste(sResult, "Graph:",paste(capture.output(print(g)), collapse="\n"), sep="\n")
+		resultL <- calcPower(weights, alpha, G, mean = meanL, sigma, cr, nSim, seed, type, f)
+		sResult <- paste(sResult, resultL2Text(resultL, digits), sep="\n")
+	} else {
+		# For testing purposes: variables <- list(a=c(1,2), b=(3), x=c(2,3,4), d=c(1,2))
+		i <- rep(1, length(variables))
+		j <- 1
+		running <- TRUE
+		while (running) {
+			variablesII <- rep(0, length(variables))
+			for(k in 1:length(variables)) {
+				variablesII[k] <- variables[[k]][i[k]]
+			}
+			names(variablesII) <- names(variables)
+			GII <- replaceVariables(G, as.list(variablesII))
+			print(GII)
+			print(weights)
+			print(alpha)
+			print(meanL)
+			additionalLabel <- paste(",", paste(paste(names(variables),"=",variablesII,sep=""), collapse=", "))
+			resultL <- calcPower(weights=weights, alpha=alpha, G=GII, mean = meanL, sigma, cr, nSim, seed, type, f)
+			sResult <- paste(sResult, resultL2Text(resultL, digits, additionalLabel=additionalLabel), sep="\n")
+			# Going through all of the variable settings:
+			i[j] <- i[j] + 1
+			while (i[j]>length(variables[[j]]) && running) {
+				if (j<length(i)) {
+					j <- j + 1
+				} else {
+					running <- FALSE
+				}
+				i[j] <- i[j] + 1
+				for (k in 1:(j-1)) {
+					i[k] <- 1
+				}
+			}
+		}		
+	}
+	
+	return(sResult)
+}
+
+resultL2Text <- function(resultL, digits, additionalLabel="") {
+	sResult <- ""
 	for(result in resultL) {
 		label <- attr(result, "label")
-		title <- paste("Setting:",label)		
+		title <- paste("Setting: ",label, additionalLabel, sep="")		
 		sResult <- paste(sResult, title, paste(rep("=", nchar(title)),collapse=""), sep="\n")			
-		sResult <- paste(sResult, "Local Power:",paste(capture.output(print(result$LocalPower)), collapse="\n"), sep="\n")
-		sResult <- paste(sResult, "\nExpected number of rejections:", result$ExpRejections, sep="\n")
-		sResult <- paste(sResult, "Prob. to reject at least one hyp.:", result$PowAtlst1, sep="\n")
-		sResult <- paste(sResult, "Prob. to reject all hypotheses:", result$RejectAll, sep="\n")
+		sResult <- paste(sResult, "Local Power:",paste(capture.output(print(round(result$LocalPower, digits))), collapse="\n"), sep="\n")
+		sResult <- paste(sResult, "\nExpected number of rejections:", round(result$ExpRejections, digits), sep="\n")
+		sResult <- paste(sResult, "Prob. to reject at least one hyp.:", round(result$PowAtlst1, digits), sep="\n")
+		sResult <- paste(sResult, "Prob. to reject all hypotheses:", round(result$RejectAll, digits), sep="\n")
 		if (length(result)>4) {
 			for (i in 5:length(result)) {
 				#TODO pF <- attr(result, "label")
 				pF <- attr(result[i], "label")
 				if (is.null(pF)) pF <- names(result)[i]
-				sResult <- paste(sResult, paste(pF,":",sep=""), result[i], sep="\n")
+				sResult <- paste(sResult, paste(pF, ":", sep=""), result[i], sep="\n")
 			}
 		}
 		sResult <- paste(sResult, "\n", sep="\n")		

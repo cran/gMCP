@@ -1,6 +1,36 @@
+- Why is RControl.getR().getHistory() not accessible when the gMCP call fails?
+- Umlaute in literatur.bib, e.g. Röhmel
+- let users choose test for parametric test
+- Options: Show R Code
+- .asRLogical().getData()[0] can be true but NA in R
+- look at warnings regarding exhaustAlpha (also optimality of graph)
+- Email subscription on start page (also tell user after 10th start of GUI)
+Not necessary, but would be great for this release:
+- Warn user if he uses a version that is older than 1 year.
+- Warn/inform user about changes.
+- Does contrMat(n=c(10, 20, 30, 40), type ="Dunnett") do what I want?!?
+- Copy&Paste of Results (Table, Text, allow to save)
+
+- For parametric procedures there is no "reset" button (->variables)
+- Right click menu for GUI
+- Description (.Rd files) of graphGUI and corMatWizard
+- Bauer & Hackel
+- "Find out what's changed in ggplot2 with"
+  "news(Version=="0.9.1", package="ggplot")"
+- Add line width to edge attributes (as color)
+- As soon as weights for nodes are implemented, change Improved Fallback one to (w_1,w_2,w_3) and edges (now 1/2,1/2) to \gamma, 1-\gamma with \gamma=w2/(w1_w2))
 - Save power scenarios
+- Correlation matrix save & restore
+- Does gMCP calculate correctly in 0.6-6 in the Console?
+- positive Definitheit!
+- Sample size is ignored in CorMatDialog
+- Konsonanz erzwingen?
+- Ist der Single-Step-Dunnett als Graph darstellbar?
+- two-sided tests?
+- Unify single NCP and multiple NCPs
 - Export user defined functions and allow names for them
 - CI Dialog testen!
+- Selection is awkward. After first dragging one edge is always fixed to the same point.
 - Check in CI zu max(0, ..) bzw. min(0, ..) / means
 - keine p-Werte übernehmen
 - Buttons to load R objects for power dialog.
@@ -14,6 +44,14 @@
   - Dunnett -> ?
 - Sequentielle Power ist schwierig (basiert am Ende auf zu wenig Fallzahl der Simulation)
 - verbose output for parametric tests
+- integrate the two files "tests.R" and "unirootbug.Rd" in directory "unitTests" into unit tests. 
+- improve behavior of tables if "Automatically enter the editing mode, whenever a table cell gets the focus" is set to false.
+- round values in CI Dialog
+- Check whether 0.7-11 is regarded as newer than 0.7-9 
+
+- Characterize optimal graphs.
+
+- Join two graphs in GUI.
 
 - Export matrix with 1/2 as 0.5 but add label as attribute
 - Save labels as edge / node attributes?
@@ -32,27 +70,24 @@
 Is this still the case?
 - In CI-Dialog (initial weights instead of alpha are displayed - this are two errors)
 
+- Activate parse2numeric again in PowerDialog if (and only if) graph@m doesn't contain NAs afterwards.
+
+.tmpGraph <- generalSuccessive()
+
+gMCP:::calcMultiPower(weights = .tmpGraph@weights, alpha = 0.05, G = .tmpGraph@m, muL = list(c(0, 0, 0, 0)), sigmaL = list(c(1, 1, 1, 1)), nL = list(c(10, 10, 10, 10)), sigma = matrix(c(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1), nrow = 4), nSim = 10000, type = "quasirandom", variables = list(delta = c(0,0.5), gamma = c(0,0.5)))
+
 Critical:
 =========
 
 - Think about JavaGD devices. (User wants to plot in R Console etc.)
 - Does Deducer interfere JavaGD? (When is .onLoad executed?)
 - Make JavaGD only a suggest (Solaris and generally safer)
-- g <- HuqueAloshEtBhore2011()
-> g
-A graphMCP graph
-H1 (NA, weight=NA)
-H2 (NA, weight=NA)
-H3 (NA, weight=NA)
-H4 (NA, weight=NA)
-> gMCP(g, runif(4))
-Fehler in if (m[i, node] * m[node, i] < 1) { : Argument hat Länge 0
+- Create function for renaming of graph nodes in R
 - Check installed structure of Windows binary.
 
 High priority:
 ==============
 
-- Graphs with variables should be set back to the version with variables.
 - Show optional dialog when refresh button is pressed.
 - Check java.awt.Desktop.open in the newest Ubuntu (or is there something else wrong?)
 - graphTest's last.alphas at least contain strange NaN in some cases
@@ -104,7 +139,6 @@ attr(,"last.alphas")
 - What happens if we start the GUI a second time?
 I have no idea which 1/2*alpha I'm referring here to: 
 - Why does matrix(c(0,1/2,0,0),2) loose half an alpha?
-- Example graphs from Ferber?
 - Flag 1+epsilon>1 in line sum
 - round adjusted p-Values up
 - Think about "-Xrs" - see paragraph below.
@@ -149,6 +183,7 @@ In library(package, lib.loc = lib.loc, character.only = TRUE, logical.return = T
 
 Additional features / low priority:
 ===================================
+- Giving \d to RJava causes a segmentation fault.
 - \gamma or \delta are pretty small on edges.
 - Save ConfIntPlot as png/bmp or copy to system clip board
 - Do we really need PolynomF as dependencies?
@@ -249,3 +284,14 @@ Warning: unable to move temporary installation 'C:\Program Files\R\R-2.13.0\libr
 
 The downloaded packages are in
         C:\Documents and Settings\Student\Local Settings\Temp\RtmpBJn6oK\downloaded_packages
+
+---
+        
+The current api for setting a popupMenu in Swing is
+
+  myComponent.setComponentPopupMenu(myPopupMenu)
+
+this way it will be shown automagically, both for mouse and keyboard triggers (the latter depends on LAF). Plus, it supports re-using the same popup across a container's children. To enable that feature:
+
+  myChild.setInheritsPopupMenu(true)
+        

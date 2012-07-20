@@ -1,7 +1,12 @@
 gMCP <- function(graph, pvalues, test, correlation, alpha=0.05, 
 		approxEps=TRUE, eps=10^(-3), ..., useC=FALSE, 
-		verbose=FALSE, keepWeights=TRUE, adjPValues=TRUE, exhaustAlpha=FALSE) {	
+		verbose=FALSE, keepWeights=TRUE, adjPValues=TRUE) {
+#		, alternatives="less") {	
 	output <- ""
+	callFromGUI <- !is.null(list(...)[["callFromGUI"]])
+	if (verbose) {
+		output <- paste(output, checkOptimal(graph), sep="\n")
+	}
 	if (approxEps && !is.numeric(graph@m)) {
 		graph <- substituteEps(graph, eps=eps)
 	}
@@ -16,14 +21,12 @@ gMCP <- function(graph, pvalues, test, correlation, alpha=0.05,
 	if (is.null(names(pvalues))) {
 		names(pvalues) <- getNodes(graph)
 	}
-	if (missing(test) && (missing(correlation) || length(pvalues)==1)) {
-		# Bonferroni-based test procedure
-		m <- graph2matrix(graph)
-		if (useC && !is.numeric(m)) { # TODO Why this warning and btw. nothing is done in this case.
-			warning("Option useC=TRUE will be ignored since graph contains epsilons or variables.")			
-		} else if (useC) {
-			w <- getWeights(graph)
-			result <- fastgMCP(m=m, w=w, p=pvalues, a=alpha, keepWeights=keepWeights)
+	if ((missing(test) && missing(correlation)) || !missing(test) && test == "Bonferroni") {
+		if (!missing(correlation)) stop("Bonferroni test can not take correlation into account. Please specify test procedure.")
+		# Bonferroni-based test procedure		
+		if (useC) {
+			w <- getWeights(graph)			
+			result <- fastgMCP(m=graph2matrix(graph), w=w, p=pvalues, a=alpha, keepWeights=keepWeights)
 			row.names(result$m) <- getNodes(graph)
 			lGraph <- matrix2graph(result$m)
 			lGraph <- setWeights(lGraph, result$w)			
@@ -39,19 +42,17 @@ gMCP <- function(graph, pvalues, test, correlation, alpha=0.05,
 			adjPValues <- adjPValues(sequence[[1]], pvalues, verbose)@adjPValues
 			return(new("gMCPResult", graphs=sequence, alpha=alpha, pvalues=pvalues, rejected=getRejected(graph), adjPValues=adjPValues))
 		}
-	} else if (missing(test) && !missing(correlation)) {
-		# Calling the code from Florian
-		checkOptimal(graph)
-		if (missing(correlation) || (!is.matrix(correlation) && !is.character(correlation))) {
+	} else if ((missing(test) && !missing(correlation)) || !missing(test) && test == "Bretz2011" || !missing(test) && test == "simple-parametric") {				
+		if (missing(correlation) || !is.matrix(correlation)) {
 			stop("Procedure for correlated tests, expects a correlation matrix as parameter \"correlation\".")
 		} else {
-			if (is.character(correlation)) {
-				samplesize <- list(...)[["samplesize"]]
-				if (is.null(samplesize)) samplesize <- getBalancedDesign(correlation, length(pvalues))				
-				x <- contrMat(samplesize, type = correlation) # balanced design up to now and only Dunnett will work with n+1
-				var <- x %*% diag(length(samplesize)) %*% t(x)
-				correlation <- diag(1/sqrt(diag(var)))%*%var%*%diag(1/sqrt(diag(var)))
-			}                       
+#			if (is.character(correlation)) {
+#				samplesize <- list(...)[["samplesize"]]
+#				if (is.null(samplesize)) samplesize <- getBalancedDesign(correlation, length(pvalues))				
+#				x <- contrMat(samplesize, type = correlation) # balanced design up to now and only Dunnett will work with n+1
+#				var <- x %*% diag(length(samplesize)) %*% t(x)
+#				correlation <- diag(1/sqrt(diag(var)))%*%var%*%diag(1/sqrt(diag(var)))
+#			}                       
 			Gm <- graph2matrix(graph)
 			w <- getWeights(graph)
 			if( all(w==0) ) {
@@ -63,21 +64,21 @@ gMCP <- function(graph, pvalues, test, correlation, alpha=0.05,
 				#myTest <- generateTest(Gm, w, correlation, alpha)
 				#zScores <- -qnorm(pvalues)
 				#rejected <- myTest(zScores)
-                adjP <- generatePvals(Gm, w, correlation, pvalues, exhaust=exhaustAlpha)
+                adjP <- generatePvals(Gm, w, correlation, pvalues, exhaust=(missing(test) || test == "Bretz2011")) #, alternatives=alternatives)
                 rejected <- adjP <= alpha
                 names(adjP) <- getNodes(graph)
 				names(rejected) <- getNodes(graph)
 			}
 			return(new("gMCPResult", graphs=sequence, alpha=alpha, pvalues=pvalues, rejected=rejected, adjPValues=adjP))
 		}
-	} else if (test=="Simes") {		
+	} else if (!missing(test) && test=="Simes") {		
 		m <- graph2matrix(graph)
 		if (!adjPValues) {
 			if (all(pvalues>alpha)) {
 				result <- new("gMCPResult", graphs=sequence, alpha=alpha, pvalues=pvalues, rejected=getRejected(graph))
 				if (verbose) {
-					output <- "All p-values above alpha."
-					if (verbose!=42) cat(output,"\n") # Go figure it out ;)
+					output <- paste(output, "All p-values above alpha.", sep="\n")
+					if (!callFromGUI) cat(output,"\n")
 					attr(result, "output") <- output
 				}
 				return(result)
@@ -87,8 +88,8 @@ gMCP <- function(graph, pvalues, test, correlation, alpha=0.05,
 				names(rejected) <- getNodes(graph)
 				result <- new("gMCPResult", graphs=sequence, alpha=alpha, pvalues=pvalues, rejected=rejected)
 				if (verbose) {
-					output <- "All p-values below alpha."
-					if (verbose!=42) cat(output,"\n") # Go figure it out ;)
+					output <- paste(output, "All p-values below alpha.", sep="\n")
+					if (!callFromGUI) cat(output,"\n")
 					attr(result, "output") <- output
 				}
 				return(result)
@@ -106,7 +107,7 @@ gMCP <- function(graph, pvalues, test, correlation, alpha=0.05,
 				if (n==2) output <- paste(output, "Only two hypotheses remaining.", sep="\n")
 				if (n==1) output <- paste(output, "Only one hypothesis remaining.", sep="\n")
 				if (n==0) output <- paste(output, "Everything allready rejected.", sep="\n")
-				if (verbose!=42) cat(output,"\n") # Go figure it out ;)
+				if (!callFromGUI) cat(output,"\n")
 				attr(result, "output") <- output
 			}
 			return(result)
@@ -127,7 +128,11 @@ gMCP <- function(graph, pvalues, test, correlation, alpha=0.05,
 					for (j in J) {
 						Jj <- subset!=0 & (pvalues2 <= pvalues2[j]) # & (1:n)!=j
 						if (adjPValues) {
-							mJt <- pvalues2[j]/sum(weights[i, Jj])
+							mJt <- pvalues2[j]/sum(weights[i, Jj])	
+							if (is.na(mJt)) { # this happens only if pvalues2[j] is 0
+								mJt <- 0
+							}
+							#cat("pvalues2:\n", pvalues2, "\nmJt: ", mJt, "\nmJ: ", mJ, "\nj: ", j, "\nJ: ", J, "\nsubset: ", subset, "\n")
 							if (mJt<mJ) {
 								mJ <- mJt
 							}
@@ -154,12 +159,68 @@ gMCP <- function(graph, pvalues, test, correlation, alpha=0.05,
 			result <- new("gMCPResult", graphs=sequence, alpha=alpha, pvalues=pvalues, rejected=getRejected(graph), adjPValues=adjPValuesV)
 			if (verbose) {
 				output <- paste(output, paste(explanation, collapse="\n"), sep="\n")
-				if (verbose!=42) cat(output,"\n") # Go figure it out ;)
+				if (!callFromGUI) cat(output,"\n")
 				attr(result, "output") <- output
 			}
 			return(result)
 		}
+	} else {
+		stop(paste("Specified test \"",test,"\" is not known.",sep=""))
 	}
+}
+
+createGMCPCall <- function(graph, pvalues, test, correlation, alpha=0.05, 
+		approxEps=TRUE, eps=10^(-3), ..., useC=FALSE, 
+		verbose=FALSE, keepWeights=TRUE, adjPValues=TRUE) {	
+	command <- paste(dputMatrix(graph@m, name="m", indent=11, rowNames=TRUE), sep="")
+	command <- paste(command, "weights <- ",dput2(unname(graph@weights)),"\n", sep="")
+	command <- paste(command, "graph <- new(\"graphMCP\", m=m, weights=weights)\n", sep="")
+	command <- paste(command, "pvalues <- ",dput2(unname(pvalues)),"\n", sep="")
+	if (!missing(correlation)) {
+		command <- paste(command, dputMatrix(correlation, name="cr", indent=12),"\n", sep="")
+	}
+	command <- paste(command, "gMCP(graph, pvalues", sep="")
+	if (!missing(test)) {
+		command <- paste(command, ", test=\"",test,"\"", sep="")
+	}
+	if (!missing(correlation)) {
+		command <- paste(command, ", correlation=cr", sep="")
+	}
+	command <- paste(command, ", alpha=",alpha, sep="")
+	command <- paste(command, ")\n", sep="")
+	return(command)
+}
+
+dputMatrix <- function(m, name, indent=6, rowNames=FALSE) {
+	s <- "rbind("
+	if (!missing(name)) s <- paste(name,"<- rbind(") 
+	for (i in 1:(dim(m)[1])) {
+		nameLater <- FALSE
+		if (any(make.names(row.names(m))!=row.names(m))) {
+			rowNames <- FALSE
+			nameLater <- TRUE
+		}
+		rName <- ifelse(rowNames, paste(row.names(m)[i],"=",sep=""), "")
+		s <- paste(s, 
+			ifelse(i==1,"",paste(rep(" ",indent),collapse="")),
+			rName,
+			dput2(unname(m[i,])),
+			ifelse(i==dim(m)[1],")\n",",\n"),
+			sep="")	    
+	}
+	if (nameLater) {
+		if (missing(name)) {
+			warning("Can set row names if no name for matrix is given.")
+			return(s)
+		}
+		s <- paste(s, 
+				"row.names(",name,") <- ", dput2(row.names(m)), "\n", sep="")
+	}
+	return(s)
+}
+
+dput2 <- function(x) {
+	paste(capture.output(dput(x)), collapse=" ")
 }
 
 # This function calculates the number of uncorrelated test statistics given the correlation structure and the number of p-values.

@@ -17,6 +17,7 @@ import javax.imageio.ImageIO;
 import javax.swing.ButtonGroup;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -58,6 +59,7 @@ public class PView extends JPanel implements KeyListener, ActionListener {
 		c.gridx=0; c.gridy=0; c.gridwidth = 1; c.gridheight = 1; c.ipadx=0; c.ipady=0;
 		
 		totalAlpha.addKeyListener(this);
+		totalAlpha.setText(Configuration.getInstance().getClassProperty(this.getClass(), "alpha level", "0.05"));
 		
 		setUp();
 		
@@ -76,6 +78,11 @@ public class PView extends JPanel implements KeyListener, ActionListener {
 		String debug = "Saving PValues: ";
 		pValues = new Vector<Double>();
 		for (PPanel panel : panels) {
+			/*TODO The following line is a work-around for the following problem:
+			 * If I insert pvalues with the middle mouse button no keyTyped event has been raised.
+			 * Also InputMethodListener does not work. 
+			 */
+			panel.keyTyped(null);
 			pValues.add(panel.getP());
 			debug += Configuration.getInstance().getGeneralConfig().getDecFormat().format(panel.getP())+"; ";
 		}
@@ -138,7 +145,7 @@ public class PView extends JPanel implements KeyListener, ActionListener {
 		row += 2;
 		panel.add(alphaLabel, cc.xy(2, row));    	
     	panel.add(totalAlpha, cc.xy(4, row));
-    	totalAlpha.setText("0.05");
+    	//totalAlpha.setText("0.05");
     	totalAlpha.addKeyListener(this);
     	
     	updateLabels();
@@ -190,6 +197,7 @@ public class PView extends JPanel implements KeyListener, ActionListener {
 	}
 	
 	public void setTesting(boolean b) {
+		Configuration.getInstance().getClassProperty(this.getClass(), totalAlpha.getText());
 		PPanel.setTesting(b);
 		for (PPanel p : panels) {
 			p.updateMe(true);
@@ -209,6 +217,7 @@ public class PView extends JPanel implements KeyListener, ActionListener {
 
 	    jcbCorObject.setEnabled(!b);
 	    jbLoadPValues.setEnabled(!b);
+	    if (!b) refresh(false);
 	}
 
 	public String getPValuesString() {		
@@ -261,7 +270,7 @@ public class PView extends JPanel implements KeyListener, ActionListener {
 	public JPanel getCorrelatedPanel() {
 		
 		if (correlatedPanel!=null) {
-			refresh();		
+			refresh(false);		
 			return correlatedPanel;
 		}
 		
@@ -275,15 +284,9 @@ public class PView extends JPanel implements KeyListener, ActionListener {
 		}
 		refresh.setToolTipText("search again for matrices in R");
 		createMatrix.setToolTipText("create matrix with GUI");
+        refresh.addActionListener(this);
+        createMatrix.addActionListener(this);
 		
-		correlatedPanel = new JPanel();
-		
-	    jcbCorObject = new JComboBox(new String[] {});
-	    jcbCorObject.addActionListener(this);
-	    refresh();
-
-	    jrbNoCorrelation.setSelected(true);
-
 	    ButtonGroup group = new ButtonGroup();
 	    group.add(jrbNoCorrelation);
 	    group.add(jrbRCorrelation);
@@ -292,6 +295,16 @@ public class PView extends JPanel implements KeyListener, ActionListener {
 	    jrbNoCorrelation.addActionListener(this);
 	    jrbRCorrelation.addActionListener(this);
 	    jrbSimes.addActionListener(this);
+		
+		correlatedPanel = new JPanel();
+		
+	    jcbCorObject = new JComboBox(new String[] {});
+	    jcbCorObject.addActionListener(this);
+	    refresh(false);
+
+	    if (!jrbRCorrelation.isSelected() && !jrbSimes.isSelected()) {
+	    	jrbNoCorrelation.setSelected(true);
+	    }
 		
         String cols = "5dlu, pref, 5dlu, fill:pref:grow, 5dlu, pref, 5dlu, pref, 5dlu";
         String rows = "5dlu, pref, 5dlu, pref, 5dlu, pref, 5dlu, pref, 5dlu, pref, 5dlu";
@@ -314,9 +327,6 @@ public class PView extends JPanel implements KeyListener, ActionListener {
         row += 2;
         
         correlatedPanel.add(jrbSimes,     cc.xyw(2, row, 7));
-                
-        refresh.addActionListener(this);
-        createMatrix.addActionListener(this);
         
         return correlatedPanel;
 	}
@@ -324,7 +334,7 @@ public class PView extends JPanel implements KeyListener, ActionListener {
 	public void actionPerformed(ActionEvent e) {
 		parent.getGraphView().setResultUpToDate(false);
 		if (e.getSource()==refresh) {
-			refresh();
+			refresh(true);
 		} else if (e.getSource()==jrbNoCorrelation) {
 			if (parent.getGraphView().getNL().getNodes().size()>0) {
 				parent.getGraphView().buttonConfInt.setEnabled(true);
@@ -344,19 +354,33 @@ public class PView extends JPanel implements KeyListener, ActionListener {
 			} else {				
 				String obj = jcbCorObject.getSelectedItem().toString();
 				String matrix = obj.endsWith("matrices found.")?null:obj;
-				new MatrixCreationDialog(parent, matrix);
-				refresh();
+				new MatrixCreationDialog(parent, matrix, MatrixCreationDialog.getNames(parent.getGraphView().getNL().getNodes()));
+				refresh(false);
+				jrbRCorrelation.setSelected(true);
 			}
 		}
 	}
 
-	private void refresh() {
+	private void refresh(boolean showInfo) {
 		jcbCorObject.removeAllItems();
 		int dim = parent.getGraphView().getNL().getNodes().size();
 		String[] matrices = RControl.getR().eval("gMCP:::getAllQuadraticMatrices(n="+dim+")").asRChar().getData();
+		if (showInfo && !Configuration.getInstance().getClassProperty(this.getClass(), "showRefreshInfo", "yes").equals("no")) {
+			JCheckBox tellMeAgain = new JCheckBox("Don't show me this info again.");
+			int n = (matrices.length==1 && matrices[0].endsWith("matrices found."))?0:+matrices.length;
+			String message = "Searched and found "+n+((n==1)?" matrix":" matrices")+" of\n" +
+					"dimension "+dim+" in the R global environment.";
+			JOptionPane.showMessageDialog(parent, new Object[] {message, tellMeAgain}, "Info", JOptionPane.INFORMATION_MESSAGE);
+			if (tellMeAgain.isSelected()) {
+				Configuration.getInstance().setClassProperty(this.getClass(), "showRefreshInfo", "no");
+			}
+		}
 		if (matrices.length==1 && matrices[0].endsWith("matrices found.")) {
+			/*if(jrbRCorrelation.isSelected()) {
+				jrbNoCorrelation.setSelected(true);
+			}*/
 			jcbCorObject.setEnabled(false);
-			jrbRCorrelation.setEnabled(false);
+			jrbRCorrelation.setEnabled(false);			
 		} else {				
 			jcbCorObject.setEnabled(true);
 			jrbRCorrelation.setEnabled(true);
@@ -372,13 +396,21 @@ public class PView extends JPanel implements KeyListener, ActionListener {
 	 * adds parameters to the gMCP call depending on the selected correlation.
 	 */
 	public String getParameters() {
-		String param = "";
+		if (jrbRCorrelation.isSelected() && !jrbRCorrelation.isEnabled()) {
+			JOptionPane.showMessageDialog(parent, "No correlation matrix available.\nUsing Bonferroni based test.", "No correlation matrix available.", JOptionPane.WARNING_MESSAGE);
+			jrbNoCorrelation.setSelected(true);
+		}
+		String param = ", test=\"Bonferroni\"";
 		if (jrbRCorrelation.isSelected()) {
-			param = ", correlation="+jcbCorObject.getSelectedItem()+"";
+			param = ", correlation="+jcbCorObject.getSelectedItem()+", test=\""+Configuration.getInstance().getGeneralConfig().getParametricTest()+"\"";
 		} else if (jrbSimes.isSelected()) {
 			param = ", test=\"Simes\"";
 		}
 		return param;
+	}
+
+	public void renameNode(int i, String name) {
+		panels.get(i).label.setText(name);		
 	}
 	
 }
