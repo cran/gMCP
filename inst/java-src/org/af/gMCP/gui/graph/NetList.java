@@ -27,6 +27,7 @@ import javax.swing.JPanel;
 import org.af.commons.images.GraphDrawHelper;
 import org.af.gMCP.config.Configuration;
 import org.af.gMCP.gui.RControl;
+import org.af.gMCP.gui.ReproducableLog;
 import org.af.gMCP.gui.dialogs.VariableDialog;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -76,7 +77,8 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 		control.getPView().savePValues();
 		saveGraph(".tmpGraph", false);
 		RControl.getR().eval(".tmpGraph <- substituteEps(.tmpGraph, eps="+Configuration.getInstance().getGeneralConfig().getEpsilon()+")");
-		RControl.getR().eval(".tmpGraph <- rejectNode(.tmpGraph, \""+node.getName()+"\")");
+		ReproducableLog.logR(RControl.getR().eval("gMCP:::dputGraph(.tmpGraph, \".tmpGraph\")").asRChar().getData()[0]);
+		RControl.evalAndLog(".tmpGraph <- rejectNode(.tmpGraph, \""+node.getName()+"\")");
 		reset();
 		new GraphMCP(".tmpGraph", this);
 		control.getPView().restorePValues();
@@ -426,17 +428,7 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 	
 	public void mousePressed(MouseEvent e) {		
 		if (e.isPopupTrigger()) {
-			for (int i = 0; i < nodes.size(); i++) {
-				if (nodes.get(i).inYou(e.getX(), e.getY())) {
-					//TODO
-					showPopUp(e, nodes.get(i), null);
-				}
-			}
-			for (int i = edges.size()-1; i >=0 ; i--) {
-				if (edges.get(i).inYou(e.getX(), e.getY())) {
-					showPopUp(e, null, edges.get(i));
-				}
-			}	
+			popUp(e);	
 		}
 		if (e.getButton()==MouseEvent.BUTTON2) {
 			newVertex = false;
@@ -514,6 +506,9 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 	 * @see java.awt.event.MouseListener#mouseReleased(java.awt.event.MouseEvent)
 	 */
 	public void mouseReleased(MouseEvent e) {
+		if (e.isPopupTrigger()) {
+			popUp(e);	
+		}
 		if (edrag != -1) {			
 			edges.get(edrag).setFixed(true);
 		}
@@ -534,6 +529,20 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 
 			repaint();
 			return;
+		}
+	}
+	
+	public void popUp(MouseEvent e) {
+		for (int i = 0; i < nodes.size(); i++) {
+			if (nodes.get(i).inYou(e.getX(), e.getY())) {
+				//TODO
+				showPopUp(e, nodes.get(i), null);
+			}
+		}
+		for (int i = edges.size()-1; i >=0 ; i--) {
+			if (edges.get(i).inYou(e.getX(), e.getY())) {
+				showPopUp(e, null, edges.get(i));
+			}
 		}
 	}
 	
