@@ -50,7 +50,13 @@ checkPSD <- function(m) {
 	return("")
 }
 
-placeNodes <- function(graph, nrow, ncol, byrow = TRUE, force = FALSE) {
+placeNodes <- function(graph, nrow, ncol, byrow = TRUE, topdown = TRUE, force = FALSE) {
+	entangled <- NULL
+	# If the graph is entangled only place the nodes of the first graph
+	if ("entangledMCP" %in% class(graph)) {
+		entangled <- graph
+		graph <- entangled@subgraphs[[1]]
+	}
 	# Only place nodes if  no placement data exists or parameter force is set to TRUE
 	if (is.null(graph@nodeAttr$X) || force) {
 		n <- length(getNodes(graph))
@@ -76,6 +82,7 @@ placeNodes <- function(graph, nrow, ncol, byrow = TRUE, force = FALSE) {
 				nodeX <- rep(((1:ncol)-1)*200+100, each = nrow)
 				nodeY <- rep(((1:nrow)-1)*200+100, ncol)
 			}
+			if (!topdown) nodeY <- max(nodeY) - nodeY + 100
 		}
 		graph@nodeAttr$X <- nodeX[1:n]
 		graph@nodeAttr$Y <- nodeY[1:n]
@@ -88,6 +95,10 @@ placeNodes <- function(graph, nrow, ncol, byrow = TRUE, force = FALSE) {
 			}
 		}		
 	}	
+	if (!is.null(entangled)) {
+		entangled@subgraphs[[1]] <- graph
+		return(entangled)
+	}
 	return(graph)	
 }
 
@@ -132,7 +143,7 @@ getAllGraphs <- function(envir=globalenv()) {
 	graphs <- c()
 	for (obj in objects) {
 		candidate <- get(obj, envir=envir)
-		if ("graphMCP" %in% class(candidate)) {
+		if ("graphMCP" %in% class(candidate) || "entangledMCP"  %in% class(candidate)) {
 			graphs <- c(graphs, obj)
 		}
 	}

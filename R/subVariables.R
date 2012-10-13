@@ -1,4 +1,12 @@
 substituteEps <- function(graph, eps=10^(-3)) {
+	# Call this function recursivly for entangled graphs.
+	if ("entangledMCP" %in% class(graph)) {
+		for(i in 1:length(graph@subgraphs)) {
+			graph@subgraphs[[i]] <- substituteEps(graph@subgraphs[[i]], eps)
+		}
+		return(graph)
+	}
+	# Real function:
 	if (is.numeric(graph@m)) return(graph)
 	m <- matrix(gsub("\\\\epsilon", eps, graph@m), nrow=length(getNodes(graph)))
 	options(warn=-1)
@@ -14,6 +22,14 @@ substituteEps <- function(graph, eps=10^(-3)) {
 }
 
 replaceVariables <-function(graph, variables=list(), ask=TRUE) {
+	# Call this function recursivly for entangled graphs.
+	if ("entangledMCP" %in% class(graph)) {
+		for(i in 1:length(graph@subgraphs)) {
+			graph@subgraphs[[i]] <- replaceVariables(graph@subgraphs[[i]], variables, ask)
+		}
+		return(graph)
+	}
+	# Real function:
 	greek <- c("alpha", "beta", "gamma", "delta", "epsilon", "zeta", "eta", 
 			"theta", "iota", "kappa", "lambda", "mu", "nu", "xi", 
 			"omicron", "pi", "rho", "sigma", "tau", "nu", "phi",
@@ -43,13 +59,22 @@ replaceVariables <-function(graph, variables=list(), ask=TRUE) {
 	return(parse2numeric(graph))
 }
 
-parse2numeric <- function(graph) {
+parse2numeric <- function(graph, force=FALSE) {
+	# Call this function recursivly for entangled graphs.
+	if ("entangledMCP" %in% class(graph)) {
+		for(i in 1:length(graph@subgraphs)) {
+			graph@subgraphs[[i]] <- parse2numeric(graph@subgraphs[[i]])
+		}
+		return(graph)
+	}
+	# Real function:
 	if (is.matrix(graph)) { m <- graph } else {m <- graph@m}
 	names <- rownames(m)
 	m <- matrix(sapply(m, function(x) {
 						result <- try(eval(parse(text=x)), silent=TRUE);
 						ifelse(class(result)=="try-error",NA,result)
 					}), nrow=dim(m)[1])
+	if (!force && any(is.na(m))) return(graph)
 	rownames(m) <- colnames(m) <- names
 	if (is.matrix(graph)) return(m)
 	graph@m <- m

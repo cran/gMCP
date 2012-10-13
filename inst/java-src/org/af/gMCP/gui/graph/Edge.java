@@ -2,7 +2,6 @@ package org.af.gMCP.gui.graph;
 
 import java.awt.BasicStroke;
 import java.awt.Color;
-import java.awt.Component;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
@@ -14,22 +13,16 @@ import java.awt.geom.Rectangle2D;
 import java.util.Collection;
 import java.util.Hashtable;
 
-import javax.swing.JFrame;
-import javax.swing.JPanel;
-
 import org.af.commons.images.GraphDrawHelper;
 import org.af.commons.images.GraphException;
 import org.af.gMCP.config.Configuration;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.scilab.forge.jlatexmath.TeXConstants;
-import org.scilab.forge.jlatexmath.TeXFormula;
 import org.scilab.forge.jlatexmath.TeXIcon;
 
 public class Edge {
 
 	private static final Log logger = LogFactory.getLog(Edge.class);
-	public static Component panel = new JPanel();
 	public boolean curve = false;
 	FontRenderContext frc = null;
 	Graphics2D g2d;
@@ -39,6 +32,7 @@ public class Edge {
 	public boolean fixed = false;
 	public Color color = Color.BLACK;
 	public Integer linewidth = null;
+	public int layer = 0;
 	
 	NetList nl;
 	
@@ -46,7 +40,7 @@ public class Edge {
 	
 	int lastFontSize = 16;
 
-	public Edge(Node von, Node nach, Double w, NetList nl) {		
+	public Edge(Node von, Node nach, Double w, NetList nl, int layer) {		
 		int x1, x2, y1, y2;
 		x1 = von.getX() + Node.getRadius();
 		x2 = nach.getX() + Node.getRadius();
@@ -57,7 +51,9 @@ public class Edge {
 		this.from = von;
 		this.to = nach;
 		this.ew = new EdgeWeight(w);
-		this.nl = nl;
+		this.nl = nl;		
+		this.layer = layer;
+		this.color = NetList.layerColors[layer%NetList.layerColors.length];
 	}
 	
 	public static int[] getK(Node from, Node to, boolean curve) {
@@ -93,37 +89,39 @@ public class Edge {
 		return new int[] {k1, k2};
 	}
 	
-	public Edge(Node from, Node to, Double w, NetList nl, boolean curve) {
-		this(from, to, w, nl);
+	public Edge(Node from, Node to, Double w, NetList nl, boolean curve, int layer) {
+		this(from, to, w, nl, layer);
 		int[] k = getK(from, to, curve);
 		k1 = k[0];
 		k2 = k[1];
 	}
 	
-	public Edge(Node von, Node nach, Double w, NetList nl, int k1, int k2) {
+	public Edge(Node von, Node nach, Double w, NetList nl, int k1, int k2, int layer) {
 		this.from = von;
 		this.to = nach;
 		this.ew = new EdgeWeight(w);
 		this.nl = nl;
 		this.k1 = k1;
 		this.k2 = k2;
+		this.layer = layer;
+		this.color = NetList.layerColors[layer%NetList.layerColors.length];
 	}
 	
-	public Edge(Node from, Node to, String wStr, NetList nl, boolean curve) {
-		this(from, to, new EdgeWeight(wStr), nl, curve);
+	public Edge(Node from, Node to, String wStr, NetList nl, boolean curve, int layer) {
+		this(from, to, new EdgeWeight(wStr), nl, curve, layer);
 	}
 
-	public Edge(Node from, Node to, String wStr, NetList nl, int i, int j) {
-		this(from, to, new EdgeWeight(wStr), nl, i, j);	
+	public Edge(Node from, Node to, String wStr, NetList nl, int i, int j, int layer) {
+		this(from, to, new EdgeWeight(wStr), nl, i, j, layer);	
 	}
 
-	public Edge(Node from, Node to, EdgeWeight ew, NetList nl, int k1, int k2) {
-		this(from, to, 0d, nl, k1, k2);
+	public Edge(Node from, Node to, EdgeWeight ew, NetList nl, int k1, int k2, int layer) {
+		this(from, to, 0d, nl, k1, k2, layer);
 		this.ew = ew;
 	}
 
-	public Edge(Node from, Node to, EdgeWeight ew, NetList nl, boolean curve) {
-		this(from, to, 0d, nl, curve);
+	public Edge(Node from, Node to, EdgeWeight ew, NetList nl, boolean curve, int layer) {
+		this(from, to, 0d, nl, curve, layer);
 		this.ew = ew;
 	}
 
@@ -194,6 +192,11 @@ public class Edge {
 		return ew.toString();
 	}
 
+	public boolean containsYou(int[] start, int[] end) {
+		return Math.min(start[0], end[0])<=x+w && Math.max(start[0], end[0])>=x
+				&& Math.min(start[1], end[1])<=y+h && Math.max(start[1], end[1])>=y; 
+	}
+	
 	public boolean inYou(int x2, int y2) {
 		return x2>=x && x2 <= x+w && y2 >= y && y2 <= y+h;
 	}
@@ -362,7 +365,7 @@ public class Edge {
 		} else {
 			if (icon==null || lastFontSize != (int) (16 * nl.getZoom())) {
 				lastFontSize = (int) (16 * nl.getZoom());
-				icon = getTeXIcon(this.nl.control.getGraphGUI(), s, lastFontSize);				
+				icon = LaTeXTool.getTeXIcon(this.nl.control.getGraphGUI(), s, lastFontSize);				
 			}
 			g2d.setColor(new Color(0.99f,0.99f,0.99f));
 			x = (int)((k1* nl.getZoom() - icon.getIconWidth() / 2)-5);
@@ -377,7 +380,7 @@ public class Edge {
 			g2d.drawRect(x, y, w, h);		
 			g2d.setStroke(oldStroke);		
 
-			icon.paintIcon(panel, g2d,
+			icon.paintIcon(LaTeXTool.panel, g2d,
 					(int) ((k1* nl.getZoom() - icon.getIconWidth() / 2)), 
 					(int) ((k2* nl.getZoom() - icon.getIconHeight() / 2)));
 		}
@@ -385,79 +388,6 @@ public class Edge {
 
 	TeXIcon icon = null;
 
-	/**
-	 * This function takes a string and creates a TeXIcon from this.
-	 * @param s String to be parsed.
-	 * @return
-	 */
-	public static TeXIcon getTeXIcon(JFrame parent, String s, int points) {
-		String latex = "";
-		try {	
-			if (s.indexOf("E-")!=-1) {
-				latex = s.replaceAll("E-", "}{10^{");
-				latex = "\\frac{"+latex+"}}";
-			} else {
-				int openBracket = 0;
-				boolean waitingForDenominator = false;
-				String nominator = "";			
-				s.replaceAll("ε", "\\varepsilon");	
-				s.replaceAll(" ", "");
-				for (int i=0;i<s.length(); i++) {
-					String c = ""+s.charAt(i);	
-					if (c.equals("(")) openBracket++;				
-					if (c.equals(")")) openBracket--;				
-					if ( (c.equals("+") || c.equals("-") || c.equals("*") || 
-							(c.equals(")") &&  (i+1)<s.length() && !(s.charAt(i+1)+"").equals("/")) ) && openBracket == 0) {
-						String start = s.substring(0, i+1);										
-						if (waitingForDenominator) {
-							if (c.equals(")")) {
-								latex += "\\frac{"+nominator+"}{"+start+"}";
-							} else {
-								latex += "\\frac{"+nominator+"}{"+start.substring(0, i)+"}"+c;
-							}
-							waitingForDenominator = false;
-						} else {
-							latex += start;
-						}
-						s = s.substring(i+1, s.length());
-						i=-1;
-					}
-					if (c.equals("/")) {					
-						nominator = s.substring(0, i);
-						s = s.substring(i+1, s.length());
-						i=-1;
-						waitingForDenominator = true;
-					}
-				}
-				if (waitingForDenominator) {
-					latex += "\\frac{"+nominator+"}{"+s+"}";				
-				} else {
-					latex += s;
-				}			
-				latex = latex.replaceAll("\\*", Configuration.getInstance().getGeneralConfig().getTimesSymbol());			
-				latex = latex.replaceAll("\\(", "{(");
-				latex = latex.replaceAll("\\)", ")}");
-			}
-			//logger.debug("LaTeX string:"+latex);		
-			TeXFormula formula = new TeXFormula(latex);//
-			formula = new TeXFormula("\\mathbf{"+latex+"}");		
-			TeXIcon result = formula.createTeXIcon(TeXConstants.ALIGN_CENTER, points);
-			// TODO What about getIconHeight()/
-			if (result.getIconWidth()>60) {
-				result = formula.createTeXIcon(TeXConstants.ALIGN_CENTER, (int) (points*0.7));
-			}
-			//if (latex.indexOf("frac")==-1 && latex.length()>4) points = (int) (points*0.7);
-			return result;
-		} catch(Exception e) {
-			//e.printStackTrace();
-			//System.out.println("Error: "+latex);
-			//TODO This is not allowed while painting:
-			//JOptionPane.showMessageDialog(parent, "Invalid weight string:\n"+latex+"\nError:\n"+e.getMessage(), "Invalid input", JOptionPane.ERROR_MESSAGE);
-			TeXFormula formula = new TeXFormula("Syntax Error");
-			return formula.createTeXIcon(TeXConstants.ALIGN_CENTER, (int) (points*0.7)); 
-		}		
-	}
-	
 	public void setK1(int k1) {
 		double correction = 0;
 		/*if (frc != null) {					

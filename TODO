@@ -1,8 +1,13 @@
+- GUI speed optimization (try Ferber II with 15x5)
+- Also check layout of (result) dialogs for big graphs.
+- Highlight edges (and perhaps nodes) depending on the focus in the dataframe. 
+- Check copyright notes for code under BSD Licence
 - Give more information about "testing mode" - one time JOptionPane for example.
-- Test everything with empty graph - (for example LateX Output throws here an error instead of telling the user to first create a graph).
+- For gMCP 0.8-1: Require CommonJavaJars (>= 1.0.3), remove afcommons.jar from package and add it to loadJars.
+- Find good color set for entangled graphs.
+- Check whether parametric test mode is set correctly in power simulations.
 - Why is RControl.getR().getHistory() not accessible when the gMCP call fails?
 - Parsing \\epsilon creates a lot of error messages in the R terminal for edges with variables.
-- Right-click menu is not working on Windows systems?!
 - Umlaute in literatur.bib, e.g. Röhmel
 - Options: Show R Code
 - .asRLogical().getData()[0] can be true but NA in R
@@ -12,7 +17,7 @@
 - Warn/inform user about changes.
 - Does contrMat(n=c(10, 20, 30, 40), type ="Dunnett") do what I want?!?
 - Copy&Paste of Results (Table, Text, allow to save)
-
+- Read and check ?validObject
 - For parametric procedures there is no "reset" button (->variables)
 - Description (.Rd files) of graphGUI and corMatWizard
 - Bauer & Hackel
@@ -49,6 +54,10 @@
 - improve behavior of tables if "Automatically enter the editing mode, whenever a table cell gets the focus" is set to false.
 - round values in CI Dialog
 - Check whether 0.7-11 is regarded as newer than 0.7-9 
+
+- TikZ:
+\tkzCircumCenter(A,B,C)\tkzGetPoint{O}\tkzDrawArc(O,A)(C)
+You can use H4.90 to get the point leaving H4 at angle 90°
 
 - Characterize optimal graphs.
 
@@ -295,4 +304,11 @@ The current api for setting a popupMenu in Swing is
 this way it will be shown automagically, both for mouse and keyboard triggers (the latter depends on LAF). Plus, it supports re-using the same popup across a container's children. To enable that feature:
 
   myChild.setInheritsPopupMenu(true)
+
+---
         
+Is this correct from R check?
+  Mismatches in argument default values:
+    Name: 'w' Code: "\\nu" Docs: "\nu"
+
+---

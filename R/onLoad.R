@@ -5,17 +5,16 @@
 	.jpackage(pkgname)	
 	.jpackage("JavaGD")
 	
-	jars <- c("commons-collections-3.2.1.jar", "commons-lang-2.6.jar", 
-			"commons-logging-1.1.1.jar", "commons-validator-1.3.1.jar", "forms-1.2.0.jar", 
-			"iText-2.1.4.jar", "jhlir.jar", "jlatexmath-0.9.4.jar", "jxlayer.jar", 
-			"log4j-1.2.15.jar", "mysql-connector-java-5.1.16-bin.jar", "poi-3.6-20091214.jar", 
-			"swing-worker-1.1.jar")
+	jars <- c("commons-collections", "commons-lang", 
+			"commons-logging", "commons-validator", "forms", 
+			"iText", "jhlir.jar", "jlatexmath", "jxlayer", 
+			"log4j", "swing-worker")
 	
-	.jpackage("CommonJavaJars", jars=jars)
+	loadJars(jars)
 	
 	# The following few lines are based on the code of the rJava .jpackage function
 	classes <- system.file("jri", package = "rJava", lib.loc = NULL)
-	if (nchar(classes)) {
+	if (nzchar(classes)) {
 		.jaddClassPath(classes)
 		jars <- grep(".*\\.jar", list.files(classes, full.names = TRUE), TRUE, value = TRUE)
 		if (length(jars)) { 
@@ -26,7 +25,7 @@
 	# If we have a rJava version < 0.8-3 load JRIEngine.jar and REngine.jar
     if (!is.null(sessionInfo()$otherPkgs$rJava$Version) && sessionInfo()$otherPkgs$rJava$Version < "0.8-3") {
 		classes <- system.file("R28", package = "CommonJavaJars", lib.loc = NULL)
-		if (nchar(classes)) {
+		if (nzchar(classes)) {
 			.jaddClassPath(classes)
 			jars <- grep(".*\\.jar", list.files(classes, full.names = TRUE), TRUE, value = TRUE)
 			if (length(jars)) { 
@@ -55,3 +54,24 @@
 	
 	# packageStartupMessage or cat for furter information (package incompatibilities / updates)
 }  
+
+# TODO Remove in gMCP 0.8-1 and use loadJars from CommonJavaJars then.
+loadJars <- function(jars, java="J5") {
+	jarsFullname <- c()	
+	classes <- system.file("java", package = "CommonJavaJars", lib.loc = NULL)
+	files <- list.files(classes, full.names = FALSE)
+	if (java=="J5") {
+		files <- grep("J6", files, TRUE, value = TRUE, invert = TRUE)
+	}
+	for (j in jars) {
+		# Always take the newest jar per default:
+		x <- sort(grep(j, files, TRUE, value = TRUE), decreasing = TRUE)
+		if (length(x)==0) {
+			stop(paste("No jar that matches \"",j,"\" could be found.",sep=""))
+		}
+		jarsFullname <- c(jarsFullname, x[1])
+	}
+	
+	.jpackage("CommonJavaJars", jars=jarsFullname)
+	return(invisible(jarsFullname))
+}

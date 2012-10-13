@@ -291,9 +291,9 @@ getWeightStr <- function(graph, from, to, LaTeX=FALSE) {
 	return(as.character(weight))	
 }
 
-getFractionString <- function(x, eps=0.000001) {
+getFractionString <- function(x, eps=1e-07) {
 	xStr <- as.character(fractions(x))
-	if (abs(eval(parse(text=xStr))-x)>eps) return(as.character(x))
+	xStr <- ifelse(abs(sapply(xStr, function(x) {eval(parse(text=x))})-x)>eps, as.character(x), xStr)
 	return(xStr)
 }
 
@@ -384,3 +384,56 @@ setMethod("show","gPADInterim",
 			print(tab)
 		}
 )
+
+############################## Entangled graphs #################################
+
+## Entangled graph representation in gMCP
+setClass("entangledMCP",	
+		representation(subgraphs="list", 
+				weights="numeric",
+				graphAttr="list"),
+		validity=function(object) validEntangledGraph(object))
+
+
+validEntangledGraph <- function(object) {
+	# if (sum(object@weights)>1)
+	return(TRUE)
+}
+
+setGeneric("getMatrices", function(object, ...) standardGeneric("getMatrices"))
+
+setMethod("getMatrices", c("entangledMCP"),
+		function(object, ...) {
+			result <- list()
+			for (g in object@subgraphs) {
+				result[[length(result)+1]] <- g@m
+			}
+			return(result)
+		})
+
+setMethod("getWeights", c("entangledMCP"),
+		function(object, node, ...) {
+			result <- c()
+			for (g in object@subgraphs) {
+				result <- rbind(result, getWeights(g, node, ...))
+			}
+			return(result)
+		})
+
+setMethod("getNodes", c("entangledMCP"),
+		function(object, ...) {			
+			return(getNodes(object@subgraphs[[1]]))
+		})
+
+setMethod("getXCoordinates", c("entangledMCP"), function(graph, node) {			
+			return(getXCoordinates(graph@subgraphs[[1]], node))
+		})
+
+setMethod("getYCoordinates", c("entangledMCP"), function(graph, node) {
+			return(getYCoordinates(graph@subgraphs[[1]], node))
+		})
+
+setMethod("getRejected", c("entangledMCP"), function(object, node, ...) {
+			return(getRejected(object@subgraphs[[1]], node))
+		})
+

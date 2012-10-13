@@ -27,7 +27,8 @@ import org.af.commons.widgets.DesktopPaneBG;
 import org.af.gMCP.config.Configuration;
 import org.af.gMCP.gui.CreateGraphGUI;
 import org.af.gMCP.gui.RControl;
-import org.af.gMCP.gui.datatable.DataTable;
+import org.af.gMCP.gui.ReproducableLog;
+import org.af.gMCP.gui.datatable.DataFramePanel;
 import org.af.gMCP.gui.dialogs.AdjustedPValueDialog;
 import org.af.gMCP.gui.dialogs.DialogConfIntEstVar;
 import org.af.gMCP.gui.dialogs.RejectedDialog;
@@ -47,7 +48,7 @@ public class GraphView extends JPanel implements ActionListener {
 	JLabel statusBar;
 	public NetList nl;
 	
-	JToggleButton buttonNewVertex;
+	JToggleButton buttonNewNode;
 	JButton buttonNewEdge;
 	JButton buttonZoomOut;
 	JButton buttonZoomIn;
@@ -75,12 +76,8 @@ public class GraphView extends JPanel implements ActionListener {
 		return parent.getPView();
 	}
 
-	public void updateEdge(int from, int to, Double w) {
-		updateEdge(from, to, new EdgeWeight(w));
-	}
-
-	public DataTable getDataTable() {		
-		return parent.getDataTable();
+	public void updateEdge(int from, int to, Double w, int layer) {
+		updateEdge(from, to, new EdgeWeight(w), layer);
 	}
 
 	public CreateGraphGUI getGraphGUI() {
@@ -117,12 +114,12 @@ public class GraphView extends JPanel implements ActionListener {
 			((FlowLayout) (toolPanel.getLayout()))
 					.setAlignment(FlowLayout.LEFT);
 			
-			buttonNewVertex = new JToggleButton(
+			buttonNewNode = new JToggleButton(
 					new ImageIcon(ImageIO.read(DesktopPaneBG.class
 											.getResource("/org/af/gMCP/gui/graph/images/vertex.png"))));
-			toolPanel.add(buttonNewVertex);
-			buttonNewVertex.addActionListener(this);
-			buttonNewVertex.setToolTipText("new vertex");
+			toolPanel.add(buttonNewNode);
+			buttonNewNode.addActionListener(this);
+			buttonNewNode.setToolTipText("new vertex");
 			
 			buttonNewEdge = new JButton(
 					new ImageIcon(ImageIO.read(DesktopPaneBG.class
@@ -184,15 +181,21 @@ public class GraphView extends JPanel implements ActionListener {
 			nl.setZoom(nl.getZoom() * 1.25);
 			getNL().refresh();
 		} else if (e.getSource().equals(buttonZoomOut)) { 
-			nl.setZoom(nl.getZoom() / 1.25);
-			getNL().refresh();
+			if (nl.getZoom()>0.025) {
+				nl.setZoom(nl.getZoom() / 1.25);
+				getNL().refresh();
+			} else {
+				JOptionPane.showMessageDialog(parent, "Highest zoom level. This is no Mandelbrot set.", "Highest zoom level", JOptionPane.INFORMATION_MESSAGE);
+			}
 		} else if (e.getSource().equals(buttonNewEdge)) {
+			ReproducableLog.logGUI("Button \"new edge\"");
 			nl.newVertex = false;
-			buttonNewVertex.setSelected(false);
+			buttonNewNode.setSelected(false);
 			nl.newEdge = true;
 			getNL().statusBar.setText("Select a node from which this edge should start.");
-		} else if (e.getSource().equals(buttonNewVertex)) {
-			if (buttonNewVertex.isSelected()) {
+		} else if (e.getSource().equals(buttonNewNode)) {
+			ReproducableLog.logGUI("Button \"new node\"");
+			if (buttonNewNode.isSelected()) {
 				nl.newVertex = true;
 				nl.newEdge = false;
 				nl.arrowHeadPoint = null;
@@ -203,6 +206,7 @@ public class GraphView extends JPanel implements ActionListener {
 			nl.repaint();
 			getNL().statusBar.setText("Click on the graph panel to place the node.");
 		} else if (e.getSource().equals(buttonConfInt)) {
+			ReproducableLog.logGUI("Button \"confint\"");
 			if (!getNL().isTesting()) {
 				getPView().savePValues();
 				getNL().saveGraph(getNL().resetGraph, false);
@@ -239,6 +243,7 @@ public class GraphView extends JPanel implements ActionListener {
 				worker.execute();				
 			}
 		} else if (e.getSource().equals(buttonStart)) {
+			ReproducableLog.logGUI("Button \"start testing\"");
 			if (!getNL().isTesting()) {				
 				getPView().savePValues();
 				getNL().saveGraph(getNL().resetGraph, false);
@@ -276,6 +281,7 @@ public class GraphView extends JPanel implements ActionListener {
 				stopTesting();
 			}
 		} else if (e.getSource().equals(buttonadjPval)) {
+			ReproducableLog.logGUI("Button \"calculate p-values\"");
 			if (getNL().getNodes().size()==0) {
 				JOptionPane.showMessageDialog(parent, "Please create first a graph.", "Please create first a graph.", JOptionPane.ERROR_MESSAGE);				
 			} else {
@@ -314,6 +320,7 @@ public class GraphView extends JPanel implements ActionListener {
 	}
 	
 	String rCode = "";
+	public boolean isGraphSaved = true;
 
 	private void showParamInfo() {
 		if (parent.getPView().jrbRCorrelation.isSelected()) {
@@ -335,12 +342,12 @@ public class GraphView extends JPanel implements ActionListener {
 		getNL().stopTesting();
 		getNL().reset();
 		getNL().loadGraph(getNL().resetGraph);
-		getDataTable().setTesting(false);
+		getDataFramePanel().setTesting(false);
 		getPView().restorePValues();
 		getPView().setTesting(false);
 		getPView().revalidate();
 		getPView().repaint();
-		buttonNewVertex.setEnabled(true);
+		buttonNewNode.setEnabled(true);
 		buttonNewEdge.setEnabled(true);
 		try {
 			buttonStart.setIcon(new ImageIcon(ImageIO.read(DesktopPaneBG.class
@@ -357,9 +364,9 @@ public class GraphView extends JPanel implements ActionListener {
 		try {
 			getNL().startTesting();
 			getNL().saveGraph();
-			getDataTable().setTesting(true);
+			getDataFramePanel().setTesting(true);
 			getPView().setTesting(true);			
-			buttonNewVertex.setEnabled(false);
+			buttonNewNode.setEnabled(false);
 			buttonNewEdge.setEnabled(false);				
 			buttonStart.setIcon(new ImageIcon(ImageIO.read(DesktopPaneBG.class
 					.getResource("/org/af/gMCP/gui/graph/images/Reset.png"))));
@@ -383,19 +390,19 @@ public class GraphView extends JPanel implements ActionListener {
 		RControl.getR().eval("gMCPReport(.exportGraphToLaTeX, file=\""+filename+"\")");
 	}
 
-	public void updateEdge(int from, int to, EdgeWeight weight) {
+	public void updateEdge(int from, int to, EdgeWeight weight, int layer) {
 		logger.info("Adding Edge from "+from+" to "+to+" with weight "+weight.toString()+".");
-		Edge e = getNL().findEdge(getNL().getNodes().get(from), getNL().getNodes().get(to));
+		Edge e = getNL().findEdge(getNL().getNodes().get(from), getNL().getNodes().get(to), layer);
 		if (e!=null) {
 			int x = e.getK1();
 			int y = e.getK2();			
 			if (!weight.toString().equals("0")) {
-				getNL().setEdge(new Edge(getNL().getNodes().get(from), getNL().getNodes().get(to), weight, getNL(), x, y));
+				getNL().setEdge(new Edge(getNL().getNodes().get(from), getNL().getNodes().get(to), weight, getNL(), x, y, layer));
 			} else {
 				getNL().removeEdge(e);
 			}
 		} else {
-			getNL().setEdge(getNL().getNodes().get(from), getNL().getNodes().get(to), weight);
+			getNL().setEdge(getNL().getNodes().get(from), getNL().getNodes().get(to), weight, layer);
 		}
 		getNL().repaint();		
 	}
@@ -421,7 +428,7 @@ public class GraphView extends JPanel implements ActionListener {
 	}
 	
 	public void saveGraphImage(File file) {
-		BufferedImage img = getNL().getImage();
+		BufferedImage img = getNL().getImage(Configuration.getInstance().getGeneralConfig().getExportZoom());
 		try {
 			ImageIO.write(img, "png", file);
 		} catch( Exception ex ) {
@@ -489,7 +496,11 @@ public class GraphView extends JPanel implements ActionListener {
 				Configuration.getInstance().setClassProperty(this.getClass(), "showClipboardInfo", "no");
 			}
 		}
-		TransferableImage.copyImageToClipboard(getNL().getImage());
+		if (getNL().getNodes().size()==0) {
+    		JOptionPane.showMessageDialog(getMainFrame(), "Graph is empty - nothing copied to clipboard.", "Empty graph", JOptionPane.ERROR_MESSAGE);
+    		return;
+    	}
+		TransferableImage.copyImageToClipboard(getNL().getImage(Configuration.getInstance().getGeneralConfig().getExportZoom()));
 	}
 	
 	
@@ -505,7 +516,29 @@ public class GraphView extends JPanel implements ActionListener {
 	public void renameNode(Node node, String name) {
 		int i = getNL().whichNode(node.getName());
 		parent.getPView().renameNode(i, name);
-		parent.getDataTable().renameNode(i, name);
+		parent.getDataFramePanel().renameNode(i, name);
 		node.setName(name);		
+	}
+
+	public DataFramePanel getDataFramePanel() {		
+		return parent.dfp;
+	}
+
+	public int getNumberOfLayers() {
+		return getDataFramePanel().getTable().size();
+	}
+
+	public void addEntangledLayer() {
+		getDataFramePanel().addLayer();
+		getPView().addEntangledLayer();
+		nl.addEntangledLayer();
+	}
+	
+	/* This method should be called only from DataFramePanel.removeLayer()
+	 * or if not, DataFramePanel.removeLayer() must be called separately.
+	 */
+	public void removeEntangledLayer(int layer) {
+		nl.removeLayer(layer);
+		getPView().removeEntangledLayer(layer);
 	}
 }

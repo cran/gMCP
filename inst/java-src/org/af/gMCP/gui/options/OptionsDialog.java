@@ -14,6 +14,7 @@ import org.af.commons.widgets.buttons.OkApplyCancelButtonPane;
 import org.af.commons.widgets.validate.ValidationException;
 import org.af.gMCP.config.Configuration;
 import org.af.gMCP.gui.CreateGraphGUI;
+import org.af.gMCP.gui.MenuBarMGraph;
 import org.af.gMCP.gui.graph.Edge;
 import org.af.gMCP.gui.graph.Node;
 import org.apache.commons.logging.Log;
@@ -98,7 +99,7 @@ public class OptionsDialog extends JDialog implements ActionListener {
                 	//TODO Update edge weights
                 }
                 for (Node node : parent.getGraphView().getNL().getNodes()) {
-                	node.setWeight(node.getWeight(), null);
+                	node.createWeightIcons();
                 }
                 parent.repaint();
             } catch (ValidationException exc) {
@@ -110,6 +111,8 @@ public class OptionsDialog extends JDialog implements ActionListener {
         if (e.getActionCommand().equals(OkApplyCancelButtonPane.CANCEL_CMD)) {
             dispose();
         }
+        ((MenuBarMGraph)parent.getJMenuBar()).createExampleMenu();
+        ((MenuBarMGraph)parent.getJMenuBar()).createExtraMenu();
     }
 
 }

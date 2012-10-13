@@ -2,10 +2,17 @@ gMCP <- function(graph, pvalues, test, correlation, alpha=0.05,
 		approxEps=TRUE, eps=10^(-3), ..., useC=FALSE, 
 		verbose=FALSE, keepWeights=TRUE, adjPValues=TRUE) {
 #		, alternatives="less") {	
+	if ("entangledMCP" %in% class(graph)) {
+		if (!missing(correlation) || !missing(test) && test != "Bonferroni") {
+			stop("Only Bonferroni based testing procedures are supported for entangled graphs in this version.")
+		}
+		out <- graphTest(pvalues=pvalues, weights=getWeights(graph), alpha=alpha*graph@weights, G=getMatrices(graph))
+		return(new("gMCPResult", graphs=list(graph), alpha=alpha, pvalues=pvalues, rejected=(out==1), adjPValues=numeric(0)))
+	}
 	output <- ""
 	callFromGUI <- !is.null(list(...)[["callFromGUI"]])
 	if (verbose) {
-		output <- paste(output, checkOptimal(graph), sep="\n")
+		output <- paste(output, checkOptimal(graph, verbose=FALSE), sep="\n")
 	}
 	if (approxEps && !is.numeric(graph@m)) {
 		graph <- substituteEps(graph, eps=eps)
@@ -172,9 +179,7 @@ gMCP <- function(graph, pvalues, test, correlation, alpha=0.05,
 createGMCPCall <- function(graph, pvalues, test, correlation, alpha=0.05, 
 		approxEps=TRUE, eps=10^(-3), ..., useC=FALSE, 
 		verbose=FALSE, keepWeights=TRUE, adjPValues=TRUE) {	
-	command <- paste(dputMatrix(graph@m, name="m", indent=11, rowNames=TRUE), sep="")
-	command <- paste(command, "weights <- ",dput2(unname(graph@weights)),"\n", sep="")
-	command <- paste(command, "graph <- new(\"graphMCP\", m=m, weights=weights)\n", sep="")
+	command <- dputGraph(graph, "graph")
 	command <- paste(command, "pvalues <- ",dput2(unname(pvalues)),"\n", sep="")
 	if (!missing(correlation)) {
 		command <- paste(command, dputMatrix(correlation, name="cr", indent=12),"\n", sep="")
@@ -186,13 +191,26 @@ createGMCPCall <- function(graph, pvalues, test, correlation, alpha=0.05,
 	if (!missing(correlation)) {
 		command <- paste(command, ", correlation=cr", sep="")
 	}
-	command <- paste(command, ", alpha=",alpha, sep="")
+	command <- paste(command, ", alpha=",dput2(alpha), sep="")
 	command <- paste(command, ")\n", sep="")
 	return(command)
 }
 
 #TODO: Set rejected.
 dputGraph <- function(g, name="graph") {
+	# Entangled graphs and recursive calls:
+	if ("entangledMCP" %in% class(g)) {
+		s <- c()
+		i <- 1
+		for (graph in g@subgraphs) {
+			s <- paste(s, dputGraph(graph, paste("subgraph",i,sep="")), "\n", sep="")
+			i <- i + 1
+		}
+		s <- paste(s, "weights <- ",dput2(unname(g@weights)),"\n", sep="")
+		s <- paste(s, name, " <- new(\"entangledMCP\", subgraphs=list(", paste(paste("subgraph",1:length(g@subgraphs),sep=""), collapse=", "), "), weights=weights)\n", sep="")
+		return(s)
+	}
+	# Normal graphs:
 	s <- dputMatrix(g@m, name="m", indent=11, rowNames=TRUE)
 	s <- paste(s, "weights <- ",dput2(unname(g@weights)),"\n", sep="")
 	s <- paste(s, name, " <- new(\"graphMCP\", m=m, weights=weights)\n", sep="")
@@ -270,6 +288,14 @@ adjPValues <- function(graph, pvalues, verbose=FALSE) {
 }
 
 rejectNode <- function(graph, node, verbose=FALSE, keepWeights=TRUE) {
+	# Entangled graphs
+	if ("entangledMCP" %in% class(graph)) {
+		for(i in 1:length(graph@subgraphs)) {
+			graph@subgraphs[[i]] <- rejectNode(graph@subgraphs[[i]], node, verbose, keepWeights)
+		}
+		return(graph)
+	}
+	# Normal graphs
 	weights <- graph@weights
 	graph@weights <- weights+weights[node]*graph@m[node,]
 	m <- graph@m	

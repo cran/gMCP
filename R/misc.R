@@ -205,3 +205,13 @@ regmatches <- function (x, m, invert = FALSE) {
 	names(y) <- names(x)
 	y
 }
+
+layers <- function(graph) {
+	if ("graphMCP" %in% class(graph)) {
+		return(as.integer(1))
+	} else if ("entangledMCP" %in% class(graph)){
+		return(as.integer(length(graph@subgraphs)))
+	} else {
+		stop("This function should only be used for objects of class graphMCP or entangledMCP.")
+	}
+}

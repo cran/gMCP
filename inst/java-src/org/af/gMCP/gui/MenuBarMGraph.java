@@ -45,6 +45,8 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
 	GraphView control;
     private static final Log logger = LogFactory.getLog(MenuBarMGraph.class);
     JMenu fmenu = new JMenu("File");
+    JMenu extraMenu = new JMenu("Extras");
+    JMenu exampleMenu = new JMenu("Example graphs");
 
 	public MenuBarMGraph(GraphView control) {
 		
@@ -73,89 +75,24 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
 		createLastUsed();
 		fmenu.setMnemonic(KeyEvent.VK_F);
 		add(fmenu);
+		
+		createExampleMenu();
+		add(exampleMenu);
+		exampleMenu.setMnemonic(KeyEvent.VK_X);
 
-		JMenu menu = new JMenu("Example graphs");
-		menu.setMnemonic(KeyEvent.VK_X);
-
-		JMenu subMenu = new JMenu("Common test procedures for any number of hypotheses");		
-		subMenu.add(makeMenuItem("Bonferroni-Holm procedure", "bht"));
-		subMenu.add(makeMenuItem("Fixed sequence test", "fixedSequence"));
-		subMenu.add(makeMenuItem("Fallback procedure", "fallback"));
-		menu.add(subMenu);
-		
-		subMenu = new JMenu("3 unstructured hypotheses");
-		subMenu.add(makeMenuItem("Improved fallback procedure I", "fallbackI"));
-		subMenu.add(makeMenuItem("Improved fallback procedure II", "fallbackII"));
-		menu.add(subMenu);		
-		
-		subMenu = new JMenu("2 primary & 2 secondary hypotheses");		
-		subMenu.add(makeMenuItem("Parallel Gatekeeping with 4 Hypotheses", "pg"));
-		subMenu.add(makeMenuItem("Improved Parallel Gatekeeping with 4 Hypotheses", "pgi"));
-		subMenu.addSeparator();
-		subMenu.add(makeMenuItem("Truncated Holm procedure", "truncHolm"));
-		subMenu.addSeparator();
-		subMenu.add(makeMenuItem("General successive graph", "gSuccessive"));
-		subMenu.add(makeMenuItem("   Simple successive graph I from Maurer et al. (2011)", "successiveI"));
-		subMenu.add(makeMenuItem("   Simple successive graph II from Maurer et al. (2011)", "successiveII"));
-		subMenu.addSeparator();
-		subMenu.add(makeMenuItem("Graph from Hung and Wang (2010)", "hung"));
-		subMenu.add(makeMenuItem("Graph from Huque, Alosh and Bhore (2011)", "huque"));
-		menu.add(subMenu);
-
-		subMenu = new JMenu("3 primary & 3 secondary hypotheses");		
-		subMenu.add(makeMenuItem("Graph from Bauer et al. (2001)", "bauer"));
-		subMenu.add(makeMenuItem("Graph from Bretz et al. (2011)", "bretzEtAl"));
-		menu.add(subMenu);
-		
-		subMenu = new JMenu("2 primary & 2 secondary & 2 tertiary hypotheses");		
-		subMenu.add(makeMenuItem("Graph from Bretz et al. (2009), Figure 14a", "bretzEtAl2009a"));
-		subMenu.add(makeMenuItem("Graph from Bretz et al. (2009), Figure 14b", "bretzEtAl2009b"));
-		subMenu.add(makeMenuItem("Graph from Bretz et al. (2009), Figure 15", "bretzEtAl2009c"));
-		menu.add(subMenu);
-		
-		subMenu = new JMenu("Miscellaneous");		
-		subMenu.add(makeMenuItem("Graph from Hommel et al. (2007)", "hommelEtAl"));
-		subMenu.add(makeMenuItem("Graph from Hommel et al. (2007) simplified", "hommelEtAlSimple"));
-		//subMenu.addSeparator();
-		subMenu.add(makeMenuItem("Drug clinical trial example (serial gatekeeping) from Maurer et al. (1995)", "maurer1995"));
-		subMenu.add(makeMenuItem("Graph from Ferber et al. (2011)", "ferber2011"));
-		menu.add(subMenu);
-		
-		menu.add(makeMenuItem("Browse archive of user submitted graphs", "userSubmitted"));
-		
-		add(menu);
-
-		menu = new JMenu("Analysis");
+		JMenu menu = new JMenu("Analysis");
 		menu.setMnemonic(KeyEvent.VK_A);
 
 		menu.add(makeMenuItem("Graph analysis", "graphAnalysis"));
 		//if (Configuration.getInstance().getGeneralConfig().experimentalFeatures()) {
 		menu.addSeparator();
-		menu.add(makeMenuItem("Power analysis (no correlation and still experimental)", "powerAnalysis"));		
+		menu.add(makeMenuItem("Power analysis (still experimental)", "powerAnalysis"));		
 		//}
 
 		add(menu);
 
-		menu = new JMenu("Extras");
-		menu.add(makeMenuItem("Options", "showOptions", KeyEvent.VK_O));
-		menu.add(makeMenuItem("Set all options back to default", "clearOptions", KeyEvent.VK_C));
-		menu.addSeparator();
-		menu.add(makeMenuItem("Change Layout of graph", "changeGraphLayout", KeyEvent.VK_G));
-		menu.add(makeMenuItem("Set variables to specific real values", "replaceVariables", KeyEvent.VK_V));
-		menu.addSeparator();
-		menu.add(makeMenuItem("Log", "showLog", KeyEvent.VK_L));
-		menu.add(makeMenuItem("Report error", "reportError", KeyEvent.VK_R));
-		menu.add(makeMenuItem("Submit your own graph to gMCP archive", "submitGraph"));
-		if (System.getProperty("eclipse") != null) {		
-			menu.add(makeMenuItem("Debug console", "debugConsole", KeyEvent.VK_D));
-		}
-		menu.setMnemonic(KeyEvent.VK_E);
-		if (Configuration.getInstance().getGeneralConfig().experimentalFeatures()) {
-			menu.addSeparator();
-			menu.add(makeMenuItem("Entangled Graphs", "entangledGraphs"));
-			menu.add(makeMenuItem("Adaptive Designs", "adaptiveDesigns"));
-		}
-		add(menu);
+		createExtraMenu();
+		add(extraMenu);
 
 		menu = new JMenu("Help");
 		menu.setMnemonic(KeyEvent.VK_H);
@@ -174,6 +111,86 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
 
 	}
 	
+	public void createExampleMenu() {
+		exampleMenu.removeAll();
+		
+		JMenu subMenu = new JMenu("Common test procedures for any number of hypotheses");		
+		subMenu.add(makeMenuItem("Bonferroni-Holm procedure", "bht"));
+		subMenu.add(makeMenuItem("Fixed sequence test", "fixedSequence"));
+		subMenu.add(makeMenuItem("Fallback procedure", "fallback"));
+		exampleMenu.add(subMenu);
+		
+		subMenu = new JMenu("3 unstructured hypotheses");
+		subMenu.add(makeMenuItem("Improved fallback procedure I", "fallbackI"));
+		subMenu.add(makeMenuItem("Improved fallback procedure II", "fallbackII"));
+		exampleMenu.add(subMenu);		
+		
+		subMenu = new JMenu("2 primary & 2 secondary hypotheses");		
+		subMenu.add(makeMenuItem("Parallel Gatekeeping with 4 Hypotheses", "pg"));
+		subMenu.add(makeMenuItem("Improved Parallel Gatekeeping with 4 Hypotheses", "pgi"));
+		subMenu.addSeparator();
+		subMenu.add(makeMenuItem("Truncated Holm procedure", "truncHolm"));
+		subMenu.addSeparator();
+		subMenu.add(makeMenuItem("General successive graph", "gSuccessive"));
+		subMenu.add(makeMenuItem("   Simple successive graph I from Maurer et al. (2011)", "successiveI"));
+		subMenu.add(makeMenuItem("   Simple successive graph II from Maurer et al. (2011)", "successiveII"));
+		subMenu.addSeparator();
+		subMenu.add(makeMenuItem("Graph from Hung and Wang (2010)", "hung"));
+		subMenu.add(makeMenuItem("Graph from Huque, Alosh and Bhore (2011)", "huque"));
+		exampleMenu.add(subMenu);
+
+		subMenu = new JMenu("3 primary & 3 secondary hypotheses");		
+		subMenu.add(makeMenuItem("Graph from Bauer et al. (2001)", "bauer"));
+		subMenu.add(makeMenuItem("Graph from Bretz et al. (2011)", "bretzEtAl"));
+		exampleMenu.add(subMenu);
+		
+		subMenu = new JMenu("2 primary & 2 secondary & 2 tertiary hypotheses");		
+		subMenu.add(makeMenuItem("Graph from Bretz et al. (2009), Figure 14a", "bretzEtAl2009a"));
+		subMenu.add(makeMenuItem("Graph from Bretz et al. (2009), Figure 14b", "bretzEtAl2009b"));
+		subMenu.add(makeMenuItem("Graph from Bretz et al. (2009), Figure 15", "bretzEtAl2009c"));
+		exampleMenu.add(subMenu);
+		
+		subMenu = new JMenu("Miscellaneous");		
+		subMenu.add(makeMenuItem("Graph from Hommel et al. (2007)", "hommelEtAl"));
+		subMenu.add(makeMenuItem("Graph from Hommel et al. (2007) simplified", "hommelEtAlSimple"));
+		//subMenu.addSeparator();
+		subMenu.add(makeMenuItem("Drug clinical trial example (serial gatekeeping) from Maurer et al. (1995)", "maurer1995"));
+		subMenu.add(makeMenuItem("Graph I from Ferber et al. (2011)", "ferber2011"));
+		subMenu.add(makeMenuItem("Graph II from Ferber et al. (2011)", "ferber2011b"));
+		exampleMenu.add(subMenu);
+		
+		if (Configuration.getInstance().getGeneralConfig().experimentalFeatures()) {
+			subMenu = new JMenu("Entangled graphs");		
+			subMenu.add(makeMenuItem("Entangled Graph I from Maurer et al. (2012)", "entangled1"));
+			subMenu.add(makeMenuItem("Entangled Graph II from Maurer et al. (20012)", "entangled2"));
+			exampleMenu.add(subMenu);
+		}
+		
+		exampleMenu.add(makeMenuItem("Browse archive of user submitted graphs", "userSubmitted"));
+	}
+	
+	public void createExtraMenu() {
+		extraMenu.removeAll();
+		extraMenu.add(makeMenuItem("Options", "showOptions", KeyEvent.VK_O));
+		extraMenu.add(makeMenuItem("Set all options back to default", "clearOptions", KeyEvent.VK_C));
+		extraMenu.addSeparator();
+		extraMenu.add(makeMenuItem("Change Layout of graph", "changeGraphLayout", KeyEvent.VK_G));
+		extraMenu.add(makeMenuItem("Set variables to specific real values", "replaceVariables", KeyEvent.VK_V));
+		extraMenu.addSeparator();
+		extraMenu.add(makeMenuItem("Log", "showLog", KeyEvent.VK_L));
+		extraMenu.add(makeMenuItem("Report error", "reportError", KeyEvent.VK_R));
+		extraMenu.add(makeMenuItem("Submit your own graph to gMCP archive", "submitGraph"));
+		if (System.getProperty("eclipse") != null) {		
+			extraMenu.add(makeMenuItem("Debug console", "debugConsole", KeyEvent.VK_D));
+		}
+		extraMenu.setMnemonic(KeyEvent.VK_E);
+		if (Configuration.getInstance().getGeneralConfig().experimentalFeatures()) {
+			extraMenu.addSeparator();
+			extraMenu.add(makeMenuItem("Add entangled graph", "entangledGraphs"));
+			//extraMenu.add(makeMenuItem("Adaptive Designs", "adaptiveDesigns"));
+		}
+	}
+
 	private void createLastUsed() {
 		List<String> graphs = Configuration.getInstance().getGeneralConfig().getLatestGraphs();
 		
@@ -249,6 +266,7 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
     }
 
 	public void actionPerformed(ActionEvent e) {
+		ReproducableLog.logGUI("Menu entry \""+e.getActionCommand()+"\"");
         if (e.getActionCommand().startsWith("LOAD_GRAPH")) {        	
         	String s = e.getActionCommand().substring(10);
         	logger.info("Trying to load \""+s+"\"");
@@ -276,7 +294,7 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
         	}
         	control.saveGraph();
         	createLastUsed();
-        	control.getMainFrame().isGraphSaved = true;
+        	control.isGraphSaved = true;
         } else if (e.getActionCommand().equals("save graph to R")) {
         	if (control.getNL().getNodes().size()==0) {
         		JOptionPane.showMessageDialog(control.getMainFrame(), "Will not save empty graph.", "Saving to R failed.", JOptionPane.ERROR_MESSAGE);
@@ -286,7 +304,7 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
         	String name = control.getNL().saveGraph(vnd.getName(), true);        	    	
         	Configuration.getInstance().getGeneralConfig().addGraph("R Object: "+name);
         	createLastUsed();
-        	control.getMainFrame().isGraphSaved = true;
+        	control.isGraphSaved = true;
         } else if (e.getActionCommand().equals("copy graph to clipboard")) {       	
         	control.copyGraphToClipboard();
         } else if (e.getActionCommand().equals("export graph image")) {       	
@@ -335,6 +353,10 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
         } else if (e.getActionCommand().equals("debugConsole")) {
         	RControl.console.setVisible(true);
         } else if (e.getActionCommand().equals("submitGraph")) {
+        	if (control.getNL().getNodes().size()==0) {
+        		JOptionPane.showMessageDialog(control.getMainFrame(), "Will not submit empty graph.", "Empty graph", JOptionPane.ERROR_MESSAGE);
+        		return;
+        	}        	
         	submitGraph();
         } else if (e.getActionCommand().equals("userSubmitted")) {
         	JOptionPane.showMessageDialog(control.getMainFrame(), "This is a brand new feature and there are no user submitted graphs yet.\n"+
@@ -353,20 +375,29 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
         		JOptionPane.showMessageDialog(control.getMainFrame(), "Graph is empty!", "Graph is empty!", JOptionPane.ERROR_MESSAGE);
         		return;
         	}
+        	if (control.getMainFrame().getPView().jrbSimes.isSelected()) {
+        		JOptionPane.showMessageDialog(control.getMainFrame(), "Simes test not yet supported in power calculations.", "Simes test not yet supported", JOptionPane.ERROR_MESSAGE);
+        		return;
+        	}
         	new PowerDialogParameterUncertainty(control.getMainFrame());
         } else if (e.getActionCommand().equals("load p-values from R")) {
         	control.loadPValuesFromR(); 
         } else if (e.getActionCommand().equals("changeGraphLayout")) {
+        	if (control.getNL().getNodes().size()==0) {
+        		JOptionPane.showMessageDialog(control.getMainFrame(), "Graph is empty.", "Empty graph", JOptionPane.ERROR_MESSAGE);
+        		return;
+        	}        	
         	new RearrangeNodesDialog(control.getMainFrame());
         } else if (e.getActionCommand().equals("replaceVariables")) {
         	Set<String> variables = control.getNL().getAllVariables();
         	if (variables.isEmpty() || (variables.size()==1 && variables.contains("ε"))) {
         		JOptionPane.showMessageDialog(control.getMainFrame(), "No variables to replace!", "No variables to replace!", JOptionPane.INFORMATION_MESSAGE);
+        		return;
         	}
         	control.getNL().saveGraphWithoutVariables(control.getNL().initialGraph, false);
         	control.getNL().loadGraph();
         } else if (e.getActionCommand().equals("entangledGraphs")) {
-        	
+        	control.addEntangledLayer();
         } else if (e.getActionCommand().equals("adaptiveDesigns")) {
         	
         } else if (e.getActionCommand().equals("bht")) {
@@ -420,7 +451,17 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
         	loadGraph("improvedFallbackII()");
         } else if (e.getActionCommand().equals("ferber2011")) {     	
         	loadGraph("Ferber2011()");
-        }
+        } else if (e.getActionCommand().equals("entangled1")) {     	
+        	loadGraph("Entangled1Maurer2012()");
+        } else if (e.getActionCommand().equals("entangled2")) {     	
+        	loadGraph("Entangled2Maurer2012()");
+        } else if (e.getActionCommand().equals("ferber2011b")) {     	
+        	Hashtable<String,Object> ht = new Hashtable<String,Object>();
+        	ht.put("times", new int[] {1,5,20});
+        	ht.put("doses", new int[] {1,3,20});
+        	//ht.put("w", new Double(0.5));
+        	new ParameterDialog(control.getGraphGUI(), ht, this, "FerberTimeDose2011");
+        } 
 	}
 	
 	private void submitGraph() {
@@ -559,6 +600,10 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
 	}
 	
 	public void exportLaTeXGraph() {
+		if (control.getNL().getNodes().size()==0) {
+    		JOptionPane.showMessageDialog(control.getMainFrame(), "No LaTeX output for empty graph.", "No LaTeX output for empty graph.", JOptionPane.ERROR_MESSAGE);
+    		return;
+    	}
 		writeLaTeX(control.getNL().getLaTeX());
 	}
 	
@@ -566,6 +611,10 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
 	 * Opens a TextFileViewer dialog and displays the LaTeX source to display the graph.
 	 */
 	public void showLaTeXGraph() {
+		if (control.getNL().getNodes().size()==0) {
+    		JOptionPane.showMessageDialog(control.getMainFrame(), "No LaTeX output for empty graph.", "No LaTeX output for empty graph.", JOptionPane.ERROR_MESSAGE);
+    		return;
+    	}
 		String latexCode = control.getNL().getLaTeX();
 		Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(latexCode), null);		
 		new TextFileViewer(control.getGraphGUI(), "LaTeX code", latexCode, 
@@ -604,9 +653,20 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
 	 * Opens a JFilechooser and saves the graph as an PNG image to the selected file.
 	 */
 	private void saveGraphImage() {
+		if (control.getNL().getNodes().size()==0) {
+    		JOptionPane.showMessageDialog(control.getMainFrame(), "Will not save empty graph.", "Empty graph", JOptionPane.ERROR_MESSAGE);
+    		return;
+    	}
 		JFileChooser fc = new JFileChooser(Configuration.getInstance().getClassProperty(this.getClass(), "ImageDirectory"));		
         fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
         fc.setDialogType(JFileChooser.SAVE_DIALOG);
+        fc.setFileFilter(new FileFilter() {
+			public boolean accept(File f) {
+				if (f.isDirectory()) return true;
+				return f.getName().toLowerCase().endsWith(".png");
+			}
+			public String getDescription () { return "PNG image files"; }  
+		});
         int returnVal = fc.showOpenDialog(this);
         if (returnVal == JFileChooser.APPROVE_OPTION) {
             File f = fc.getSelectedFile();

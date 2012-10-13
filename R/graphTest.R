@@ -1,6 +1,11 @@
 graphTest <- function(pvalues, weights = NULL, alpha = 0.05, G = NULL, cr = NULL, graph = NULL, verbose = FALSE) {
 	
 	usegraph <- !is.null(graph)
+	if (!is.list(G) && length(alpha)!=1) {
+		stop("length of alpha should be one for only one graph.")
+	} else if (is.list(G) && length(alpha)!=length(G)) {
+		stop("length of alpha and G should match")
+	}
 	if(usegraph & (class(graph) != "graphMCP"))
 		stop("graph needs to be an object of class graphMCP")
 	if(usegraph & ((!is.null(weights)||!is.null(G))))
@@ -18,6 +23,9 @@ graphTest <- function(pvalues, weights = NULL, alpha = 0.05, G = NULL, cr = NULL
 	checkArgs(pvalues, alphas, G, nH)
 	
 	if (!is.null(cr)) { # parametric case
+		if (is.list(G)) {
+			stop("The parametric case does not support multiple graphs yet.")
+		}
 		hint <- generateWeights(G, weights)
 		out <- matrix(0, nrow=0, ncol=dim(pvalues)[2])
 		colnames(out) <- colnames(G)

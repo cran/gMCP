@@ -1,7 +1,6 @@
 package tests;
 
 import org.af.gMCP.gui.CreateGraphGUI;
-import org.af.gMCP.gui.MenuBarMGraph;
 import org.af.gMCP.gui.RControl;
 import org.af.gMCP.gui.graph.NetList;
 import org.junit.After;
@@ -17,8 +16,8 @@ public class InteractionTest {
     @Before
     public void setUp() {
     	ctrl = RControl.getRControl(true);
-    	gui = new CreateGraphGUI("graph", new double[] {}, true,  10, true);
-    	nl = gui.getGraphView().getNL();
+    	/*gui = new CreateGraphGUI("graph", new double[] {}, true,  10, true);
+    	nl = gui.getGraphView().getNL();*/
     }
 
     @After
@@ -27,7 +26,7 @@ public class InteractionTest {
 
     @Test
     public void testReject() {
-    	((MenuBarMGraph)gui.getJMenuBar()).loadGraph("parallelGatekeeping()");
+    	//((MenuBarMGraph)gui.getJMenuBar()).loadGraph("parallelGatekeeping()");
     	
     }
     

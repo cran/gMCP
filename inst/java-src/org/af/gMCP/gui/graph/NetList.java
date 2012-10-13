@@ -37,10 +37,10 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 	private static final Log logger = LogFactory.getLog(NetList.class);
 	GraphView control;
 	
-	GraphMCP graph;
+	public GraphMCP graph;
 	
-	int drag = -1;
-	int edrag = -1;
+	int[] dragN = new int[0];
+	int[] dragE = new int[0];
 	boolean unAnchor = false;
 	
 	protected Vector<Edge> edges = new Vector<Edge>();
@@ -60,9 +60,17 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 
 	public boolean testingStarted = false;
 
-	double zoom = 1.00;
+	double zoom = 1d;
 	
 	static DecimalFormat format = new DecimalFormat("#.####");
+	
+	public static Color[] layerColors = new Color[] {
+		Color.BLACK,
+		Color.BLUE,
+		Color.RED, //TODO: Find better Colors then the following:
+		Color.YELLOW,
+		Color.GREEN
+	};
 
 	public NetList(JLabel statusBar, GraphView graphview) {
 		this.statusBar = statusBar;
@@ -91,60 +99,60 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 			i = i + 1;
 			name = "H" + i;
 		}
-		addNode(new Node(name, x, y, 0d, this));		
+		addNode(new Node(name, x, y, new double[] {0d}, this));		
 	}
 
 	public void setEdge(Edge e) {
 		Edge old = null;
 		for (Edge e2 : edges) {
-			if (e2.from == e.from && e2.to == e.to) {
+			if (e2.from == e.from && e2.to == e.to && e2.layer == e.layer) {
 				old = e2;
 			}
-			if (e2.from == e.to && e2.to == e.from) {
+			if (e2.from == e.to && e2.to == e.from && e2.layer == e.layer) {
 				e.curve = true;
 				e2.curve = true;
 			}
 		}
 		if (old != null) edges.remove(old);
 		edges.add(e);
-		control.getDataTable().getModel().setValueAt(e.getEdgeWeight(), getNodes().indexOf(e.from), getNodes().indexOf(e.to));
+		control.getDataFramePanel().setValueAt(e.getEdgeWeight(), getNodes().indexOf(e.from), getNodes().indexOf(e.to), e.layer);
 		graphHasChanged();
 	}
 
-	public void setEdge(Node from, Node to) {
-		setEdge(from, to, 1d);		
+	public void setEdge(Node from, Node to, int layer) {
+		setEdge(from, to, 1d, layer);		
 	}
 	
-	public void setEdge(Node from, Node to, Double w) {	
-		setEdge(from, to, new EdgeWeight(w));
+	public void setEdge(Node from, Node to, Double w, int layer) {	
+		setEdge(from, to, new EdgeWeight(w), layer);
 	}
 
-	public void setEdge(Node from, Node to, EdgeWeight w) {
+	public void setEdge(Node from, Node to, EdgeWeight w, int layer) {
 		Integer x = null;
 		Integer y = null;
 		boolean curve = false;
 		for (int i = edges.size()-1; i >= 0; i--) {
-			if (edges.get(i).from == from && edges.get(i).to == to) {
+			if (edges.get(i).from == from && edges.get(i).to == to && edges.get(i).layer == layer) {
 				x = edges.get(i).getK1();
 				y = edges.get(i).getK2();
 				removeEdge(edges.get(i));				
 			}
 		}
 		for (Edge e : edges) {
-			if (e.from == to && e.to == from) {
+			if (e.from == to && e.to == from && e.layer == layer) {
 				e.curve = true;
 				curve = true;
 			}
 		}		
 		if (!w.toString().equals("0")) {
 			if (x!=null) {
-				edges.add(new Edge(from, to, w, this, x, y));
+				edges.add(new Edge(from, to, w, this, x, y, layer));
 			} else {
-				edges.add(new Edge(from, to, w, this, curve));
+				edges.add(new Edge(from, to, w, this, curve, layer));
 			}
 			edges.lastElement().curve = curve;
 		}
-		control.getDataTable().getModel().setValueAt(w, getNodes().indexOf(from), getNodes().indexOf(to));
+		control.getDataFramePanel().setValueAt(w, getNodes().indexOf(from), getNodes().indexOf(to), layer);
 		graphHasChanged();
 	}
 
@@ -152,7 +160,7 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 		control.enableButtons(true);		
 		nodes.add(node);
 		control.getPView().addPPanel(node);
-		control.getDataTable().getModel().addRowCol(node.getName());
+		control.getDataFramePanel().addRowCol(node.getName());
 		calculateSize();
 		graphHasChanged();
 	}
@@ -171,7 +179,7 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 	public void graphHasChanged() {
 		expRejections = null; powAtlst1 = null; rejectAll = null; userDefined = null;
 		control.setResultUpToDate(false);
-		control.getMainFrame().isGraphSaved = false;
+		control.isGraphSaved = false;
 		if (!updateGUI) return;
 		String analysis = null;
 		Set<String> variables = getAllVariables();
@@ -193,7 +201,6 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 	/**
 	 * Calculates the size of the panel to view all nodes and resizes the panel.
 	 */
-
 	public int[] calculateSize() {
 		int maxX = 0;
 		int maxY = 0;
@@ -219,9 +226,9 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 		return new int[] {maxX, maxY};
 	}
 	
-	public Edge findEdge(Node von, Node nach) {
+	public Edge findEdge(Node von, Node nach, int layer) {
 		for (Edge e : edges) {
-			if (von == e.from && nach == e.to) {
+			if (von == e.from && nach == e.to && e.layer == layer) {
 				return e;
 			}
 		}
@@ -232,7 +239,17 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 		return edges;
 	}
 
-	public BufferedImage getImage() {
+	/**
+	 * Returns an image of the graph.
+	 * @param zoom Zoom used for the image. Bigger values result in higher resolutions.
+	 * If "null" the current zoom is used.
+	 * @return Returns an image of the graph with a border of 5 pixel in most cases.
+	 */
+	public BufferedImage getImage(Double zoom) {
+		if (zoom == null) zoom = getZoom();
+		double oldZoom = getZoom();
+		setZoom(zoom);
+		
 		long maxX = 0;
 		long maxY = 0;
 		for (Node node : nodes) {
@@ -270,18 +287,17 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 			edge.paintEdgeLabel(g);			
 		}
 		
-		img = cutImage(img);
+		img = cutImage(img, 5);
+		setZoom(oldZoom);
 		
 		return img;
-
 	}
 	
-	private BufferedImage cutImage(BufferedImage img) {
+	private BufferedImage cutImage(BufferedImage img, int offset) {
 		int minX = img.getWidth();
 		int minY = img.getHeight();
 		int maxX = 0;
-		int maxY = 0;
-		int offset = 5;
+		int maxY = 0;		
 		//System.out.println(img.getRGB(1, 1));
 		for (int x=0; x<img.getWidth(); x++) {
 			for(int y=0; y<img.getHeight(); y++) {				
@@ -293,6 +309,7 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 				}
 			}
 		}
+		//System.out.println(Math.max(0, minX-offset)+","	+Math.max(0, minY-offset)+","+Math.min(maxX-minX+2*offset, img.getWidth())+"," +Math.min(maxY-minY+2*offset, img.getHeight()));
 		return img.getSubimage(Math.max(0, minX-offset), 
 				Math.max(0, minY-offset), 
 				Math.min(maxX-minX+2*offset, img.getWidth()), 
@@ -339,13 +356,18 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 		return testingStarted;
 	}
 
+	// This function neither sets the description nor the pvalues.
+	// TODO Is this really a good design?
 	public GraphMCP loadGraph() {
 		control.stopTesting();
 		reset();
-		this.updateGUI = false;
+		updateGUI = false;
 		graph = new GraphMCP(initialGraph, this);
 		control.getPView().restorePValues();
-		this.updateGUI = true;
+		if (graph.entangledWeights!= null) {
+			control.getPView().setEntangledWeights(graph.entangledWeights);
+		}
+		updateGUI = true;
 		graphHasChanged();
 		revalidate();
 		repaint();
@@ -384,27 +406,31 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 			repaint();
 			return;
 		}
-		if (drag==-1 && edrag == -1) { /* Dragging without objects creates a rectangular. */
+		if (dragN.length==0 && dragE.length==0) { /* Dragging without objects creates a rectangular. */
 			endPoint = new int[] {e.getX(), e.getY()};
 			repaint();
 			return;
 		}
-		if (drag!=-1) {
+
+		for (int i : dragN) {
 			if (!unAnchor && Configuration.getInstance().getGeneralConfig().getUnAnchor()) { 
 				for (Edge edge : getEdges()) {
-					if (edge.from == nodes.get(drag) || edge.to == nodes.get(drag)) {
+					if (edge.from == nodes.get(i) || edge.to == nodes.get(i)) {
 						edge.fixed = false;
 					}
 				}
 				unAnchor = true;
 			}
-			nodes.get(drag).setX( (int) ((e.getX()+offset[0]) / (double) getZoom()));
-			nodes.get(drag).setY( (int) ((e.getY()+offset[1]) / (double) getZoom()));
-			placeUnfixedNodes(nodes.get(drag));
-		} else {
-			edges.get(edrag).setK1( (int) ((e.getX()+offset[0]) / (double) getZoom()));
-			edges.get(edrag).setK2( (int) ((e.getY()+offset[1]) / (double) getZoom()));
+			nodes.get(i).setX( (int) ((e.getX()+offsetN[i][0]) / (double) getZoom()));
+			nodes.get(i).setY( (int) ((e.getY()+offsetN[i][1]) / (double) getZoom()));
+			placeUnfixedNodes(nodes.get(i));
 		}
+
+		for (int i : dragE) {		
+			edges.get(i).setK1( (int) ((e.getX()+offsetE[i][0]) / (double) getZoom()));
+			edges.get(i).setK2( (int) ((e.getY()+offsetE[i][1]) / (double) getZoom()));
+		}
+
 		calculateSize();
 		repaint();
 	}
@@ -422,20 +448,23 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 		}
 	}
 
-	protected int[] offset;
+	protected int[][] offsetE;
+	protected int[][] offsetN;
 	protected int[] startingPoint = null;
 	protected int[] endPoint = null;
 	
 	public void mousePressed(MouseEvent e) {		
+		// Trigger PopUp
 		if (e.isPopupTrigger()) {
 			popUp(e);	
 		}
+		// Right-click stops placement of new nodes
 		if (e.getButton()==MouseEvent.BUTTON2) {
 			newVertex = false;
-			control.buttonNewVertex.setSelected(false);
+			control.buttonNewNode.setSelected(false);
 			return;
 		}
-		//logger.debug("MousePressed at ("+e.getX()+","+ e.getY()+").");
+		// Check whether to add new node
 		if (newVertex && vertexSelected(e.getX(), e.getY())==null) {
 			addDefaultNode((int)(e.getX() / getZoom()) - Node.r, 
 						(int) (e.getY() / getZoom()) - Node.r);
@@ -443,6 +472,7 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 			repaint();
 			return;
 		}
+		// Check whether to add new edge
 		if (newEdge) {
 			if (!firstVertexSelected) {
 				firstVertex = vertexSelected(e.getX(), e.getY());
@@ -454,8 +484,8 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 				Node secondVertex = vertexSelected(e.getX(), e.getY());
 				if (secondVertex == null || secondVertex == firstVertex) {
 					return;
-				}
-				setEdge(firstVertex, secondVertex);
+				}	
+				setEdge(firstVertex, secondVertex, askForLayer());
 				newEdge = false;
 				arrowHeadPoint = null;
 				firstVertexSelected = false;
@@ -464,20 +494,36 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 			repaint();
 			return;
 		}
-
-		for (int i = 0; i < nodes.size(); i++) {
-			if (nodes.get(i).inYou(e.getX(), e.getY())) {
-				drag = i;
-				offset = nodes.get(i).offset(e.getX(), e.getY());
+		
+		// Drag'n'drop
+		if (dragN.length!=0 || dragE.length!=0) {
+			offsetN = new int[nodes.size()][2];
+			offsetE = new int[edges.size()][2];
+			for (int i : dragN) {
+				offsetN[i] = nodes.get(i).offset(e.getX(), e.getY());
+			}
+			for (int i : dragE) {
+				offsetE[i] = edges.get(i).offset(e.getX(), e.getY());
+			}
+		} else {
+			for (int i = 0; i < nodes.size(); i++) {
+				if (nodes.get(i).inYou(e.getX(), e.getY())) {
+					dragN = new int[] {i};
+					offsetN = new int[nodes.size()][2];
+					offsetN[i] = nodes.get(i).offset(e.getX(), e.getY());
+				}
+			}
+			for (int i = edges.size()-1; i >=0 ; i--) {
+				if (edges.get(i).inYou(e.getX(), e.getY())) {
+					dragN = new int[0];
+					dragE = new int[] {i};
+					offsetE = new int[edges.size()][2];
+					offsetE[i] = edges.get(i).offset(e.getX(), e.getY());
+				}
 			}
 		}
-		for (int i = edges.size()-1; i >=0 ; i--) {
-			if (edges.get(i).inYou(e.getX(), e.getY())) {
-				drag = -1;
-				edrag = i;
-				offset = edges.get(i).offset(e.getX(), e.getY());
-			}
-		}
+		
+		// Double click opens dialog for changing nodes or edges. 
 		if (e.getClickCount() == 2 && !testingStarted) {			
 			for (int i = edges.size()-1; i >=0 ; i--) {
 				if (edges.get(i).inYou(e.getX(), e.getY())) {
@@ -495,25 +541,55 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 					return;
 				}
 			}
-		}		
+		}
+		
 		startingPoint = new int[] {e.getX(), e.getY()};
 		repaint();
 	}
 	
-	/*
+	private int askForLayer() {
+		int layer = 0;
+		if (control.getNumberOfLayers()>1) {
+			//We could ask with a JOptionPane window for the layer - but for now we just take the active tab from the DataFramePanel:
+			layer = control.getDataFramePanel().getSelectedIndex();
+		}
+		return layer;
+	}
+
+	/**
 	 * Unfortunately a double click resulting in opening a new dialog does not trigger a mouseReleased-event in the end.
 	 * Therefore the method can be called with e=null whenever a dialog is opened that way.
 	 * @see java.awt.event.MouseListener#mouseReleased(java.awt.event.MouseEvent)
 	 */
 	public void mouseReleased(MouseEvent e) {
-		if (e.isPopupTrigger()) {
-			popUp(e);	
+		dragN = new int[0];
+		dragE = new int[0];
+		
+		if (e != null)	{
+			if (endPoint!=null && startingPoint!=null && Configuration.getInstance().getGeneralConfig().experimentalFeatures()) {
+				Vector<Node> nodes = new Vector<Node>();
+				Vector<Edge> edges = new Vector<Edge>(); 
+				for (Edge edge : this.edges) {
+					if (edge.containsYou(startingPoint, endPoint)) {
+						edges.add(edge);
+					}
+				}
+				for (Node node : this.nodes) {
+					if (node.containsYou(startingPoint, endPoint)) {
+						nodes.add(node);
+					}
+				}
+				NetListSelectionPopUpMenu menu = new NetListSelectionPopUpMenu(this, nodes, edges);
+				menu.show(e.getComponent(), e.getX()-20, e.getY()-20);
+			} else 	if (e.isPopupTrigger()) {
+				popUp(e);	
+			}
 		}
-		if (edrag != -1) {			
-			edges.get(edrag).setFixed(true);
+		
+		for(int i : dragE) {			
+			edges.get(i).setFixed(true);
 		}
-		drag = -1;
-		edrag = -1;
+		
 		unAnchor = false;
 		endPoint = null;
 		if (e !=null && newEdge && firstVertexSelected) {				
@@ -521,7 +597,7 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 			if (secondVertex == null || secondVertex == firstVertex) {
 				return;
 			}
-			setEdge(firstVertex, secondVertex);
+			setEdge(firstVertex, secondVertex, askForLayer());
 			newEdge = false;
 			arrowHeadPoint = null;
 			firstVertexSelected = false;
@@ -550,17 +626,28 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 	 * We use paintComponent() instead of paint(), since the later one
 	 * is not called by a revalidate of the scrollbars.
 	 */
-
 	public void paintComponent(Graphics g) {
-		super.paintComponent(g);
+		// Apart from speed issues we shouldn't draw the graph while it is modified.
+		if (!updateGUI) return;
+		/* TODO Actually we also have to check whether paintComponent is in progress,
+		 * otherwise for example "for (Node node : nodes) { node.paintYou(g) }"
+		 * will throw a ConcurrentModificationException.
+		 */
+		super.paintComponent(g);		
 		int grid = Configuration.getInstance().getGeneralConfig().getGridSize();
 		g.setColor(Color.LIGHT_GRAY);
 		if (grid>1) {
-			for(int x=(-Node.r/grid)*grid; x < getWidth(); x += grid) {				
-				g.drawLine(x+Node.r, 0, x+Node.r, getHeight());	
+			for(int x=(int)(Node.r*getZoom()); x < getWidth(); x += grid*getZoom()) {				
+				g.drawLine(x, 0, x, getHeight());	
 			}
-			for(int y=(-Node.r/grid)*grid; y < getHeight(); y += grid) {
-				g.drawLine(0, y+Node.r, getWidth(), y+Node.r);
+			for(int x=(int)(Node.r*getZoom()); x > 0; x -= grid*getZoom()) {				
+				g.drawLine(x, 0, x, getHeight());	
+			}
+			for(int y=(int)(Node.r*getZoom()); y < getHeight(); y += grid*getZoom()) {
+				g.drawLine(0, y, getWidth(), y);
+			}
+			for(int y=(int)(Node.r*getZoom()); y > 0; y -= grid*getZoom()) {
+				g.drawLine(0, y, getWidth(), y);
 			}
 		}
 		BasicStroke stroke = new BasicStroke(Configuration.getInstance().getGeneralConfig().getLineWidth());
@@ -645,7 +732,6 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 	/**
 	 * Repaints the NetzListe and sets the preferredSize etc.
 	 */
-
 	public void refresh() {
 		calculateSize();
 		revalidate();
@@ -655,13 +741,13 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 	public void removeEdge(Edge edge) {
 		logger.info("Removing "+edge);
 		for (Edge e : edges) {
-			if (e.from == edge.to && e.to == edge.from) {
+			if (e.from == edge.to && e.to == edge.from && e.layer == edge.layer) {
 				e.curve = false;				
 			}
 		}
 		edges.remove(edge);
-		edrag = -1;
-		control.getDataTable().getModel().setValueAt(new EdgeWeight(0), getNodes().indexOf(edge.from), getNodes().indexOf(edge.to));
+		dragE = new int[0];
+		control.getDataFramePanel().setValueAt(new EdgeWeight(0), getNodes().indexOf(edge.from), getNodes().indexOf(edge.to), edge.layer);
 		graphHasChanged();
 	}
 
@@ -673,7 +759,7 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 				edges.remove(e);
 			}
 		}
-		control.getDataTable().getModel().delRowCol(getNodes().indexOf(node));
+		control.getDataFramePanel().delRowCol(getNodes().indexOf(node));
 		nodes.remove(node);
 		control.getPView().removePPanel(node);
 		if (nodes.size()==0) {
@@ -698,9 +784,10 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 		newVertex = false;
 		newEdge = false;
 		zoom = 1.00;
+		control.getDataFramePanel().reset();
 		control.getDView().setDescription("Enter a description for the graph.");
 		graphHasChanged();
-		control.getMainFrame().isGraphSaved = true;
+		control.isGraphSaved = true;
 	}
 
 	public void saveGraph() {
@@ -760,16 +847,42 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 	 * the corresponding Double values. Should not be null, but can be empty.
 	 * @return
 	 */
-	public String saveGraph(String graphName, boolean verbose, Hashtable<String,Double> ht) {		
-		graphName = RControl.getR().eval("make.names(\""+graphName+"\")").asRChar().getData()[0];		
+	public String saveGraph(String graphNameOld, boolean verbose, Hashtable<String,Double> ht) {
+		if (nodes.size()==0) {
+			throw new RuntimeException("Cannot save empty graph.");
+		}
+		String graphName = RControl.getR().eval("make.names(\""+graphNameOld+"\")").asRChar().getData()[0];
+		if (control.getNumberOfLayers()==1) {
+			saveSingleLayerGraph(graphName, verbose, ht, 0);
+		} else {
+			String graphs = "";
+			String weights = "";
+			for (int i=0; i<control.getNumberOfLayers(); i++) {
+				saveSingleLayerGraph(tmpGraph+"_layer_"+i, verbose, ht, i);
+				graphs += tmpGraph+"_layer_"+i;
+				weights += control.getPView().entangledWeights.get(i).getText();
+				if (i!=control.getNumberOfLayers()-1) {
+					graphs += ", ";
+					weights += ", ";
+				}
+			}
+			RControl.getR().evalVoid(graphName+" <- new(\"entangledMCP\", subgraphs=list("+graphs+"), weights=c("+weights+"))");
+		}
+		RControl.getR().evalVoid("attr("+graphName+", \"description\") <- \""+ control.getDView().getDescription()+"\"");
+		RControl.getR().evalVoid("attr("+graphName+", \"pvalues\") <- "+ control.getPView().getPValuesString());
+		if (verbose && !graphName.equals(graphNameOld)) { JOptionPane.showMessageDialog(this, "The graph as been exported to R under ther variable name:\n\n"+graphName, "Saved as \""+graphName+"\"", JOptionPane.INFORMATION_MESSAGE); }
+		return graphName;
+	}
+	
+	private void saveSingleLayerGraph(String graphName, boolean verbose, Hashtable<String, Double> ht, int layer) {
 		String alpha = "";
 		String nodeStr = "";
 		String x = "";
 		String y = "";
 		for (Node n : nodes) {
 			//alpha += "\""+n.getWS() +"\",";
-			alpha += n.getWeight() +",";
-			nodeStr += "\""+n.getName() +"\","; 
+			alpha += n.getWeight().get(layer) +",";
+			nodeStr += "\""+n.getRName() +"\","; 
 			x += n.getX() + ",";
 			y += n.getY() + ",";
 		}
@@ -780,16 +893,19 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 		
 		RControl.getR().evalVoid(".gsrmtVar <- list()");
 		RControl.getR().evalVoid(".gsrmtVar$alpha <- c("+alpha+")");
-		RControl.getR().evalVoid(".gsrmtVar$hnodes <- c("+nodeStr.replaceAll("\\\\", "\\\\\\\\")+")");
+		RControl.getR().evalVoid(".gsrmtVar$hnodes <- c("+nodeStr+")");
+
 		RControl.getR().evalVoid(".gsrmtVar$m <- matrix(0, nrow="+nodes.size()+", ncol="+nodes.size()+")");
 		RControl.getR().evalVoid("rownames(.gsrmtVar$m) <- colnames(.gsrmtVar$m) <- .gsrmtVar$hnodes");
+		
 		for (Edge e : edges) {
-			RControl.getR().evalVoid(".gsrmtVar$m[\""+e.from.getName().replaceAll("\\\\", "\\\\\\\\") +"\",\""+e.to.getName().replaceAll("\\\\", "\\\\\\\\") +"\"] <- \""+ e.getPreciseWeightStr().replaceAll("\\\\", "\\\\\\\\") +"\"");
+			if (e.layer==layer) {
+				RControl.getR().evalVoid(".gsrmtVar$m[\""+e.from.getRName() +"\",\""+e.to.getRName() +"\"] <- \""+ e.getPreciseWeightStr().replaceAll("\\\\", "\\\\\\\\") +"\"");
+			}
 		}
-		if (RControl.getR().eval("!any(is.na(as.numeric(.gsrmtVar$m)))").asRLogical().getData()[0]) {
-			RControl.getR().evalVoid(".gsrmtVar$m <- matrix(as.numeric(.gsrmtVar$m), nrow="+nodes.size()+")");
-			RControl.getR().evalVoid("rownames(.gsrmtVar$m) <- colnames(.gsrmtVar$m) <- .gsrmtVar$hnodes");
-		}		
+
+		RControl.getR().evalVoid(".gsrmtVar$m <- gMCP:::parse2numeric(.gsrmtVar$m)");
+	
 		RControl.getR().evalVoid(graphName+" <- new(\"graphMCP\", m=.gsrmtVar$m, weights=.gsrmtVar$alpha)");
 		for (int i=nodes.size()-1; i>=0; i--) {
 			Node n = nodes.get(i);
@@ -800,22 +916,21 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 		RControl.getR().evalVoid(graphName+"@nodeAttr$X <- c("+x+")");
 		RControl.getR().evalVoid(graphName+"@nodeAttr$Y <- c("+y+")");
 		for (Edge e : edges) {				
-			RControl.getR().evalVoid("edgeAttr("+graphName+", \""+e.from.getName().replaceAll("\\\\", "\\\\\\\\") +"\", \""+e.to.getName().replaceAll("\\\\", "\\\\\\\\") +"\", \"labelX\") <- "+(e.k1-Node.getRadius()));
-			RControl.getR().evalVoid("edgeAttr("+graphName+", \""+e.from.getName().replaceAll("\\\\", "\\\\\\\\") +"\", \""+e.to.getName().replaceAll("\\\\", "\\\\\\\\") +"\", \"labelY\") <- "+(e.k2-Node.getRadius()));
-			//logger.debug("Weight is: "+e.getW(ht));
-			if (((Double)e.getW(ht)).isNaN()) {
-				RControl.getR().evalVoid("edgeAttr("+graphName+", \""+e.from.getName().replaceAll("\\\\", "\\\\\\\\") +"\", \""+e.to.getName().replaceAll("\\\\", "\\\\\\\\") +"\", \"variableWeight\") <- \""+e.getWS().replaceAll("\\\\", "\\\\\\\\")+"\"");
+			if (e.layer==layer) {
+				RControl.getR().evalVoid("edgeAttr("+graphName+", \""+e.from.getRName() +"\", \""+e.to.getRName() +"\", \"labelX\") <- "+(e.k1-Node.getRadius()));
+				RControl.getR().evalVoid("edgeAttr("+graphName+", \""+e.from.getRName() +"\", \""+e.to.getRName() +"\", \"labelY\") <- "+(e.k2-Node.getRadius()));
+				//logger.debug("Weight is: "+e.getW(ht));
+				if (((Double)e.getW(ht)).isNaN()) {
+					//TODO Is the following line necessary? Are we still using the edge attribute "variableWeight"?
+					RControl.getR().evalVoid("edgeAttr("+graphName+", \""+e.from.getRName() +"\", \""+e.to.getRName() +"\", \"variableWeight\") <- \""+e.getWS().replaceAll("\\\\", "\\\\\\\\")+"\"");
+				}
+				if (e.getW(ht)==0) {
+					RControl.getR().evalVoid(graphName +"@m[\""+e.from.getRName() +"\", \""+e.to.getRName() +"\"] <- 0");
+				}			
 			}
-			if (e.getW(ht)==0) {
-				RControl.getR().evalVoid(graphName +"@m[\""+e.from.getName().replaceAll("\\\\", "\\\\\\\\") +"\", \""+e.to.getName().replaceAll("\\\\", "\\\\\\\\") +"\"] <- 0");
-			}			
-		}	
-		RControl.getR().evalVoid("attr("+graphName+", \"description\") <- \""+ control.getDView().getDescription()+"\"");
-		RControl.getR().evalVoid("attr("+graphName+", \"pvalues\") <- "+ control.getPView().getPValuesString());
-		if (verbose) { JOptionPane.showMessageDialog(this, "The graph as been exported to R under ther variable name:\n\n"+graphName, "Saved as \""+graphName+"\"", JOptionPane.INFORMATION_MESSAGE); }
-		return graphName;
+		}			
 	}
-	
+
 	public void setEdges(Vector<Edge> edges) {
 		this.edges = edges;
 		graphHasChanged();
@@ -882,7 +997,6 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 		this.repaint();
 	}
 
-
 	private void placeUnfixedNodes(Node node) {
 		for (Edge e : edges) {
 			if ((e.from == node || e.to == node) && !e.isFixed()) {
@@ -890,5 +1004,24 @@ public class NetList extends JPanel implements MouseMotionListener, MouseListene
 			}
 		}		
 	}
-	
+
+	public void removeLayer(int layer) {
+		for (int i = edges.size(); i>0; i--) {
+			if (edges.get(i-1).layer == layer) {
+				edges.remove(i-1);
+			}
+		}
+		for (Node n : nodes) {
+			n.removeLayer(layer);
+		}
+		refresh();
+	}
+
+	public void addEntangledLayer() {
+		for (Node n : nodes) {
+			n.addLayer();
+		}
+		refresh();
+	}
+
 }

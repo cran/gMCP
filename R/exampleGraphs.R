@@ -595,6 +595,37 @@ improvedFallbackII <- function(weights=rep(1/3, 3)) {
 } 
 
 
+FerberTimeDose2011 <- function(times, doses, w="\\nu") {
+	# Nodes:
+	hnodes <- paste(rep(paste("T", 1:times, sep=""), each=doses),"D",1:doses, sep="")
+	if (times<2) stop("times has to be an integer > 1")
+	if (doses<2) stop("doses has to be an integer > 1")
+	# Edges:
+	m <- matrix(0, times*doses, times*doses)
+	w2 <- paste("1-", w, sep="")
+	for (i in 2:(doses)) {
+		m[i,i-1] <- w	
+		m[doses*(times-1)+i, doses*(times-1)+i-1] <- w2
+		for (j in 2:(times)) {			
+			m[doses*(j-1)+(i-1),doses*(j-2)+i] <- w		
+			m[doses*(j-2)+i, doses*(j-1)+(i-1)] <- w2
+		}
+	}
+	for (j in 2:(times)) {
+		m[doses*(j-1)+1,doses*(j-2)+1] <- w2
+		m[doses*(j), doses*(j-1)] <- w
+	}
+	rownames(m) <- colnames(m) <- hnodes 
+	# Graph creation
+	graph <- new("graphMCP", m=m, weights=c(rep(0, times*doses-1), 1))
+	attr(graph, "description") <- paste("Second graph from Ferber et al. 2011",
+			"",
+			"Literature: G. Ferber, L. Staner and P. Boeijinga (2011): Structured multiplicity and confirmatory statistical analyses in pharmacodynamic studies using the quantitative electroencephalogram, Journal of neuroscience methods, Volume 201, Issue 1, Pages 204-212.", sep="\n")
+	# Placing nodes and converting to numeric
+	graph <- placeNodes(gMCP:::parse2numeric(graph), times, doses)
+	return(graph)
+}
+
 Ferber2011 <- function() {
 	# Nodes:
 	hnodes <- c("\\delta", "\\theta", "\\beta", "\\alpha", "\\alpha_1", 
@@ -639,6 +670,108 @@ Ferber2011 <- function() {
 							"\\alpha_2", "\\beta_1", "\\beta_2", "\\beta_3"), c("\\delta", 
 							"\\theta", "\\beta", "\\alpha", "\\alpha_1", "\\alpha_2", 
 							"\\beta_1", "\\beta_2", "\\beta_3")))
+	
+	return(graph)
+}
+
+Entangled1Maurer2012 <- function() {
+	m <- rbind(H1=c(0, 0, 1, 0, 0),
+			H2=c(0, 0, 1, 0, 0),
+			H3=c(0, 0, 0, "1-\\epsilon", "\\epsilon"),
+			H4=c(0, 1, 0, 0, 0),
+			H5=c(0, 0, 0, 0, 0))
+	
+	weights <- c(1, 0, 0, 0, 0)
+	
+	graph1 <- new("graphMCP", m=m, weights=weights)
+	
+	graph1@nodeAttr$X <- c(100, 300, 200, 100, 300)
+	graph1@nodeAttr$Y <- c(100, 100, 200, 300, 300)
+	
+	edgeAttr(graph1, "H4", "H2", "labelX") <- 50
+	edgeAttr(graph1, "H4", "H2", "labelY") <- 50
+	
+	edgeAttr(graph1, "H1", "H3", "labelX") <- 170
+	edgeAttr(graph1, "H1", "H3", "labelY") <- 130
+	
+	edgeAttr(graph1, "H2", "H3", "labelX") <- 270
+	edgeAttr(graph1, "H2", "H3", "labelY") <- 170
+	
+	edgeAttr(graph1, "H3", "H4", "labelX") <- 170
+	edgeAttr(graph1, "H3", "H4", "labelY") <- 270
+	
+	edgeAttr(graph1, "H3", "H5", "labelX") <- 270
+	edgeAttr(graph1, "H3", "H5", "labelY") <- 230
+	
+	m <- rbind(H1=c(0, 0, 1, 0, 0),
+			H2=c(0, 0, 1, 0, 0),
+			H3=c(0, 0, 0, "\\epsilon", "1-\\epsilon"),
+			H4=c(0, 0, 0, 0, 0),
+			H5=c(1, 0, 0, 0, 0))
+	
+	weights <- c(0, 1, 0, 0, 0)
+	
+	graph2 <- new("graphMCP", m=m, weights=weights)
+	
+	edgeAttr(graph2, "H5", "H1", "labelX") <- 350
+	edgeAttr(graph2, "H5", "H1", "labelY") <- 50
+	
+	edgeAttr(graph2, "H1", "H3", "labelX") <- 130
+	edgeAttr(graph2, "H1", "H3", "labelY") <- 170
+	
+	edgeAttr(graph2, "H2", "H3", "labelX") <- 230
+	edgeAttr(graph2, "H2", "H3", "labelY") <- 130
+	
+	edgeAttr(graph2, "H3", "H4", "labelX") <- 130
+	edgeAttr(graph2, "H3", "H4", "labelY") <- 230
+	
+	edgeAttr(graph2, "H3", "H5", "labelX") <- 230
+	edgeAttr(graph2, "H3", "H5", "labelY") <- 270
+	
+	graph <- new("entangledMCP", subgraphs=list(graph1,graph2), weights=c(0.5,0.5))
+
+	attr(graph, "description") <- paste("Graph from Maurer and Bretz 2012",
+			"",
+			"Literature: Not yet published.", sep="\n")
+	
+	return(graph)
+}
+
+Entangled2Maurer2012 <- function() {
+	m <- rbind(H1=c(0, 0, 1, 0, 0),
+			H2=c(0, 0, 0, 0, 1),
+			H3=c(0, 0, 0, 1, 0),
+			H4=c(0, 1, 0, 0, 0),
+			H5=c(0, 0, 0, 0, 0))
+	
+	weights <- c(1, 0, 0, 0, 0)
+	
+	graph1 <- new("graphMCP", m=m, weights=weights)
+	
+	graph1@nodeAttr$X <- c(100, 300, 200, 100, 300)
+	graph1@nodeAttr$Y <- c(100, 100, 200, 300, 300)
+	
+	edgeAttr(graph1, "H4", "H2", "labelX") <- 50
+	edgeAttr(graph1, "H4", "H2", "labelY") <- 50
+	
+	m <- rbind(H1=c(0, 0, 0, 1, 0),
+			H2=c(0, 0, 1, 0, 0),
+			H3=c(0, 0, 0, 0, 1),
+			H4=c(0, 0, 0, 0, 0),
+			H5=c(1, 0, 0, 0, 0))
+	
+	weights <- c(0, 1, 0, 0, 0)
+	
+	graph2 <- new("graphMCP", m=m, weights=weights)
+	
+	edgeAttr(graph2, "H5", "H1", "labelX") <- 350
+	edgeAttr(graph2, "H5", "H1", "labelY") <- 50
+	
+	graph <- new("entangledMCP", subgraphs=list(graph1,graph2), weights=c(0.5,0.5))
+	
+	attr(graph, "description") <- paste("Graph from Maurer and Bretz 2012",
+			"",
+			"Literature: Not yet published.", sep="\n")
 	
 	return(graph)
 }
