@@ -1,0 +1,14 @@
+\contentsline {figure}{\numberline {1}{\ignorespaces Graph representing the Bonferroni-Holm-Procedure for three hypotheses.}}{4}{figure.1}
+\contentsline {figure}{\numberline {2}{\ignorespaces Example showing how two null hypotheses can be rejected with p-values $p_1=0.01$, $p_2=0.07$ and $p_3=0.02$.}}{4}{figure.2}
+\contentsline {figure}{\numberline {3}{\ignorespaces Example graph from \cite {bretzEtAl2009power} that we will create in this vignette.}}{6}{figure.3}
+\contentsline {figure}{\numberline {4}{\ignorespaces The graphical user interface allows testing, calculation of confidence intervals and adjusted p-values.}}{8}{figure.4}
+\contentsline {figure}{\numberline {5}{\ignorespaces Final graph from the test procedure after rejection of $H_{21}$, $H_{31}$ and $H_{32}$.}}{10}{figure.5}
+\contentsline {figure}{\numberline {6}{\ignorespaces For normal and t-distributions simultaneous CI can be calculated by the GUI.}}{11}{figure.6}
+\contentsline {figure}{\numberline {7}{\ignorespaces You can also specify a correlation between the tests.}}{11}{figure.7}
+\contentsline {figure}{\numberline {8}{\ignorespaces Dialog for specifying a correlation matrix.}}{12}{figure.8}
+\contentsline {figure}{\numberline {9}{\ignorespaces The Parallel Gatekeeping and the Improved Parallel Gatekeeping Procedure.}}{12}{figure.9}
+\contentsline {figure}{\numberline {10}{\ignorespaces Graph from Bretz et al. (2009)}}{14}{figure.10}
+\contentsline {figure}{\numberline {11}{\ignorespaces Local power and some (trivial) user defined power functions.}}{15}{figure.11}
+\contentsline {figure}{\numberline {12}{\ignorespaces Import and export of graphs.}}{17}{figure.12}
+\contentsline {figure}{\numberline {13}{\ignorespaces Graph from \texttt {graph2latex} that does not look optimal.}}{18}{figure.13}
+\contentsline {figure}{\numberline {14}{\ignorespaces Boxplot of the hydroquinone data set}}{20}{figure.14}

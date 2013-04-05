@@ -1,6 +1,5 @@
 package org.af.gMCP.gui.dialogs;
 
-import java.awt.Component;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
@@ -534,8 +533,12 @@ public class PowerDialogParameterUncertainty extends JDialog implements ActionLi
 		panel.setLayout(new GridBagLayout());
 		if (Boolean.parseBoolean(Configuration.getInstance().getClassProperty(this.getClass(), "ncp", ""+true))) {
 			panel.add(singleNCP, c);
+			switchNCP.setText("Enter µ, σ and n instead of ncp");
+			ncp = true;
 		} else {
 			panel.add(singleMuSigmaN, c);
+			switchNCP.setText("Enter ncp instead of µ, σ and n");
+			ncp = false;
 		}
 		
 		mPanel.add(new JScrollPane(panel), cc.xy(2, row));

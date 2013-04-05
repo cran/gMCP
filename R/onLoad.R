@@ -5,7 +5,7 @@
 	.jpackage(pkgname)	
 	.jpackage("JavaGD")
 	
-	jars <- c("commons-collections", "commons-lang", 
+	jars <- c("afcommons", "commons-collections", "commons-lang", 
 			"commons-logging", "commons-validator", "forms", 
 			"iText", "jhlir.jar", "jlatexmath", "jxlayer", 
 			"log4j", "swing-worker")
@@ -22,15 +22,30 @@
 		}		
 	}
 	
+	rJavaVersion <- utils::sessionInfo()$otherPkgs$rJava$Version
+	
 	# If we have a rJava version < 0.8-3 load JRIEngine.jar and REngine.jar
-    if (!is.null(sessionInfo()$otherPkgs$rJava$Version) && sessionInfo()$otherPkgs$rJava$Version < "0.8-3") {
-		classes <- system.file("R28", package = "CommonJavaJars", lib.loc = NULL)
-		if (nzchar(classes)) {
-			.jaddClassPath(classes)
-			jars <- grep(".*\\.jar", list.files(classes, full.names = TRUE), TRUE, value = TRUE)
-			if (length(jars)) { 
-				.jaddClassPath(jars)
-			}		
+    if (!is.null(rJavaVersion)) {
+    	if (rJavaVersion < "0.8-3") {
+			classes <- system.file("R28", package = "CommonJavaJars", lib.loc = NULL)
+			if (nzchar(classes)) {
+				.jaddClassPath(classes)
+				jars <- grep(".*\\.jar", list.files(classes, full.names = TRUE), TRUE, value = TRUE)
+				if (length(jars)) { 
+					.jaddClassPath(jars)
+				}		
+			}
+		}
+		# If we have a rJava version > 0.9-3 load JRIEngine.jar and REngine.jar
+	    if (rJavaVersion > "0.9-3") {
+			classes <- system.file("JRI", package = "CommonJavaJars", lib.loc = NULL)
+			if (nzchar(classes)) {
+				.jaddClassPath(classes)
+				jars <- grep(".*\\.jar", list.files(classes, full.names = TRUE), TRUE, value = TRUE)
+				if (length(jars)) { 
+					.jaddClassPath(jars)
+				}		
+			}
 		}
 	}
 	
@@ -55,23 +70,6 @@
 	# packageStartupMessage or cat for furter information (package incompatibilities / updates)
 }  
 
-# TODO Remove in gMCP 0.8-1 and use loadJars from CommonJavaJars then.
-loadJars <- function(jars, java="J5") {
-	jarsFullname <- c()	
-	classes <- system.file("java", package = "CommonJavaJars", lib.loc = NULL)
-	files <- list.files(classes, full.names = FALSE)
-	if (java=="J5") {
-		files <- grep("J6", files, TRUE, value = TRUE, invert = TRUE)
-	}
-	for (j in jars) {
-		# Always take the newest jar per default:
-		x <- sort(grep(j, files, TRUE, value = TRUE), decreasing = TRUE)
-		if (length(x)==0) {
-			stop(paste("No jar that matches \"",j,"\" could be found.",sep=""))
-		}
-		jarsFullname <- c(jarsFullname, x[1])
-	}
-	
-	.jpackage("CommonJavaJars", jars=jarsFullname)
-	return(invisible(jarsFullname))
+.onUnload <- function(libpath) {
+	# TODO Unload jars?
 }
