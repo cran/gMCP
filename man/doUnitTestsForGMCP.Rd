@@ -8,7 +8,8 @@
 	Runs the R unit (and optional the JUnit) test suite for gMCP and prints the results.
 }
 \usage{
-	unitTestsGMCP(extended=FALSE, java=FALSE, interactive=FALSE, junitLibrary, outputPath)
+	unitTestsGMCP(extended=FALSE, java=FALSE, interactive=FALSE, 
+                junitLibrary, outputPath)
 }
 
 \arguments{
@@ -48,7 +49,8 @@
 \examples{
 
 \dontrun{
-doUnitTestsForGMCP()
+unitTestsForGMCP()
+unitTestsGMCP(extended=TRUE, java=TRUE, interactive=TRUE, outputPath="~/RUnitTests")
 
 }
 

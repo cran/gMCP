@@ -11,7 +11,7 @@
   calcPower(weights, alpha, G, mean = rep(0, nrow(sigma)),
             sigma = diag(length(mean)), cr = NULL,
             nSim = 10000, seed = NULL,
-            type = c("quasirandom", "pseudorandom"), f=list())
+            type = c("quasirandom", "pseudorandom"), f=list(), test)
 }
 \arguments{
   \item{weights}{ Initial weight levels for the test procedure, see graphTest function. }
@@ -23,7 +23,7 @@
  \item{mean}{ Mean under the alternative }
   \item{sigma}{ Covariance matrix under the alternative. }
   \item{cr}{ Correlation matrix that should be used for the parametric test.
-  If \code{cr==NULL} the Bonferroni based test procedure is used. }
+  If \code{cr==NULL} the Bonferroni based test procedure is used. Can contain NAs.}
   \item{seed}{ Optional seed for pseudo random numbers and the random shift of
     the lattice rule. }
   \item{type}{ What type of random numbers to use. \code{quasirandom}
@@ -36,8 +36,14 @@
     in the power to reject hypotheses 1 and 3 one could specify
     \code{f=list(function(x) {x[1] && x[3]})}
   }  
+  \item{test}{ In the parametric case there is more than one way to handle 
+    subgraphs with less than the full alpha. If the parameter \code{test} is missing,
+    the tests are performed as described by Bretz et al. (2011), 
+    i.e. tests of intersection null hypotheses 
+    always exhaust the full alpha level even if the sum of weights is strictly
+    smaller than one. If \code{test="simple-parametric"} the tests are performed 
+    as defined in Equation (3) of Bretz et al. (2011).}
 }
-
 \value{
   A list containg three elements
   \item{LocalPower }{A numeric giving the local powers for the hypotheses}
@@ -103,7 +109,8 @@ simfunc <- function(nSim, a1, a2, g1, g2, rh, t1, t2, t3, t4, Gr){
 ## calculate power for all 14 scenarios
 outList <- list()
 for(i in 1:14){
-  outList[[i]] <- simfunc(10000, weights1[i], weights2[i], gam1[i], gam2[i], rho[i], th1[i], th2[i], th3[i], th4[i])
+  outList[[i]] <- simfunc(10000, weights1[i], weights2[i], 
+                    gam1[i], gam2[i], rho[i], th1[i], th2[i], th3[i], th4[i])
 }
 
 ## summarize data as in Stat Med paper Table I 

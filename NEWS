@@ -1,4 +1,34 @@
-Changes in version 0.8-1 (05-04-2012, Rev. 1567)
+Changes in version 0.8-3 (??-06-2013)
+================================================
+
+- If a correlation matrix is selected in the main window, the same 
+  correlation matrix is loaded per default in the power analysis dialog.
+
+- To comply with CRAN policies the function graphGUI has now an argument
+  envir to specify in which environment the object graph is located and/or 
+  it should be saved (default is the global environment).
+
+
+Changes in version 0.8-2 (14-06-2013)
+================================================
+
+- The output of graph2latex has greatly improved and you nearly get 
+  in TikZ what you can see in the Java GUI. 
+
+- Fixed a bug existing in gMCP 0.7-11 to 0.8-1 which caused errors for 
+  multiple power settings in the GUI.
+  
+- The official source repository switched from subversion/r-forge to git/github:
+  https://github.com/kornl/gMCP
+  (R package devtools from Hadley Wickham et al. can be used to install
+  development versions.)
+  Instead of subversion revision numbers you will find annotated tags specifying 
+  the versions in the git repository.
+  
+ (This version was not accepted on CRAN. See news for version 0.8-3.)
+
+
+Changes in version 0.8-1 (06-04-2013, Rev. 1567)
 ================================================
 
 - An rJava update to 0.9-4 removed necessary files for gMCP 0.8-0.
@@ -8,6 +38,8 @@ Changes in version 0.8-1 (05-04-2012, Rev. 1567)
 
 - Fix for loading the namespace when just the base namespace is loaded.
 
+ 28 files changed, 177 insertions(+), 197 deletions(-)
+ 
 
 Changes in version 0.8-0 (14-10-2012, Rev. 1536)
 ================================================

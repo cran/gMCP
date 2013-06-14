@@ -2,7 +2,7 @@ graph2latex <- function(graph, package="TikZ", scale=1, alpha=0.05, pvalues,
 		fontsize=c("tiny","scriptsize", "footnotesize", "small",
 		"normalsize", "large", "Large", "LARGE", "huge", "Huge"),
 		nodeTikZ, labelTikZ="near start,above,fill=blue!20",
-		tikzEnv=TRUE, offset=c(0,0),fill=list(reject="red!80",retain="green!80")) {
+		tikzEnv=TRUE, offset=c(0,0),fill=list(reject="red!80",retain="green!80"), nodeR=25) {
 	graph <- placeNodes(graph)
 	colors <- c("yellow","black","blue","red","green")
 	if (tikzEnv) {
@@ -15,8 +15,8 @@ graph2latex <- function(graph, package="TikZ", scale=1, alpha=0.05, pvalues,
 	#tikz <- paste(tikz, "\\tikzset{help lines/.style=very thin}", paste="\n")	
 	for (node in getNodes(graph)) {
 		nodeColor <- ifelse(getRejected(graph, node),fill$reject, fill$retain)
-		x <- getXCoordinates(graph, node)*scale
-		y <- getYCoordinates(graph, node)*scale
+		x <- getXCoordinates(graph, node) + nodeR # Actually I'm not sure whether this "+ nodeR" in this function is really necessary.
+		y <- getYCoordinates(graph, node) + nodeR # It is more important to use nodeR to reduce the arc that should be drawn.
 		#alpha <- format(getWeights(graph,node), digits=3, drop0trailing=TRUE)
 		weight <- paste(getLaTeXFraction(getWeights(graph,node)), collapse=" ")
 		if (weight == 1) {
@@ -58,11 +58,23 @@ graph2latex <- function(graph, package="TikZ", scale=1, alpha=0.05, pvalues,
 		for (i in getNodes(graph)) {
 			for (j in getNodes(graph)) {			
 				if (graph@m[i,j]!=0) {
-					# The following to lines test whether the edge in opposite direction exists:				
-					to <- ifelse(graph@m[j,i]==0, "auto", "bend left=15")
-					#weight <- ifelse(edgeL[i]==0, "\\epsilon", getLaTeXFraction(edgeL[i])) # format(edgeL[i], digits=3, drop0trailing=TRUE))
-					weight <- getWeightStr(graph, i, j, LaTeX=TRUE) 
-					edgeLine <- paste("\\draw [->,line width=1pt] (",nodes2[i],") to[",to,"] node[",labelTikZ,"] {$",weight,"$} (",nodes2[j],");",sep="")
+				  weight <- getWeightStr(graph, i, j, LaTeX=TRUE) 
+				  edgeNode <- paste("node[",labelTikZ,"] {$",weight,"$}",sep="")
+					# The following line test whether the edge in opposite direction exists:				          
+					to <- paste(") to[",ifelse(graph@m[j,i]==0, "auto", "bend left=15"),"] ", edgeNode, sep="")
+          edgeNode <- paste("node[","fill=blue!20","] {$",weight,"$}",sep="") # TODO labelTikZ is ignored in this case
+          # New arc function:
+					x <- try(unlist(edgeAttr(graph, i, j, "labelX")), silent = TRUE)          
+					y <- try(unlist(edgeAttr(graph, i, j, "labelY")), silent = TRUE)
+					if (!("try-error" %in% class(x)) && !is.null(x) && !is.na(x) && class(y)!="try-error" && !is.null(y) && !is.na(y) && x>-10 && y>-10) {
+					  b <- c(x,y) + nodeR
+					  x <- getXCoordinates(graph, c(i,j)) + nodeR
+					  y <- getYCoordinates(graph, c(i,j)) + nodeR
+					  to2 <- try(getArc(c(x[1],y[1]),b,c(x[2],y[2]), edgeNode, nodeR=nodeR))
+					  if (!("try-error" %in% class(to2))) to <- to2
+					}          
+					#weight <- ifelse(edgeL[i]==0, "\\epsilon", getLaTeXFraction(edgeL[i])) # format(edgeL[i], digits=3, drop0trailing=TRUE))					
+					edgeLine <- paste("\\draw [->,line width=1pt] (",nodes2[i], to," (",nodes2[j],");",sep="")
 					tikz <- paste(tikz, edgeLine,sep="\n")
 				}
 			}
@@ -73,6 +85,119 @@ graph2latex <- function(graph, package="TikZ", scale=1, alpha=0.05, pvalues,
 		tikz <- paste(paste("{\\", fontsize, sep=""), tikz, "}",sep="\n")
 	}
 	return(tikz)
+}
+
+# Arc from a to b and from b to c.
+getArc <- function(a, b, c, edgeNode, col="black", nodeR=25) {
+  #a <- invertY(a)
+  #b <- invertY(b)
+  #c <- invertY(c)
+  m <- try(getCenter(a,b,c,0.001))
+  if ("try-error" %in% class(m)) {
+    return(getLine(a, b, c, edgeNode, col="black"))    
+  }
+  r <- sqrt(sum((m-a)^2))
+  if (r>500) return(getLine(a, b, c, edgeNode, col="black"))
+  phi <- getAngle(a,b,c,m, nodeR)  
+  #cat("a: ",a,", b: ",b,", c:", c,"m: ",m,"r: ",r,", phi: ",phi,"\n")
+  return(paste(".",round(phi[1]+ifelse(phi[1]>phi[2],-90,90)),") arc(",round(phi[1]),":",round(phi[3]),":",round(r),"bp) ",edgeNode," arc(",round(phi[3]),":",round(phi[2]),":",round(r),"bp) to",sep=""))
+}
+
+# Line from a to b and from b to c.
+getLine <- function(a, b, c, edgeNode, col="black") {
+  return(paste(") to (",round(b[1]),"bp, ",-round(b[2]),"bp) ",edgeNode," to",sep=""))
+}
+
+invertY <- function(x) {
+  return(c(x[1],-x[2]))
+}
+
+getAngle <- function(a,b,c,m, nodeR=25) {
+  # phi correction factor:
+  r <- sqrt((m[1]-a[1])*(m[1]-a[1])+(m[2]-a[2])*(m[2]-a[2]))
+  #phiCF <- (nodeR*360)/(2*pi*r)
+  phiCF <- 2*asin(nodeR/(2*r))/(2*pi)*360
+  
+  if ((a[1]-m[1])==0) {
+    phi1 <- 90 + ifelse((m[2]-a[2]>0),0,180)
+  } else {
+    phi1 <- atan((-a[2]+m[2])/(a[1]-m[1]))*360/(2*pi)+ifelse((a[1]-m[1]<0),180,0)
+  }
+  if ((c[1]-m[1])==0) {
+    phi2 <- 90 + ifelse((m[2]-c[2]>0),0,180)
+  } else {
+    phi2 <- atan((-c[2]+m[2])/(c[1]-m[1]))*360/(2*pi)+ifelse((c[1]-m[1]<0),180,0)
+  }
+  if ((b[1]-m[1])==0) {
+    phi3 <- 90 + ifelse((m[2]-b[2]>0),0,180)
+  } else {
+    phi3 <- atan((-b[2]+m[2])/(b[1]-m[1]))*360/(2*pi)+ifelse((b[1]-m[1]<0),180,0)
+  }		
+  phi1 <- (phi1 + 360) %% 360 # phi for a
+  phi2 <- (phi2 + 360) %% 360 # phi for c
+  phi3 <- (phi3 + 360) %% 360 # phi for b
+  #return(c(phi1, phi2, phi3))
+  if ((phi1 > phi2 && phi1 > phi3 && phi3 > phi2) || (phi2 > phi1 && (phi3>phi2 || phi3<phi1))) {  
+    # Clockwise direction: phi2 < phi1
+    phi1 <- phi1 - phiCF
+    phi2 <- phi2 + phiCF + 2
+    if (phi3>phi1) phi3 <- phi3 -360
+    if (phi2<phi1){
+      return(c(phi1, phi2, phi3))
+    } else {
+      return(c(phi1, phi2-360, phi3))
+    }
+  } else {
+    # Counter clockwise: phi1 < phi2
+    phi1 <- phi1 + phiCF
+    phi2 <- phi2 - phiCF - 2
+    if (phi3<phi1) phi3 <- phi3 + 360
+    if (phi1<phi2) {      
+      return(c(phi1, phi2, phi3))
+    } else {
+      return(c(phi1, phi2+360, phi3))
+    }
+  }
+}
+
+getCenter <- function(a,b,c, eps=0.05) {  
+  if((b[2]-c[2])==0) {
+    x <- c(0,1)
+  } else {
+    x <- c(1,-(b[1]-c[1])/(b[2]-c[2]))
+  }
+  if ((a[2]-b[2])==0) {
+    z <- c(0,1)
+  } else {
+    z <- c(1,-(a[1]-b[1])/(a[2]-b[2]))
+  }
+  if (abs((b[1]-a[1])/(b[2]-a[2])-(c[1]-b[1])/(c[2]-b[2]))<eps && sign(b[1]-a[1])==sign(c[1]-b[1])) {
+    stop("Slopes are to similar")
+  }
+  if (z[1]!=0 && x[1]==0) {			
+    c <- (c[1]-a[1])/(2*z[1])
+    return(c((a[1]+b[1])/2+c*z[1], (a[2]+b[2])/2+c*z[2]))
+  } else if (x[1]!=0 && z[1]==0) {
+    d <- (a[1]-c[1])/(2*x[1])
+    return(c((b[1]+c[1])/2+d*x[1], (b[2]+c[2])/2+d*x[2]))
+  } else if ((x[1]==0 && z[1]==0)||(x[2]==0 && z[2]==0)) {
+    stop("Slopes are too similar.")
+  } else if (z[2]!=0 && x[2]==0) {			
+    c <- (c[2]-a[2])/(2*z[2])
+    return(c((a[1]+b[1])/2+c*z[1], (a[2]+b[2])/2+c*z[2]))
+  } else if (x[2]!=0 && z[2]==0) {			
+    d <- (a[2]-c[2])/(2*x[2])
+    return(c((b[1]+c[1])/2+d*x[1], (b[2]+c[2])/2+d*x[2]))
+  } else {
+    if ((x[2]-x[1]*z[2]/z[1])==0) {
+      if ((z[2]-z[1]*x[2]/x[1])==0) stop("Can this happen?")
+      c <- ((c[2]-a[2])/2+((a[1]-c[1])/2*x[1])*x[2])/(z[2]-z[1]*x[2]/x[1])
+      return(c((a[1]+b[1])/2+c*z[1], (a[2]+b[2])/2+c*z[2]))			
+    }
+    d <- ((a[2]-c[2])/2+((c[1]-a[1])/2*z[1])*z[2])/(x[2]-x[1]*z[2]/z[1])		
+  }  
+  m <- c((b[1]+c[1])/2+d*x[1], (b[2]+c[2])/2+d*x[2])
+  return(m)
 }
 
 # x <- c("H+1","H-1","H/1","H1","H2","H1+")
@@ -153,7 +278,7 @@ createTable <- function(vector) {
 LaTeXHeader <- function() {
 	report <- "\\documentclass[11pt]{article}"
 	report <- paste(report, "\\usepackage{tikz}", sep="\n")
-	report <- paste(report, "\\usetikzlibrary{snakes,arrows,shapes}", sep="\n")
+	report <- paste(report, "\\usetikzlibrary{decorations,arrows,shapes}", sep="\n")
 	report <- paste(report, "\\begin{document}", sep="\n")
 	return(report)
 }
