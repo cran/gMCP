@@ -18,6 +18,11 @@ import org.scilab.forge.jlatexmath.TeXConstants;
 import org.scilab.forge.jlatexmath.TeXFormula;
 import org.scilab.forge.jlatexmath.TeXIcon;
 
+/**
+ * Node of a graph. Knows the NetList it belongs to and 
+ * paints itself on a given Graphics object. 
+ *
+ */
 public class Node {
 	
 	static DecimalFormat format = new DecimalFormat("#.####");
@@ -281,9 +286,11 @@ public class Node {
 		return name+" (w: "+getWS()+")";
 	}
 
-	public void removeLayer(int layer) {
+	public void removeLayer(int layer) {				
 		weight.remove(layer);
-		stringW.remove(layer);		
+		stringW.remove(layer);	
+		// Force recalculation of TeXItems:
+		lastFontSize = 0;		
 	}
 
 }

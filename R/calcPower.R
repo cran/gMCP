@@ -5,7 +5,14 @@ extractPower <- function(x, f=list()) {
   allPow <- mean(rowSums(x)==dim(x)[2])
   result <- list(LocalPower = pow, ExpRejections = avgPow,
 		  PowAtlst1 = atleast1, RejectAll = allPow)
-  if(length(unique(names(f)))!=length(f)) stop("f must be a named list with unique names.")
+  if (is.function(f)) {f <- list(f)}
+  if (length(f)>0) {
+    n <- names(f)
+    if (is.null(n) || all(is.na(n))) n <- paste("func", 1:length(f), sep="")
+    n[n=="" | is.na(n)] <- paste("func", 1:sum(n==""), sep="")
+    n <- make.names(n, unique=TRUE)
+    names(f) <- n
+  }
   for (fn in names(f)) {
   	result[[fn]] <- sum(apply(x,1, f[[fn]]))/dim(x)[1]
   }
@@ -24,7 +31,7 @@ calcPower <- function(weights, alpha, G, mean = rep(0, nrow(sigma)),
 	  for (m in mean) {
 		  sims <- rqmvnorm(nSim, mean = m, sigma = sigma, seed = seed, type = type)
 		  pvals <- pnorm(sims, lower.tail = FALSE)
-		  out <- graphTest(pvals, weights, alpha, G, cr, test=test)
+		  out <- graphTest(pvalues=pvals, weights=weights, alpha=alpha, G=G, cr=cr, test=test)
 		  out <- extractPower(out, f)
 		  label <- attr(m, "label")		  
 		  if (!is.null(label)) {
@@ -34,9 +41,12 @@ calcPower <- function(weights, alpha, G, mean = rep(0, nrow(sigma)),
 	  }
 	  return(result)
   } else {
+    print(mean)
+    print(sigma)
+    print(nSim)
 	  sims <- rqmvnorm(nSim, mean = mean, sigma = sigma, seed = seed, type = type)
 	  pvals <- pnorm(sims, lower.tail = FALSE)
-	  out <- graphTest(pvals, weights, alpha, G, cr, test=test)
+	  out <- graphTest(pvalues=pvals, weights=weights, alpha=alpha, G=G, cr=cr, test=test)
 	  extractPower(out, f)
   }
 }
