@@ -1,11 +1,43 @@
-- Hommel simplified caused print to console: Error in if (abs((b[1] - a[1])/(b[2] - a[2]) - (c[1] - b[1])/(c[2] - b[2])) <  : 
-  missing value where TRUE/FALSE needed
+Documention for value in secondStageTest looks strange.
+
+Multiple Setting:
+Default: NCP (throw out n, \sigma, \mu)
+Instead of c(0,0,...) use #hypotheses text fields.
+Remove setting + check for empty textfields
+Move power simulation options on the right side of the simulation window
+In Options: Weights of subgraphs are upscaled to 1 Yes (Bretz et al. 2011) / No 
+Change test to only "Bonferroni", "Simes", "parametric" and add parameter upscale to 'gMCP' (and change exhaust)
+Allow upscale for Simes test? (Theory!)
+Is the shortcut really used for the Simes test (it can not be used for adjusted p-values, but if these are not asked for the shortcut should be used).
+Remember multiple setting options and add "clear" button. Save settings under name.
+"Select an R correlation matrix" -> "?"
+Add labels to "create matrix" and "refresh".
+_Always_ use correlation matrix - never covariance matrix. Check for this for imports (and ask for converting to corMat). In the GUI disable diagonal.
+User specified power functions should be namable in the GUI. Save output as data.frame and CSV.
+Simes -> simply -> "Use Simes test" -> Show "Warning dialog exlaining..." with check box "never show me again".
+Improve "Graph Analysis" -> Check whether weights sum up to 1 for all subgraphs.
+Sample Sizes: Drop "n" column,  
+Replace n, \sigma, \mu with \theta θ and Standard error of \theta.
+Specify marginal power (and one field for which alpha this power was calculated).
+Entangled graph should shown be separately.
+subgraph alpha splitting -> component graph weights
+Tabs for the entangled graphs are called "transition matrix 1", "transition matrix 2", "trasition matrix 3"
+Entangled graphs: Alpha level -> Weights 1, Weights 2, Weights 3
+- NEWS.Rd and news()
+
+- Streamline / throw out graphTest
+- Highlight edges (and perhaps nodes) depending on the focus in the dataframe. 
+
+- Unify graphMCP and entangled graphs?
+- Integrate parameter 'envir' into corMatWizard.
+- Use jgr.addMenu, jgr.addMenuItem.
+- Explain that the order of the rejected hypotheses doesn't affect the end result.
 - Report was send dialog is sometimes behind ErrorReport.
 - http://semver.org/ Should we switch from version numbers like 0.8-3 to 0.8.3?
 - NICER BUGREPORT!
 - Let user choose colors for entangled graphs.
+- Simes and power
 - Simes + parametric test for entangled graphs.
-- Bug: Selection with mouse sometimes is drawn in window even after mouse left the window.
 - Optionally display alpha weighting directly in entangled graphs.
 - Save settings for power and remember them in the same session.
 - Names for userdefined functions.
@@ -16,18 +48,13 @@
 - Link to archive is wrong on bundle site.
 - Removing layer from entangled graphs does not remove weights?
 - GUI speed optimization (try Ferber II with 15x5)
-- Is there a better way than to assign everything to the global environment:
-     assign(newGraphName, x, envir=globalenv())
-  (The main point is the usability not technical problems! See also utils::getAnywhere)   
 - Also check layout of (result) dialogs for big graphs.
-- Highlight edges (and perhaps nodes) depending on the focus in the dataframe. 
 - Check copyright notes for code under BSD Licence
 - Give more information about "testing mode" - one time JOptionPane for example.
 - Find good color set for entangled graphs.
 - Check whether parametric test mode is set correctly in power simulations.
 - Why is RControl.getR().getHistory() not accessible when the gMCP call fails?
 - Umlaute in literatur.bib, e.g. Röhmel
-- Options: Show R Code
 - .asRLogical().getData()[0] can be true but NA in R
 - look at warnings regarding exhaustAlpha (also optimality of graph)
 - Email subscription on start page (also tell user after 10th start of GUI)
@@ -56,6 +83,8 @@
 - Check in CI zu max(0, ..) bzw. min(0, ..) / means
 - keine p-Werte übernehmen
 - Buttons to load R objects for power dialog.
+- check whether we want to use java.math.BigDecimal somewhere.
+- Improve and use in manuals/examples/etc. getWeights, getMatrix (should e.g. convert "1/3" to numeric 0.3333), etc.
 === POWER ===
 - Erben der Korrelationsmatrix vom Hauptfenster (warn if this is not the case?)
 - Copy&Paste of Results (Table, Text, allow to save)
@@ -71,6 +100,10 @@
 - integrate the two files "tests.R" and "unirootbug.Rd" in directory "unitTests" into unit tests. 
 - improve behavior of tables if "Automatically enter the editing mode, whenever a table cell gets the focus" is set to false.
 - round values in CI Dialog
+- "Packages should not write in the users’ home filespace, nor anywhere else on the file system apart from the R session’s temporary directory (or during installation in the location pointed to by TMPDIR: and such usage should be cleaned up). Installing into the system’s R installation (e.g., scripts to its bin directory) is not allowed. Limited exceptions may be allowed in interactive sessions if the package obtains confirmation from the user."
+Check config, logfile, ...
+
+- JHLIR creates variable .jhlir.errors in global environment.
 
 - Characterize optimal graphs.
 
@@ -279,6 +312,15 @@ From http://download.oracle.com/javase/1.3/docs/tooldocs/solaris/java.html :
 
 ---
 
+Note for building gMCP for older R versions:
+============================================
+
+Prof Brian Ripley: - if your LaTeX installation gets updated and you do not want to update 
+R, you can update just Rd.sty from 
+https://svn.r-project.org/R/trunk/share/texmf/tex/latex/Rd.sty .  Or you 
+could write a file inconsolata.sty as a wrapper for zi4.sty and put it 
+in your TEXINPUTS path. [http://r.789695.n4.nabble.com/inconsolata-sty-is-liable-to-disappear-texinfo-5-1-td4669976.html]
+
 As always:
 ==========
 - more references, since some people will actually look at this package.
@@ -354,3 +396,27 @@ Trick to open PDF files from R:
 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:615)
 	at java.lang.Thread.run(Thread.java:722)
  
+---
+Look at highr and
+<<tikz-ex, engine = "tikz", fig.cap = "Funky tikz", fig.ext = 'png', cache=TRUE>>=
+\usetikzlibrary{arrows}
+\begin{tikzpicture}[node distance=2cm, auto,>=latex', thick, scale = 0.5]
+\node (P) {$P$};
+\node (B) [right of=P] {$B$};
+\node (A) [below of=P] {$A$};
+\node (C) [below of=B] {$C$};
+\node (P1) [node distance=1.4cm, left of=P, above of=P] {$\hat{P}$};
+\draw[->] (P) to node {$f$} (B);
+\draw[->] (P) to node [swap] {$g$} (A);
+\draw[->] (A) to node [swap] {$f$} (C);
+\draw[->] (B) to node {$g$} (C);
+\draw[->, bend right] (P1) to node [swap] {$\hat{g}$} (A);
+\draw[->, bend left] (P1) to node {$\hat{f}$} (B);
+\draw[->, dashed] (P1) to node {$k$} (P);
+\end{tikzpicture}
+@
+
+Bug in Roxygen. Roxygenize inserted documentation at a total wrong place (_in_ another function in another file): 
+
+#' @export subgraph
+	subgraph <- graph@subgraphs[[k]]

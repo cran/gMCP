@@ -1,4 +1,43 @@
-Changes in version 0.8-5 (16-07-2013)
+Changes in version 0.8-6 (??-0?-2013)
+=====================================
+
+- Improved memory settings. Especially in R 2.15.1 and 2.15.2 on 32-bit systems 
+  errors like the following could occur when the GUI was used:
+  java.lang.OutOfMemoryError: unable to create new native thread
+
+- Fixed: When the value of the alpha field was not a valid number in the GUI,
+  an infite loop of warning dialogs popped up.
+  
+- Fixed: Loading old graph objects from version 0.6.x, i.e. from before August 2011,
+  without package 'graph' asks to install this package. If this is refused or
+  the installation failed, bad things happened like a complete crash of the current
+  R session.
+
+- Function 'graph2latex' gains an argument 'scaleText'. If TRUE (default)
+  a scalebox is used in LaTeX instead of the optional parameter 'scale'
+  from the tikzpicture environment.
+
+- Improved documentation. Some Rd files are built by a patched version of
+  roxygen2 that escapes "\" in arguments and understands "returnItem": 
+  install_github("roxygen2", username="kornl")
+  (This version includes especially Yihui's pull request: 
+   https://github.com/klutometis/roxygen/pull/112 
+   and A. Alfons's pull request:
+   https://github.com/klutometis/roxygen/pull/30 )
+
+- Using RCallServicesREngineWrapper to eval each expression in the environment 
+  gMCP:::gMCPenv instead of the global environment.
+
+- Some errors were catched in Java or R, but still showed up in the console.
+  We now use 'try(..., silent=TRUE)' in these cases.
+
+- Adjacency Matrix is renamed to Transition Matrix (since some people 
+  use the word Adjacency Matrix for the binary matrix).
+
+- We always use correlation matrices instead of covariance matrices in the GUI.
+
+
+Changes in version 0.8-5 (18-07-2013)
 =====================================
 
 - Removed dangerous parameter seed from function rqmvnorm and calcPower.
@@ -7,16 +46,21 @@ Changes in version 0.8-5 (16-07-2013)
 
 - Fix for problems with knitr 1.3.
 
-- Fixed: The rarly used offset parameter did not work well with the new edges consisting of arcs in TikZ.
+- Fixed: The rarly used offset parameter did not work well with the new edges 
+   consisting of arcs in TikZ.
+
+ 24 files changed, 88 insertions(+), 248 deletions(-)
 
 
 Changes in version 0.8-4 (15-07-2013)
 =====================================
 
-- R's base function chol for the Choleski Decomposition now defaults to LAPACK in R 3.0
-  resulting in meaningless results for not non-negative definite matrices (without 
-  any numerical tolerance!). Therefore power calculations for only semi-positive 
-  definite correlation matrices could have been off under R 3.0 in previous versions.
+- R's base function chol for the Choleski Decomposition now defaults to LAPACK 
+  in R 3.0 resulting in meaningless results for not non-negative definite 
+  matrices (without any numerical tolerance! And in R devel it is by now defunct: 
+  ‘chol(pivot = TRUE, LINPACK = TRUE)’ is defunct.). 
+  Therefore power calculations for only semi-positive definite correlation 
+  matrices could have been off under R 3.0 in previous versions.
   We switched to the singular value decomposition.
 
 - Fixed: List of user defined power functions doesn't need to have names.
@@ -26,10 +70,10 @@ Changes in version 0.8-4 (15-07-2013)
 - Since the vignettes were moved from gMCP/inst/doc to gMCP/vignettes
   most likely they will only be build with R >= 2.14.0.
 
-- Moved MASS, PolynomF, multcomp, lattice, mvtnorm, Matrix, CommonJavaJars and methods 
-  from DEPENDS to IMPORTS. Therefore loading gMCP will no longer add these packages to
-  the search path and if for example you want to use contrMat from package multcomp you 
-  have to load/attach the package yourself.
+- Moved MASS, PolynomF, multcomp, lattice, mvtnorm, Matrix, CommonJavaJars and 
+  methods from DEPENDS to IMPORTS. Therefore loading gMCP will no longer add 
+  these packages to the search path and if for example you want to use 
+  contrMat from package multcomp you have to load/attach the package yourself.
 
  37 files changed, 437 insertions(+), 136 deletions(-)
 
@@ -53,8 +97,8 @@ Changes in version 0.8-2 (14-06-2013)
 - The output of graph2latex has greatly improved and you nearly get 
   in TikZ what you can see in the Java GUI. 
 
-- Fixed a bug existing in gMCP 0.7-11 to 0.8-1 which caused errors for 
-  multiple power settings in the GUI.
+- Fixed a bug existing in gMCP 0.7-11 to 0.8-1 which caused calculations with
+  multiple power settings in the GUI to stop with an error.
   
 - The official source repository switched from subversion/r-forge to git/github:
   https://github.com/kornl/gMCP
@@ -457,8 +501,7 @@ Changes in version 0.7-0 (26-Aug-2011, Rev. 964)
   addEdge -> setEdge, edgeData -> edgeAttr, 
   nodeData -> nodeAttr, nodes -> getNodes 
 
-- Power simulation code from our third author
-  Bjoern Bornkamp.
+- Power simulation code.
 
 - New example graphs:
 

@@ -35,6 +35,7 @@ import org.af.gMCP.gui.dialogs.RearrangeNodesDialog;
 import org.af.gMCP.gui.dialogs.TextFileViewer;
 import org.af.gMCP.gui.dialogs.VariableNameDialog;
 import org.af.gMCP.gui.graph.GraphView;
+import org.af.gMCP.gui.graph.WrongInputException;
 import org.af.gMCP.gui.options.OptionsDialog;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -301,7 +302,7 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
         		return;
         	}
         	VariableNameDialog vnd = new VariableNameDialog(control.getGraphGUI(), control.getGraphName());
-        	String name = control.getNL().saveGraph(vnd.getName(), true);        	    	
+        	String name = control.getNL().saveGraph(vnd.getName(), true, true);        	    	
         	Configuration.getInstance().getGeneralConfig().addGraph("R Object: "+name);
         	createLastUsed();
         	control.isGraphSaved = true;
@@ -367,7 +368,7 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
         		JOptionPane.showMessageDialog(control.getMainFrame(), "Graph is empty!", "Graph is empty!", JOptionPane.ERROR_MESSAGE);
         		return;
         	}
-        	control.getNL().saveGraph(".tmpGraph", false);
+        	control.getNL().saveGraph(".tmpGraph", false, false);
         	String text = RControl.getR().eval("graphAnalysis(.tmpGraph, file=tempfile())").asRChar().getData()[0];
         	new TextFileViewer(control.getMainFrame(), "Graph analysis", text);
         } else if (e.getActionCommand().equals("powerAnalysis")) {
@@ -394,7 +395,7 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
         		JOptionPane.showMessageDialog(control.getMainFrame(), "No variables to replace!", "No variables to replace!", JOptionPane.INFORMATION_MESSAGE);
         		return;
         	}
-        	control.getNL().saveGraphWithoutVariables(control.getNL().initialGraph, false);
+        	control.getNL().saveGraphWithoutVariables(control.getNL().initialGraph, false, false);
         	control.getNL().loadGraph();
         } else if (e.getActionCommand().equals("entangledGraphs")) {
         	control.addEntangledLayer();
@@ -551,7 +552,7 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
     		return;
     	}
 		if (!RControl.getR().eval("exists(\""+control.getNL().initialGraph+"\")").asRLogical().getData()[0]) {
-			control.getNL().saveGraph();
+			control.getNL().saveGraph(false);
 		}
 		JFileChooser fc = new JFileChooser(Configuration.getInstance().getClassProperty(this.getClass(), "LaTeXReportDirectory"));
 		fc.setDialogType(JFileChooser.SAVE_DIALOG);		
@@ -572,13 +573,21 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
 		SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
 			@Override
 			protected Void doInBackground() throws Exception {
-				if (!control.isResultUpToDate()) {
-					RControl.getR().evalVoid(control.result+" <- gMCP("+control.getNL().initialGraph+control.getGMCPOptions()+")");
-					control.setResultUpToDate(true);
+				try {
+					if (!control.isResultUpToDate()) {
+						RControl.getR().evalVoid(control.result+" <- gMCP("+control.getNL().initialGraph+control.getGMCPOptions()+")");
+						control.setResultUpToDate(true);
+					}
+					String filename = f.getAbsolutePath().replaceAll("\\\\", "\\\\\\\\");
+					RControl.getR().eval("gMCPReport("+control.result+", file=\""+filename+"\")");
+					control.getMainFrame().glassPane.stop();
+				} catch (Exception ex) {
+					if (ex instanceof WrongInputException) {
+						control.getMainFrame().glassPane.stop();
+						return null;
+					}
+					ErrorHandler.getInstance().makeErrDialog(ex.getMessage(), ex);
 				}
-				String filename = f.getAbsolutePath().replaceAll("\\\\", "\\\\\\\\");
-				RControl.getR().eval("gMCPReport("+control.result+", file=\""+filename+"\")");
-				control.getMainFrame().glassPane.stop();
 				return null;
 			}  
 		};

@@ -1,13 +1,22 @@
 useDynLib(gMCP)
 
+import(methods)
+# See https://stat.ethz.ch/pipermail/r-devel/2012-February/063396.html :
+importFrom(stats4, plot)
 import(utils)
 import(rJava)
 importFrom(CommonJavaJars, loadJars)
-importFrom(graphics, plot)
 importFrom(PolynomF, polynom)
 importFrom(mvtnorm, pmvnorm)
 importFrom(MASS, fractions)
 importFrom(multcomp, contrMat)
+# These methods are directly called by the GUI - we note them here for the CRAN checks:
+importFrom(JavaGD, JavaGD)
+importFrom(Matrix, bdiag)
+# This is work in progress:
+# importFrom(JGR, jgr.addMenu, jgr.addMenuItem)
+# I'm really not sure about this - I'll add it nevertheless for further testing since it doesn't harm:
+# importFrom(methods, new)
 
 exportClasses(graphMCP, gMCPResult, gPADInterim, entangledMCP)
 exportMethods(plot, print)
@@ -21,6 +30,7 @@ export(matrix2graph, graph2matrix, bdiagNA, joinGraphs, subgraph)
 export(graphAnalysis)
 export(replaceVariables)
 export(unitTestsGMCP)
+export(getJavaInfo)
 
 export(BonferroniHolm)
 export(BretzEtAl2011)

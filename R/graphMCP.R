@@ -281,6 +281,11 @@ getWeightStr <- function(graph, from, to, LaTeX=FALSE) {
 	if (LaTeX) {
 		if (is.numeric(weight)) {
 			return(getLaTeXFraction(weight))
+		} else {
+      asNr <- try(eval(parse(text=weight), envir=NULL, enclos=NULL), silent=TRUE)
+		  if (!is.na(asNr) && !("try-error"%in%class(asNr))) {
+		    return(getLaTeXFraction(asNr))
+		  }
 		}
 		# TODO / Bonus: Parse fractions in polynomials
 		return(weight)
@@ -395,8 +400,8 @@ setClass("entangledMCP",
 		validity=function(object) validEntangledGraph(object))
 
 
-validEntangledGraph <- function(object) {
-	# if (sum(object@weights)>1)
+validEntangledGraph <- function(graph) {
+	if (!all("graphMCP" == lapply(graph@subgraphs, class))) stop("Subgraphs need to be of class 'graphMCP'.")
 	return(TRUE)
 }
 

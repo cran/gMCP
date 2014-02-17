@@ -177,6 +177,15 @@ public class GraphView extends JPanel implements ActionListener {
 	}
 	
 	public void actionPerformed(ActionEvent e) {
+		if (!e.getSource().equals(buttonNewNode)) {
+			nl.newVertex = false;
+			buttonNewNode.setSelected(false);
+		}
+		if (!e.getSource().equals(buttonNewEdge)) {
+			nl.newEdge = false;
+			nl.arrowHeadPoint = null;
+			nl.firstVertexSelected = false;
+		}
 		if (e.getSource().equals(buttonZoomIn)) {
 			nl.setZoom(nl.getZoom() * 1.25);
 			getNL().refresh();
@@ -189,28 +198,19 @@ public class GraphView extends JPanel implements ActionListener {
 			}
 		} else if (e.getSource().equals(buttonNewEdge)) {
 			ReproducableLog.logGUI("Button \"new edge\"");
-			nl.newVertex = false;
-			buttonNewNode.setSelected(false);
 			nl.newEdge = true;
 			getNL().statusBar.setText("Select a node from which this edge should start.");
 		} else if (e.getSource().equals(buttonNewNode)) {
 			ReproducableLog.logGUI("Button \"new node\"");
-			if (buttonNewNode.isSelected()) {
-				nl.newVertex = true;
-				nl.newEdge = false;
-				nl.arrowHeadPoint = null;
-				nl.firstVertexSelected = false;
-			} else {
-				nl.newVertex = false;
-			}
+			nl.newVertex = buttonNewNode.isSelected();
 			nl.repaint();
 			getNL().statusBar.setText("Click on the graph panel to place the node.");
 		} else if (e.getSource().equals(buttonConfInt)) {
 			ReproducableLog.logGUI("Button \"confint\"");
 			if (!getNL().isTesting()) {
 				getPView().savePValues();
-				getNL().saveGraph(getNL().resetGraph, false);
-				getNL().saveGraphWithoutVariables(getNL().initialGraph, false);
+				getNL().saveGraph(getNL().resetGraph, false, false);
+				getNL().saveGraphWithoutVariables(getNL().initialGraph, false, false);
 	        	getNL().loadGraph();
 	        	getPView().restorePValues();
 	        	showParamInfo();
@@ -235,6 +235,10 @@ public class GraphView extends JPanel implements ActionListener {
 							parent.glassPane.stop();
 							new DialogConfIntEstVar(parent, nl, rejected, alpha);
 						} catch (Exception ex) {
+							if (ex instanceof WrongInputException) {
+								parent.glassPane.stop();
+								return null;
+							}
 							ErrorHandler.getInstance().makeErrDialog(ex.getMessage(), ex);
 						}
 						return null;
@@ -246,8 +250,8 @@ public class GraphView extends JPanel implements ActionListener {
 			ReproducableLog.logGUI("Button \"start testing\"");
 			if (!getNL().isTesting()) {				
 				getPView().savePValues();
-				getNL().saveGraph(getNL().resetGraph, false);
-				getNL().saveGraphWithoutVariables(getNL().initialGraph, false);
+				getNL().saveGraph(getNL().resetGraph, false, false);
+				getNL().saveGraphWithoutVariables(getNL().initialGraph, false, false);
 	        	getNL().loadGraph();
 	        	getPView().restorePValues();
 	        	showParamInfo();
@@ -271,6 +275,10 @@ public class GraphView extends JPanel implements ActionListener {
 							parent.glassPane.stop();
 							new RejectedDialog(parent, rejected, parent.getGraphView().getNL().getNodes(), output, rCode);
 						} catch (Exception ex) {
+							if (ex instanceof WrongInputException) {
+								parent.glassPane.stop();
+								return null;
+							}
 							ErrorHandler.getInstance().makeErrDialog(ex.getMessage(), ex);
 						}
 						return null;
@@ -287,8 +295,8 @@ public class GraphView extends JPanel implements ActionListener {
 			} else {
 				if (!getNL().isTesting()) {
 					getPView().savePValues();
-					getNL().saveGraph(getNL().resetGraph, false);
-					getNL().saveGraphWithoutVariables(getNL().initialGraph, false);
+					getNL().saveGraph(getNL().resetGraph, false, false);
+					getNL().saveGraphWithoutVariables(getNL().initialGraph, false, false);
 		        	getNL().loadGraph();					
 					getPView().restorePValues();
 					showParamInfo();
@@ -309,6 +317,10 @@ public class GraphView extends JPanel implements ActionListener {
 							parent.glassPane.stop();
 							new AdjustedPValueDialog(parent, getPView().pValues, adjPValues, getNL().getNodes());
 						} catch (Exception ex) {
+							if (ex instanceof WrongInputException) {
+								parent.glassPane.stop();
+								return null;
+							}
 							ErrorHandler.getInstance().makeErrDialog(ex.getMessage(), ex);
 						} 
 						return null;
@@ -319,6 +331,11 @@ public class GraphView extends JPanel implements ActionListener {
 		}
 	}
 	
+	/**
+	 * rCode is just a helper variable that is used to give the r code
+	 * to run to anonymous subclasses of SwingWorker.
+	 * See method actionPerformed(ActionEvent e) where it is used.
+	 */
 	String rCode = "";
 	public boolean isGraphSaved = true;
 
@@ -326,9 +343,13 @@ public class GraphView extends JPanel implements ActionListener {
 		if (parent.getPView().jrbRCorrelation.isSelected()) {
     		if (!Configuration.getInstance().getClassProperty(this.getClass(), "showParamInfo", "yes").equals("no")) {
     			JCheckBox tellMeAgain = new JCheckBox("Don't show me this info again.");
-    			String message = "This test is appropriate if the p-values\n" +
+    			String message = 
+    					"The parametric test that takes correlation into\n"+
+    					"account is appropriate if the p-values\n" +
     					"belong to one-sided test-statistics with a joint\n" +
-    					"multivariate normal distribution under the null.";
+    					"multivariate normal distribution under the null.\n" +
+    					"(The Bonferroni- and Simes-based tests do not\n" +
+    					"need this assumption).";
     			JOptionPane.showMessageDialog(parent, new Object[] {message, tellMeAgain}, "Info", JOptionPane.INFORMATION_MESSAGE);
     			if (tellMeAgain.isSelected()) {
     				Configuration.getInstance().setClassProperty(this.getClass(), "showParamInfo", "no");
@@ -363,7 +384,7 @@ public class GraphView extends JPanel implements ActionListener {
 		getPView().savePValues();
 		try {
 			getNL().startTesting();
-			getNL().saveGraph();
+			getNL().saveGraph(false);
 			getDataFramePanel().setTesting(true);
 			getPView().setTesting(true);			
 			buttonNewNode.setEnabled(false);
@@ -386,7 +407,7 @@ public class GraphView extends JPanel implements ActionListener {
 			return;
 		}
 		String filename = file.getAbsolutePath();
-		nl.saveGraph(".exportGraphToLaTeX", false);
+		nl.saveGraph(".exportGraphToLaTeX", false, false);
 		RControl.getR().eval("gMCPReport(.exportGraphToLaTeX, file=\""+filename+"\")");
 	}
 
@@ -413,7 +434,7 @@ public class GraphView extends JPanel implements ActionListener {
 		buttonStart.setEnabled(enabled);
 	}
 
-	public String getGMCPOptions() {
+	public String getGMCPOptions() throws Exception {
 		return ","+getPView().getPValuesString()
 				+ correlation
 				+", alpha="+getPView().getTotalAlpha()
@@ -457,7 +478,7 @@ public class GraphView extends JPanel implements ActionListener {
             try {
             	VariableNameDialog vnd = new VariableNameDialog(getGraphGUI(), getGraphName());            	
             	String name = vnd.getName();
-            	name = getNL().saveGraph(name, false); 
+            	name = getNL().saveGraph(name, false, true); 
             	String filename = f.getAbsolutePath().replaceAll("\\\\", "\\\\\\\\");            	
             	RControl.getR().eval("save("+name+", file=\""+filename+"\")");        		
             	JOptionPane.showMessageDialog(getMainFrame(), "Exported graph to R object '"+name+"' and saved this to \n'" + f.getAbsolutePath() + "'.", "Saved graph", JOptionPane.INFORMATION_MESSAGE);

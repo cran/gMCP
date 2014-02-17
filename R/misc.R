@@ -50,6 +50,25 @@ getDebugInfo <- function() {
 	return("Graph not available.")
 }
 
+#' Create a Block Diagonal Matrix with NA outside the diagonal
+#' 
+#' Build a block diagonal matrix with NA values outside the diagonal given
+#' several building block matrices.
+#' 
+#' This function is usefull to build the correlation matrices, when only
+#' partial knowledge of the correlation exists.
+#' 
+#' @param ...  individual matrices or a \code{list} of matrices.
+#' @return A block diagonal matrix with NA values outside the diagonal.
+#' @author Kornelius Rohmeyer \email{rohmeyer@@small-projects.de}
+#' @seealso \code{\link{gMCP}}
+#' @examples
+#' 
+#' 
+#' bdiagNA(diag(3), matrix(1/2,nr=3,nc=3), diag(2))
+#' 
+#' 
+#' @export bdiagNA
 bdiagNA <- function(...) {	
 	if (nargs() == 0) 
 		return(matrix(nrow=0, ncol=0))
@@ -90,12 +109,14 @@ requireLibrary <- function(package) {
 				biocLite <- get("biocLite", envir=globalenv())
 				biocLite(package)
 			} else {
-				install.packages(package)
-				require(package, character.only=TRUE)
+				install.packages(package)				
 			}
+			return(require(package, character.only=TRUE))
 		} else {
 			stop(paste("Required package ",package," should not be installed.", sep=""))
 		}
+	} else {
+		return(TRUE)
 	}
 }
 
@@ -216,4 +237,18 @@ layers <- function(graph) {
 	} else {
 		stop("This function should only be used for objects of class graphMCP or entangledMCP.")
 	}
+}
+
+#' Get Memory and Runtime Info from JVM
+#' 
+#' Get Memory and Runtime Info from JVM
+#' 
+#' @return character vector of length 1 containing the memory and runtime info.
+#' @author Kornelius Rohmeyer \email{rohmeyer@@small-projects.de}
+#' @examples
+#' 
+#' cat(getJavaInfo())
+#' 
+getJavaInfo <- function() {
+  return(J("org.af.commons.logging.SystemInfo")$getSystemInfo(TRUE, TRUE, TRUE))  
 }
