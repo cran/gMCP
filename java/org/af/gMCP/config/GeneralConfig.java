@@ -2,6 +2,9 @@ package org.af.gMCP.config;
 
 import java.io.File;
 import java.text.DecimalFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 import java.util.Random;
 import java.util.Vector;
@@ -28,6 +31,23 @@ public class GeneralConfig extends SpecificConfig {
             tmpDir = System.getProperty("java.io.tmpdir");
         }
         return tmpDir;
+    }
+    
+	public boolean usePersistentConfigFile() {
+		return Boolean.parseBoolean(getProperty("usePersistentConfigFile", "false"));
+	}
+	
+	public void setUsePersistentConfigFile(boolean usePersistentConfigFile) {		
+		setProperty("usePersistentConfigFile", ""+usePersistentConfigFile);
+	}
+    
+    public void setConfigDir(String configDir) {
+        setProperty("configDir", configDir);
+    }
+
+    public String getConfigDir() {
+        String configDir = getProperty("configDir", System.getProperty("user.home"));        
+        return configDir;
     }
 
     public void setPDFViewerPath(String pdfViewerPath) {
@@ -139,6 +159,14 @@ public class GeneralConfig extends SpecificConfig {
 	
 	public void setUseEpsApprox(boolean useEpsApprox) {
 		setProperty("useEpsApprox", ""+useEpsApprox);
+	}
+	
+	public boolean useSeed() {
+		return Boolean.parseBoolean(getProperty("useSeed", "false"));
+	}
+	
+	public void setUseSeed(boolean useSeed) {
+		setProperty("useSeed", ""+useSeed);
 	}
 	
 	public boolean useJLaTeXMath() {
@@ -295,6 +323,15 @@ public class GeneralConfig extends SpecificConfig {
 	public int getDigits2() {
 		return Integer.parseInt(getProperty("digits2", "6"));		
 	}
+	
+	public int getSeed() {
+		return Integer.parseInt(getProperty("ramdomSeed", "1234"));		
+	}
+	
+	public void setSeed(int seed) {
+		setProperty("ramdomSeed", ""+seed);		
+	}
+
 
 	public void setSimplify(boolean b) {
 		setProperty("simplify", ""+b);		
@@ -349,16 +386,16 @@ public class GeneralConfig extends SpecificConfig {
 		setProperty("envir", envir);
 	}
 	
-	public String getParametricTest() {
-		return getProperty("parametricTest", "Bretz2011");
+	public boolean getUpscale() {
+		return Boolean.parseBoolean(getProperty("upscale", ""+false));
 	}
 	
-	public void setParametricTest(String test) {
-		setProperty("parametricTest", test);
+	public void setUpscale(boolean upscale) {
+		setProperty("upscale", ""+upscale);
 	}
 
 	public Double getExportZoom() {		
-		return getProperty("Exportzoom", "null")=="null"?null:Double.parseDouble(getProperty("Exportzoom", "null"));		
+		return getProperty("Exportzoom", "2")=="null"?2:Double.parseDouble(getProperty("Exportzoom", "2"));		
 	}
 	
 	public void setShowRCode(boolean b) {
@@ -368,4 +405,32 @@ public class GeneralConfig extends SpecificConfig {
 	public boolean showRCode() {
 		return Boolean.parseBoolean(getProperty("showRCode", "true"));
 	}
+
+	public void setReleaseDate(String rd) {
+		setProperty("releaseDate", rd);
+	}
+	
+	public Date getReleaseDate() {
+		String ds = getProperty("releaseDate", "UNKOWN");
+		try {
+			SimpleDateFormat parseDate = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+			return(parseDate.parse(ds));
+		} catch (ParseException e) {
+			// TODO Auto-generated catch block
+			logger.warn("Release date string '"+ds+"' could not be parsed.");
+			return null;
+		}
+	}
+	
+	public static void main(String args[]) throws ParseException {
+		GeneralConfig conf = Configuration.getInstance().getGeneralConfig();		
+		Date d = conf.getReleaseDate();
+		System.out.println(conf.getProperty("releaseDate", "UNKOWN"));
+		System.out.println(d.toString());
+	}
+
+	public String getUser() {		
+		return getProperty("gMCPUser", System.getProperty("user.name"));
+	}
+		
 }

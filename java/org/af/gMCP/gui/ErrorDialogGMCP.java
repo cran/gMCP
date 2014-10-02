@@ -91,7 +91,7 @@ public class ErrorDialogGMCP extends JDialog implements ActionListener {
         this.fatal = fatal;
         this.e = e;
         if (e!=null && e instanceof Throwable) ((Throwable)e).printStackTrace();
-        this.msg = msg;      
+        this.msg = msg;
 	}
 
 
@@ -376,21 +376,25 @@ public class ErrorDialogGMCP extends JDialog implements ActionListener {
     }
 
     public void showDialog() {
-    	//new ErrorDialogChooseLevel(null);    	
-    	setTitle("Sorry, an error occured - please tell us about it.");
-        setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
-        addWindowListener(new WindowAdapter() {
-            public void windowClosing(WindowEvent e) {
-                onExit();
-            }
-        });
-    	makeComponents();
-    	doTheLayout();
-    	setResizable(true);
-    	setAlwaysOnTop(true);
-    	setVisible(true);
-    }
-  
+    	try {
+    		//new ErrorDialogChooseLevel(null);    	
+    		setTitle("Sorry, an error occured - please tell us about it.");
+    		setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
+    		addWindowListener(new WindowAdapter() {
+    			public void windowClosing(WindowEvent e) {
+    				onExit();
+    			}
+    		});
+    		makeComponents();
+    		doTheLayout();
+    		setResizable(true);
+    		setAlwaysOnTop(true);
+    		setVisible(true);
+    	} catch (Exception e) {	
+    		 JOptionPane.showMessageDialog(this, "Error during creating error dialog:\n"+e.getMessage(), "Error creating error dialog", JOptionPane.ERROR_MESSAGE);
+    		e.printStackTrace();
+    	}
+    }  
     
 }
 

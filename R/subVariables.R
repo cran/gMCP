@@ -57,6 +57,8 @@ substituteEps <- function(graph, eps=10^(-3)) {
 #' asked for the values (if the session is not interactive an error is thrown).
 #' @param ask If \code{FALSE} all variables that are not specified are not
 #' replaced.
+#' @param partial IF \code{TRUE} only specified variables are replaced and 
+#' parameter \code{ask} is ignored.
 #' @return A graph or a matrix with variables replaced by the specified numeric
 #' values.
 #' @author Kornelius Rohmeyer \email{rohmeyer@@small-projects.de}
@@ -72,7 +74,7 @@ substituteEps <- function(graph, eps=10^(-3)) {
 #' replaceVariables(graph, list("tau"=0.5,"omega"=0.5, "nu"=0.5))
 #' 
 #' @export replaceVariables
-replaceVariables <-function(graph, variables=list(), ask=TRUE) {
+replaceVariables <-function(graph, variables=list(), ask=TRUE, partial=FALSE) {
 	# Call this function recursivly for entangled graphs.
 	if ("entangledMCP" %in% class(graph)) {
 		for(i in 1:length(graph@subgraphs)) {
@@ -85,19 +87,16 @@ replaceVariables <-function(graph, variables=list(), ask=TRUE) {
 			"theta", "iota", "kappa", "lambda", "mu", "nu", "xi", 
 			"omicron", "pi", "rho", "sigma", "tau", "nu", "phi",
 			"chi", "psi", "omega")
-	shouldBeParsed2Numeric <- TRUE
 	if (is.matrix(graph)) { m <- graph } else {m <- graph@m}	
 	for (g in c(greek,  letters)) {
 		if (length(grep(g, m))!=0) {
 			if (is.null(answer <- variables[[g]])) {
-				if (ask) {
+				if (!partial && ask) {
 					if(interactive()) {
 						answer <- readline(paste("Value for variable ",g,"? ", sep=""))
 					} else {
 						stop(paste("Value for variable",g,"not specified."))
 					}
-				} else {
-					shouldBeParsed2Numeric <- FALSE
 				}
 			}
 			if(!is.null(answer)) {
@@ -110,6 +109,23 @@ replaceVariables <-function(graph, variables=list(), ask=TRUE) {
 	return(parse2numeric(graph))
 }
 
+# Parses matrices of graphs (simple and entangled)
+# 
+# Parses matrices of graphs (simple and entangled) when values are of type character, e.g. "1/3".
+# 
+# @param g Graph of class \code{\link{graphMCP}} or \code{\link{entangledMCP}}.
+# @param force Logical whether conversion to numeric should be forced or not. 
+# If forced all values that could not be parsed will be \code{NA}. 
+# Otherwise the original unchanged graph will be returned.
+# @author Kornelius Rohmeyer \email{rohmeyer@@small-projects.de}
+# @keywords Converted graph (if all values could be parsed or \code{force=TRUE}) or original graph.
+# @examples
+#
+# # Nothing changes:
+# gMCP:::parse2numeric(HungEtWang2010())
+# # Note that other methods like printing don't handle NAs well:
+# gMCP:::parse2numeric(HungEtWang2010(), force=TRUE)
+# 
 parse2numeric <- function(graph, force=FALSE) {
 	# Call this function recursivly for entangled graphs.
 	if ("entangledMCP" %in% class(graph)) {

@@ -49,9 +49,9 @@ public class PView extends JPanel implements KeyListener, ActionListener {
 	JButton jbLoadPValues = new JButton("Load p-values from R");
 	public JComboBox jcbCorObject;
 	
-	protected JRadioButton jrbNoCorrelation = new JRadioButton("No Information about correlations");
+	protected JRadioButton jrbNoCorrelation = new JRadioButton("No information about correlations (Bonferroni based weighted tests)");
 	public JRadioButton jrbRCorrelation = new JRadioButton("Select an R correlation matrix"); 
-	public JRadioButton jrbSimes = new JRadioButton("Correlation applicable for Simes test (new feature that still needs testing)");
+	public JRadioButton jrbSimes = new JRadioButton("Use Simes test");
 	
 	private Vector<PPanel> panels = new Vector<PPanel>();
 	
@@ -66,7 +66,7 @@ public class PView extends JPanel implements KeyListener, ActionListener {
 	
 	private RealTextField totalAlpha = new RealTextField("totalAlpha", 0, 1);
 	
-	JLabel weightLabel = new JLabel("Weight");
+	JLabel weightLabel = new JLabel("Weights");
 	
 	public PView(CreateGraphGUI parent) {
 		this.parent = parent;
@@ -76,7 +76,7 @@ public class PView extends JPanel implements KeyListener, ActionListener {
 		c.gridx=0; c.gridy=0; c.gridwidth = 1; c.gridheight = 1; c.ipadx=0; c.ipady=0;
 		
 		totalAlpha.addKeyListener(this);
-		totalAlpha.setText(Configuration.getInstance().getClassProperty(this.getClass(), "alpha level", "0.05"));
+		totalAlpha.setText(Configuration.getInstance().getClassProperty(this.getClass(), "alpha level", "0.025"));
 		
 		setUp();
 		
@@ -96,6 +96,18 @@ public class PView extends JPanel implements KeyListener, ActionListener {
 			parent.getGraphView().buttonConfInt.setEnabled(false);
 			parent.getGraphView().buttonadjPval.setEnabled(true);
 		} else if (e.getSource()==jrbSimes) {
+			if (!Configuration.getInstance().getClassProperty(this.getClass(), "showSimesInfo", "yes").equals("no")) {
+    			JCheckBox tellMeAgain = new JCheckBox("Don't show me this info again.");
+    			String message = 
+    					"The Simes test requires certain assumptions\n"+
+    					"(sufficient is for example independence or positive\n" +
+    					"regression dependence) and it's the responsibility\n" +
+    					"of the user to check whether they are fullfilled.";
+    			JOptionPane.showMessageDialog(parent, new Object[] {message, tellMeAgain}, "Info", JOptionPane.INFORMATION_MESSAGE);
+    			if (tellMeAgain.isSelected()) {
+    				Configuration.getInstance().setClassProperty(this.getClass(), "showSimesInfo", "no");
+    			}
+    		}
 			parent.getGraphView().buttonConfInt.setEnabled(false);
 			parent.getGraphView().buttonadjPval.setEnabled(true);
 		} else if (e.getSource()==jbLoadPValues) {
@@ -106,9 +118,11 @@ public class PView extends JPanel implements KeyListener, ActionListener {
 			} else {				
 				String obj = jcbCorObject.getSelectedItem().toString();
 				String matrix = obj.endsWith("matrices found.")?null:obj;
-				new MatrixCreationDialog(parent, matrix, MatrixCreationDialog.getNames(parent.getGraphView().getNL().getNodes()));
+				MatrixCreationDialog mcd = new MatrixCreationDialog(parent, matrix, MatrixCreationDialog.getNames(parent.getGraphView().getNL().getNodes()));
 				refresh(false);
-				jrbRCorrelation.setSelected(true);
+				if (mcd.created==true) {
+					jrbRCorrelation.setSelected(true);
+				}
 			}
 		}
 	}
@@ -127,9 +141,9 @@ public class PView extends JPanel implements KeyListener, ActionListener {
 		}
 		
 		try {
-			refresh = new JButton(new ImageIcon(ImageIO.read(DesktopPaneBG.class
+			refresh = new JButton("Refresh", new ImageIcon(ImageIO.read(DesktopPaneBG.class
 					.getResource("/org/af/gMCP/gui/graph/images/update24.png"))));
-			createMatrix = new JButton(new ImageIcon(ImageIO.read(DesktopPaneBG.class
+			createMatrix = new JButton("Create Matrix", new ImageIcon(ImageIO.read(DesktopPaneBG.class
 					.getResource("/org/af/gMCP/gui/graph/images/matrix.png"))));
 		} catch (IOException e) {
 			logger.error("IOError that should never happen.", e);
@@ -195,10 +209,11 @@ public class PView extends JPanel implements KeyListener, ActionListener {
 		}
 		String param = ", test=\"Bonferroni\"";
 		if (jrbRCorrelation.isSelected()) {
-			param = ", correlation="+jcbCorObject.getSelectedItem()+", test=\""+Configuration.getInstance().getGeneralConfig().getParametricTest()+"\"";
+			param = ", correlation="+jcbCorObject.getSelectedItem()+", test=\"parametric\"";
 		} else if (jrbSimes.isSelected()) {
 			param = ", test=\"Simes\"";
 		}
+		param += ", upscale="+(Configuration.getInstance().getGeneralConfig().getUpscale()?"TRUE":"FALSE");
 		return param;
 	}
 
@@ -217,6 +232,14 @@ public class PView extends JPanel implements KeyListener, ActionListener {
 			s += panel.getP()+", ";
 		}
 		return s.substring(0, s.length()-2)+")";
+	}
+	
+	public List<Double> getPValues() {
+		Vector<Double> v = new Vector<Double>();		
+		for (PPanel panel : panels) {		
+			v.add(panel.getP());
+		}
+		return v;
 	}
 	
 	public double getTotalAlpha() throws Exception {
@@ -261,12 +284,12 @@ public class PView extends JPanel implements KeyListener, ActionListener {
 	private void refresh(boolean showInfo) {
 		jcbCorObject.removeAllItems();
 		int dim = parent.getGraphView().getNL().getNodes().size();
-		String[] matrices = RControl.getR().eval("gMCP:::getAllQuadraticMatrices(n="+dim+")").asRChar().getData();
+		String[] matrices = RControl.getR().eval("gMCP:::getAllCorrelationMatrices(n="+dim+")").asRChar().getData();
 		if (showInfo && !Configuration.getInstance().getClassProperty(this.getClass(), "showRefreshInfo", "yes").equals("no")) {
 			JCheckBox tellMeAgain = new JCheckBox("Don't show me this info again.");
 			int n = (matrices.length==1 && matrices[0].endsWith("matrices found."))?0:+matrices.length;
-			String message = "Searched and found "+n+((n==1)?" matrix":" matrices")+" of\n" +
-					"dimension "+dim+" in the R global environment.";
+			String message = "Searched and found "+n+" correlation "+((n==1)?" matrix":" matrices")+" of\n" +
+					"dimension "+dim+"x"+dim+" in the R global environment.";
 			JOptionPane.showMessageDialog(parent, new Object[] {message, tellMeAgain}, "Info", JOptionPane.INFORMATION_MESSAGE);
 			if (tellMeAgain.isSelected()) {
 				Configuration.getInstance().setClassProperty(this.getClass(), "showRefreshInfo", "no");
@@ -343,11 +366,11 @@ public class PView extends JPanel implements KeyListener, ActionListener {
 			p.updateMe(true);
 		}
 		totalAlpha.setEditable(!b);
-		if (b) {
-			weightLabel.setText("α Level");
-		} else {
-			weightLabel.setText("Weight");
-		}
+		//if (b) {
+		//	weightLabel.setText("α Level");
+		//} else {
+		//	weightLabel.setText("Weights");
+		//}
 		refresh.setEnabled(!b);
 		createMatrix.setEnabled(!b);
 		
@@ -360,11 +383,13 @@ public class PView extends JPanel implements KeyListener, ActionListener {
 	    if (!b) refresh(false);
 	}
 
+	JLabel subGraphLabel = new JLabel();
+	
 	public void setUp() {
 		JPanel panel = new JPanel();
 		
 		String cols = "5dlu, fill:pref:grow, 5dlu, fill:pref:grow, 5dlu, fill:pref:grow, 5dlu, fill:pref:grow, 5dlu";
-        String rows = "5dlu, pref, 5dlu, pref, 5dlu, pref, 5dlu";
+        String rows = "5dlu, pref, 5dlu, pref, 5dlu, pref, 5dlu, pref, 5dlu";
         for (PPanel p : panels) {
         	rows += ", pref, 5dlu";
         }
@@ -386,7 +411,7 @@ public class PView extends JPanel implements KeyListener, ActionListener {
     	int col = 6;
     	
     	for (int i=1; i<parent.getGraphView().getNumberOfLayers(); i++) {
-    		panel.add(new JLabel("Layer "+(i+1)), cc.xy(col, 2));
+    		panel.add(new JLabel("Weights "+(i+1)), cc.xy(col, 2));
     		col += 2;
     	}
     	
@@ -411,7 +436,7 @@ public class PView extends JPanel implements KeyListener, ActionListener {
     	
     	if (parent.getGraphView().getNumberOfLayers()>1) {
     		row += 2;
-    		panel.add(new JLabel("Subgraph alpha splitting: "), cc.xy(2, row));
+    		panel.add(new JLabel("Component graph weights: "), cc.xy(2, row));
         	    
     		for (int i=entangledWeights.size(); i<parent.getGraphView().getNumberOfLayers(); i++) {
     			RealTextField tf = new RealTextField("totalAlpha", 0, 1);
@@ -425,6 +450,8 @@ public class PView extends JPanel implements KeyListener, ActionListener {
         		panel.add(entangledWeights.get(i), cc.xy(col, row));
         		col += 2;
         	}
+        	row += 2;
+        	panel.add(subGraphLabel, cc.xyw(2, row, 5));
     	}
     	
     	updateLabels();
@@ -453,6 +480,26 @@ public class PView extends JPanel implements KeyListener, ActionListener {
 			text += Configuration.getInstance().getGeneralConfig().getDecFormat().format(weight)+"; ";
 		}
 		statusLabel.setText(text);
+		subGraphLabel.setForeground(Color.BLACK);
+		subGraphLabel.setText("");
+		double weight = 0;
+		if (entangledWeights.size()>0) {
+			try {
+				for (int i=0; i<entangledWeights.size(); i++) {
+					weight += Double.parseDouble(entangledWeights.get(i).getText());
+				}
+				if (Math.abs(1-weight)>0.0001) {
+					subGraphLabel.setForeground(Color.RED);
+					subGraphLabel.setText("Component graph weights do not sum up to 1."); // We don't have to much space here, so we drop: " but instead to "+weight+".");
+				}
+			} catch (NumberFormatException nfe) {
+				subGraphLabel.setForeground(Color.RED);
+				subGraphLabel.setText("Component graph weights could not be parsed.");
+			}
+		}		
+		for (int i=0; i<entangledWeights.size(); i++) {
+			parent.getGraphView().getNL().setEntangledLegendWeight(i, entangledWeights.get(i).getText());
+		}
 	}
 
 	public void setEntangledWeights(double[] ew) {
@@ -461,19 +508,28 @@ public class PView extends JPanel implements KeyListener, ActionListener {
 		}*/
 		for (int i=0; i<ew.length; i++) {
 			entangledWeights.get(i).setText(""+ew[i]);
-		}		
+		}	
+		updateLabels();
 	}
 
 	public void addEntangledLayer() {
 		for (PPanel p : panels) {
 			p.addEntangledLayer();
 		}
+		weightLabel.setText("Weights 1");
 		setUp();		
 	}
 
+	/**
+	 * Removes entangled layer
+	 * @param layer Counting starts from 0 (not from 1).
+	 */
 	public void removeEntangledLayer(int layer) {
 		for (PPanel p : panels) {
 			p.removeEntangledLayer(layer);
+		}
+		if (parent.getGraphView().getNumberOfLayers()==1) {
+			weightLabel.setText("Weights");
 		}
 		setUp();		
 	}

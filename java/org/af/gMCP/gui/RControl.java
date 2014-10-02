@@ -63,6 +63,7 @@ public class RControl {
 		try {
 			rcs = new RCallServicesREngineWrapper(new JRIEngine(rengine));
 			if (System.getProperty("eclipse") != null) {
+				rcs.eval("Sys.setlocale(\"LC_NUMERIC\", \"C\")");
 				if (System.getProperty("libPath") != null) {
 					rcs.eval(".libPaths(new=\""+System.getProperty("libPath")+"\")");
 				}
@@ -96,6 +97,12 @@ public class RControl {
 	 * @return
 	 */
 	public static String getFraction(Double d, int cycles) {
+		if (Double.isNaN(d)) {
+			return("NaN");
+		}
+		if (Double.isInfinite(d)) {
+			return("Infinity");
+		}
 		String result = fractions.get(""+d+":"+cycles);
 		if (result != null) return result;
 		result = RControl.getR().eval("as.character(MASS::fractions("+d+(cycles==-1?"":", cycles="+cycles)+"))").asRChar().getData()[0];
@@ -169,6 +176,15 @@ public class RControl {
 	public static void evalAndLog(String command) {
 		ReproducableLog.logR(command);
 		getR().eval(command);		
+	}
+
+	public static String setSeed() {
+		String code = "";
+		if (Configuration.getInstance().getGeneralConfig().useSeed()) {
+			code = "set.seed("+Configuration.getInstance().getGeneralConfig().getSeed()+")";
+			getR().eval(code);
+		}		
+		return code+"\n";
 	}
 
 }

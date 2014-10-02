@@ -16,6 +16,7 @@ import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
+import org.af.commons.errorhandling.DefaultExceptionHandler;
 import org.af.commons.errorhandling.ErrorHandler;
 import org.af.commons.widgets.InfiniteProgressPanel;
 import org.af.commons.widgets.InfiniteProgressPanel.AbortListener;
@@ -38,7 +39,7 @@ public class CreateGraphGUI extends JFrame implements WindowListener, AbortListe
 		 Locale.setDefault(Locale.ENGLISH);
 		 JComponent.setDefaultLocale(Locale.ENGLISH);
 		 /* Comment: There are other ways, but if if this is ever changed, 
-		  * please check whether JFileChooser displays "All Files" or 
+		  * please check that JFileChooser displays "All Files" instead of
 		  * "Alle Dateien" on a German system. 
 		  */
 	 };
@@ -50,9 +51,23 @@ public class CreateGraphGUI extends JFrame implements WindowListener, AbortListe
 	public InfiniteProgressPanel glassPane;
 	protected static Log logger = LogFactory.getLog(CreateGraphGUI.class);
 	public static CreateGraphGUI lastCreatedGUI;
+	/** If we drop back to zero GUIs we may want to terminate the currently running Java Virtual Machine. */
+	public static int countGUIs = 0; 
 	
+	/**
+	 * Constructor of the GUI main frame
+	 * @param graph Variable name for the graph, given as a character string. If the GUI is created by graphGUI the name is valid.
+	 * @param pvalues Double array that optionally (if pvalues.length>0) specifies the p-values.
+	 * @param debug If true logging will be written to standard out and application will be more verbose.
+	 * @param grid Positive integer that sets the grid size for easier placement of nodes.
+	 *  (Therefore grid size 1 allows unrestricted placement and disables the grid.)  
+	 *  If grid=0 the last used grid value is used or if the GUI is started the first time a value of 50.
+	 * @param experimentalFeatures Boolean. If true some unfinished / insufficiently tested experimental features are available in the GUI.
+	 */
 	public CreateGraphGUI(String graph, double[] pvalues, boolean debug, double grid, boolean experimentalFeatures) {
 		super("gMCP GUI");
+		countGUIs++;
+		System.setProperty("java.net.useSystemProxies","true");
 		RControl.getRControl(debug);
 		if (grid>0) {
 			Configuration.getInstance().getGeneralConfig().setGridSize((int)grid);
@@ -62,12 +77,21 @@ public class CreateGraphGUI extends JFrame implements WindowListener, AbortListe
 		/* Get and save R and gMCP version numbers */
 		try {		
 			Configuration.getInstance().getGeneralConfig().setRVersionNumber(RControl.getR().eval("paste(R.version$major,R.version$minor,sep=\".\")").asRChar().getData()[0]);
-			Configuration.getInstance().getGeneralConfig().setVersionNumber(RControl.getR().eval("gMCP:::gMCPVersion()").asRChar().getData()[0]);
+			Configuration.getInstance().getGeneralConfig().setVersionNumber(RControl.getR().eval("gMCP:::gMCPVersion()").asRChar().getData()[0]);		
 			this.setTitle("gMCP GUI "+Configuration.getInstance().getGeneralConfig().getVersionNumber());
+			Configuration.getInstance().getGeneralConfig().setReleaseDate(RControl.getR().eval("packageDescription(\"gMCP\", fields=\"Date/Publication\")").asRChar().getData()[0]);
 		} catch (Exception e) {
 			// This is no vital information and will fail for e.g. R 2.8.0, so no error handling here...
 			logger.warn("Package version could not be set:\n"+e.getMessage());
 		}
+		
+		// Java 7 does not respect system property "sun.awt.exception.handler".
+		// Eventually this fix should be included in afcommons.
+		javax.swing.SwingUtilities.invokeLater(new Runnable() {
+			public void run() {		
+				Thread.currentThread().setUncaughtExceptionHandler(new DefaultExceptionHandler());
+			}
+		});
 		
 		/* Count the number of starts */
 		int n = Configuration.getInstance().getGeneralConfig().getNumberOfStarts();
@@ -96,8 +120,12 @@ public class CreateGraphGUI extends JFrame implements WindowListener, AbortListe
 		setJMenuBar(new MenuBarMGraph(control));		
 		makeContent();
 		
-		if (RControl.getR().eval("exists(\""+graph+"\""+Configuration.getInstance().getGeneralConfig().getEnvir()+")").asRLogical().getData()[0]) {
-			control.getNL().loadGraph(graph);
+		if (RControl.getR().eval("exists(\""+graph+"\""+Configuration.getInstance().getGeneralConfig().getEnvir()+")", true).asRLogical().getData()[0]) {
+			control.getNL().loadGraph(graph, true);
+		}
+		
+		if (System.getProperty("eclipse") != null) {
+			((MenuBarMGraph)getJMenuBar()).loadGraph("simpleSuccessiveI()", false);
 		}
 		
 		if (pvalues.length>0) getPView().setPValues(ArrayUtils.toObject(pvalues));
@@ -126,7 +154,7 @@ public class CreateGraphGUI extends JFrame implements WindowListener, AbortListe
 
 		//TODO Is there really no better way than this kind of strange workaround?!?
 		new Thread(new Runnable() {
-			public void run() {
+			public void run() {				
 				for (int i=0; i<6; i++) {
 					try {
 						Thread.sleep(1000);
@@ -147,6 +175,7 @@ public class CreateGraphGUI extends JFrame implements WindowListener, AbortListe
 				}
 				new Thread(new Runnable() {
 					public void run() {
+						Thread.currentThread().setUncaughtExceptionHandler(new DefaultExceptionHandler());
 						VersionComparator.getOnlineVersion();
 					}
 				}).start();				
@@ -201,6 +230,11 @@ public class CreateGraphGUI extends JFrame implements WindowListener, AbortListe
 			if (answer==JOptionPane.YES_OPTION) {
 				control.saveGraph();
 			}
+		}
+		countGUIs--;
+		if (countGUIs==0) { 
+			//System.exit(0);
+			//RControl.console.f.dispose();
 		}
 		if (RControl.getR().eval("exists(\".isBundle\")").asRLogical().getData()[0]) {
 			RControl.getR().eval("q(save=\"no\")");
@@ -265,6 +299,10 @@ public class CreateGraphGUI extends JFrame implements WindowListener, AbortListe
 		UIManager.setLookAndFeel(Configuration.getInstance().getJavaConfig().getLooknFeel());
 		WidgetFactory.setFontSizeGlobal(Configuration.getInstance().getGeneralConfig().getFontSize());
 		SwingUtilities.updateComponentTreeUI(this);
+	}
+
+	public int getLayerNr() {		
+		return getGraphView().getNumberOfLayers();
 	}
 	
 }
