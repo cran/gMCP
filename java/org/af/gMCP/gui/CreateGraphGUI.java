@@ -53,6 +53,7 @@ public class CreateGraphGUI extends JFrame implements WindowListener, AbortListe
 	public static CreateGraphGUI lastCreatedGUI;
 	/** If we drop back to zero GUIs we may want to terminate the currently running Java Virtual Machine. */
 	public static int countGUIs = 0; 
+	public static String helpURL = "http://cran.r-project.org/web/packages/gMCP/vignettes/gMCP.pdf";
 	
 	/**
 	 * Constructor of the GUI main frame
@@ -73,12 +74,14 @@ public class CreateGraphGUI extends JFrame implements WindowListener, AbortListe
 			Configuration.getInstance().getGeneralConfig().setGridSize((int)grid);
 		}
 		Configuration.getInstance().getGeneralConfig().setExperimental(experimentalFeatures);
+		if (System.getProperty("eclipse") != null) helpURL = "http://algorithm-forge.com/gMCP/archive/gMCP.pdf";
 		
 		/* Get and save R and gMCP version numbers */
 		try {		
 			Configuration.getInstance().getGeneralConfig().setRVersionNumber(RControl.getR().eval("paste(R.version$major,R.version$minor,sep=\".\")").asRChar().getData()[0]);
 			Configuration.getInstance().getGeneralConfig().setVersionNumber(RControl.getR().eval("gMCP:::gMCPVersion()").asRChar().getData()[0]);		
 			this.setTitle("gMCP GUI "+Configuration.getInstance().getGeneralConfig().getVersionNumber());
+			//The following line may fail if "Date/Publication" is NA: WARN - Package version could not be set: org.rosuda.REngine.REXPLogical cannot be cast to org.rosuda.REngine.REXPString
 			Configuration.getInstance().getGeneralConfig().setReleaseDate(RControl.getR().eval("packageDescription(\"gMCP\", fields=\"Date/Publication\")").asRChar().getData()[0]);
 		} catch (Exception e) {
 			// This is no vital information and will fail for e.g. R 2.8.0, so no error handling here...
@@ -87,11 +90,7 @@ public class CreateGraphGUI extends JFrame implements WindowListener, AbortListe
 		
 		// Java 7 does not respect system property "sun.awt.exception.handler".
 		// Eventually this fix should be included in afcommons.
-		javax.swing.SwingUtilities.invokeLater(new Runnable() {
-			public void run() {		
-				Thread.currentThread().setUncaughtExceptionHandler(new DefaultExceptionHandler());
-			}
-		});
+		Thread.setDefaultUncaughtExceptionHandler(new DefaultExceptionHandler());
 		
 		/* Count the number of starts */
 		int n = Configuration.getInstance().getGeneralConfig().getNumberOfStarts();
@@ -154,7 +153,7 @@ public class CreateGraphGUI extends JFrame implements WindowListener, AbortListe
 
 		//TODO Is there really no better way than this kind of strange workaround?!?
 		new Thread(new Runnable() {
-			public void run() {				
+			public void run() {	
 				for (int i=0; i<6; i++) {
 					try {
 						Thread.sleep(1000);
@@ -172,10 +171,9 @@ public class CreateGraphGUI extends JFrame implements WindowListener, AbortListe
 				if (!Configuration.getInstance().getGeneralConfig().tellAboutCheckOnline()) {
 					new TellAboutOnlineUpate(null);
 					Configuration.getInstance().getGeneralConfig().setTellAboutCheckOnline(true);
-				}
+				}				
 				new Thread(new Runnable() {
 					public void run() {
-						Thread.currentThread().setUncaughtExceptionHandler(new DefaultExceptionHandler());
 						VersionComparator.getOnlineVersion();
 					}
 				}).start();				
@@ -256,6 +254,10 @@ public class CreateGraphGUI extends JFrame implements WindowListener, AbortListe
 		return control;
 	}
 
+	public MenuBarMGraph getMBar() {
+		return (MenuBarMGraph) this.getJMenuBar();
+	}
+	
 	public void abort() {
 		if (RControl.getR().getREngine().getClass() == JRIEngine.class) {
 			JRIEngine engine = (JRIEngine) RControl.getR().getREngine();
@@ -303,6 +305,11 @@ public class CreateGraphGUI extends JFrame implements WindowListener, AbortListe
 
 	public int getLayerNr() {		
 		return getGraphView().getNumberOfLayers();
+	}
+
+	public void openHelp(String topic) {
+		getMBar().showURL(helpURL+"#nameddest="+topic);
+		//TODO If this does not work (or options are set? or generally?) open local file.
 	}
 	
 }

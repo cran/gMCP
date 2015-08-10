@@ -12,28 +12,29 @@ import javax.swing.JScrollPane;
 
 import org.af.gMCP.gui.graph.LaTeXTool;
 import org.af.gMCP.gui.graph.Node;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
 
 import com.jgoodies.forms.layout.CellConstraints;
 import com.jgoodies.forms.layout.FormLayout;
 
-public class GroupPanel extends JPanel implements ActionListener {
-	List<Group> gv = new Vector<Group>();
+public class ScenarioPanel2 extends JPanel implements ActionListener, ScenarioPanelInterface {
+	List<Scenario2> sc = new Vector<Scenario2>();
 	JButton addScenario = new JButton("Add scenario");
 	JButton rmScenario = new JButton("Remove last scenario");
 	
-	SampleSizeDialog sd;
+	PDialog pd;
 	
 	JPanel panel = new JPanel();
 	
-	public GroupPanel(SampleSizeDialog sd) {
-		this.sd = sd;
-		gv.add(new Group(sd, "Group "+(gv.size()+1)));
+	public ScenarioPanel2(PDialog pd) {
+		this.pd = pd;		
+		
+		sc.add(new Scenario2(pd, "Scenario "+(sc.size()+1)));
+				
 		setUpLayout();
 	}
-	
-	
-	// Add θ and standard error of θ.
-	// Allocation ratio?
 	
 	public void setUpLayout() {
 
@@ -65,58 +66,90 @@ public class GroupPanel extends JPanel implements ActionListener {
 
 		int row = 2;
 
-		String cols = "5dlu, pref, 5dlu";
+		String cols = "5dlu, fill:pref:grow, 5dlu";
 		String rows = "5dlu, pref, 5dlu";
-		for (Node n : sd.getNodes()) {
-			cols += ", pref, 5dlu";
+		for (Node n : pd.getNodes()) {
+			cols += ", fill:pref:grow, 5dlu";
 		}
-		for (Group g : gv) {
+		for (Scenario2 s : sc) {
 			rows += ", pref, 5dlu";
 		}
+		//cols += ", pref, 5dlu";
 
 		panel.setLayout(new FormLayout(cols, rows));
 
 		int col = 2;
 		panel.add(new JLabel("Scenario name"), cc.xy(col, row));
 
-		for (Node n : sd.getParent().getGraphView().getNL().getNodes()) {
+		for (Node n : pd.nodes) {
 			col += 2;
-			panel.add(new JLabel("NCP "+ LaTeXTool.LaTeX2UTF(n.getName())+"    "), cc.xy(col, row));
+			panel.add(new JLabel(LaTeXTool.LaTeX2UTF(n.getName())), cc.xy(col, row));
 		}
 
-		for (Group g : gv) {
+		for (Scenario2 s : sc) {
 			row += 2;
-			g.addComponents(panel, cc, row);
+			s.addComponents(panel, cc, row);
 		}
 		return panel;
 	}
 
 	public String getNCPString() {
-		String sList = ", list(";
-		for (Group g : gv) {
-			//sList += g.getNCPString()+", ";
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public String getEffSizeString() {
+		String sList = "list(";
+		for (Scenario2 s : sc) {
+			sList += s.getEffSizeString()+", ";
 		}
 		return sList.substring(0, sList.length()-2)+")";
 	}
 
 	public void actionPerformed(ActionEvent e) {
 		if (e.getSource()==addScenario) {
-			gv.add(new Group(sd, "Group "+(gv.size()+1)));
+			sc.add(new Scenario2(pd, "Scenario "+(sc.size()+1)));
 			getMainPanel();
 			revalidate();
 			repaint();
 			rmScenario.setEnabled(true);
 		} else if (e.getSource()==rmScenario) {
-			if (gv.size()>1) {
-				gv.remove(gv.size()-1);
+			if (sc.size()>1) {
+				sc.remove(sc.size()-1);
 				getMainPanel();
 				revalidate();
 				repaint();
 			}
-			if (gv.size()==1) {
+			if (sc.size()==1) {
 				rmScenario.setEnabled(false);
 			}
 		}		
-	}	
+	}
+
+	public Element getConfigNode(Document document) {
+		Element e = document.createElement("scenarios");
+		e.setAttribute("numberSC", ""+sc.size());
+		e.setAttribute("numberHS", ""+sc.get(0).effSizes.size());
+		for (Scenario2 s : sc) {
+			e.appendChild(s.getConfigNode(document));
+		}
+      	return e;
+	}
+	
+	public void loadConfig(Element e) {
+		int nSC = Integer.parseInt(e.getAttribute("numberSC"));
+		int nHS = Integer.parseInt(e.getAttribute("numberHS"));
+		while(sc.size()<nSC) {
+			sc.add(new Scenario2(pd, "Scenario "+(sc.size()+1)));
+			rmScenario.setEnabled(true);
+		}
+		NodeList nlist = e.getChildNodes();
+		for (int i=0; i<sc.size(); i++) {			
+			sc.get(i).loadConfig((Element)nlist.item(i));
+		}
+		getMainPanel();
+		revalidate();
+		repaint();
+	}
 	
 }

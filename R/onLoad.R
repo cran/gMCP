@@ -1,6 +1,7 @@
 .onLoad <- function(libname, pkgname) {
 	if (!.jniInitialized) {
-		.jinit(parameters=c("-Xrs", "-Xss1m"))
+		.jinit(parameters=c("-Xrs", "-Xss1m",
+		                    paste0("-Djava.io.tmpdir=", tempdir())))
     # Remark - rJava 0.9-5: detect support for -Xrs and enable it by default (this prevents
     # Java from killing R process on interrupt)
 	}
@@ -65,6 +66,13 @@
 		    }		
 		  }
 		}
+  }
+	
+	if (!"JRI.jar" %in% lapply(strsplit(.jclassPath(), "/"), tail, 1)) {
+	  warning(paste(c("JRI.jar seems to be missing from the classpath.",
+	                  "The graphical user interface will most likely not be available.",
+	                  "Compile R with shared library enabled (--enable-R-shlib option)",
+	                  "and reinstall rJava to use JRI functionality."), sep="\n"))
 	}
   
   java.info <- getJavaInfo(FALSE, FALSE, TRUE)

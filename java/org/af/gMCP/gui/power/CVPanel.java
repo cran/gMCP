@@ -62,7 +62,7 @@ public class CVPanel extends JPanel implements ActionListener {
 		dfp.getTable().setDefaultEditor(EdgeWeight.class, new CellEditorE(null, dfp.getTable()));
 		dfp.getTable().getModel().setCheckRowSum(false);
 		
-		dfpTest = new SingleDataFramePanel(df);
+		dfpTest = new SingleDataFramePanel(df2);
 		dfpTest.getTable().getModel().checkCorMat();
 		dfpTest.getTable().setDefaultEditor(EdgeWeight.class, new CellEditorE(null, dfpTest.getTable()));
 		dfpTest.getTable().getModel().setCheckRowSum(false);
@@ -160,12 +160,16 @@ public class CVPanel extends JPanel implements ActionListener {
 
 	private void load(SingleDataFramePanel dfp) {
 		VariableNameDialog vnd = new VariableNameDialog(parent);
-		if (!RControl.getR().eval("gMCP:::checkQuadraticMatrix("+vnd.getName()+", n="+nodes.size()+")").asRLogical().getData()[0]) {
-			JOptionPane.showMessageDialog((JDialog)pd, 
-					"Can not get a numeric quadradtic matric from \""+vnd.getName()+"\" of dimension "+nodes.size()+"x"+nodes.size()+".", "Not a numeric quadratic matrix of correct dimension", JOptionPane.ERROR_MESSAGE);
-			return;
-		}		
-		load(dfp, vnd.getName());		
+		try {
+			if (!RControl.getR().eval("gMCP:::checkQuadraticMatrix("+vnd.getName()+", n="+nodes.size()+")").asRLogical().getData()[0]) {
+				JOptionPane.showMessageDialog((JDialog)pd, 
+						"Can not get a numeric quadradtic matric from \""+vnd.getName()+"\" of dimension "+nodes.size()+"x"+nodes.size()+".", "Not a numeric quadratic matrix of correct dimension", JOptionPane.ERROR_MESSAGE);
+				return;
+			}		
+			load(dfp, vnd.getName());
+		} catch(Exception e) {
+			JOptionPane.showMessageDialog(parent, "An error occured loading the matrix (please check especially the variable name):\n"+e.getMessage(), "Error loading matrix", JOptionPane.ERROR_MESSAGE);
+		}
 	}
 
 	private void load(SingleDataFramePanel dfp3, String name) {
@@ -205,7 +209,7 @@ public class CVPanel extends JPanel implements ActionListener {
 			return;
 		}
 		if (e.getSource() == createCV) {			
-			MatrixCreationDialog mcd = new MatrixCreationDialog(parent, dfp.getTable().getRMatrix(), MatrixCreationDialog.getNames(parent.getGraphView().getNL().getNodes()));
+			MatrixCreationDialog mcd = new MatrixCreationDialog(parent, null, dfp.getTable().getRMatrix(), MatrixCreationDialog.getNames(parent.getGraphView().getNL().getNodes()));
 			dfp.getTable().getModel().copy(mcd.dfp.getTable().getModel()); 
 			return;
 		}

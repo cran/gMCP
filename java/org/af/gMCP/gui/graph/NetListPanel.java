@@ -67,9 +67,13 @@ public class NetListPanel extends JPanel implements MouseMotionListener, MouseLi
 	 * Returns an image of the graph.
 	 * @param zoom Zoom used for the image. Bigger values result in higher resolutions.
 	 * If "null" the current zoom is used.
+	 * @param color 
+	 * @param drawEdgeWeights 
+	 * @param drawHypWeights 
+	 * @param drawHypNames 
 	 * @return Returns an image of the graph with a border of 5 pixel in most cases.
 	 */
-	public BufferedImage getImage(Double zoom) {
+	public BufferedImage getImage(Double zoom, boolean color, boolean drawHypNames, boolean drawHypWeights, boolean drawEdgeWeights) {
 		if (zoom == null) zoom = getZoom();
 		double oldZoom = getZoom();
 		setZoom(zoom);
@@ -91,13 +95,15 @@ public class NetListPanel extends JPanel implements MouseMotionListener, MouseLi
 		g.setRenderingHint(RenderingHints.KEY_ANTIALIASING,	RenderingHints.VALUE_ANTIALIAS_ON);
 		
 		for (Node node : getNodes()) {
-			node.paintYou(g, layer);
+			node.paintYou(g, layer, color, drawHypNames, drawHypWeights);
 		}
 		for (Edge edge : getEdges()) {
 			if (shouldDraw(edge)) edge.paintEdge(g);			
 		}
-		for (Edge edge : getEdges()) {
-			if (shouldDraw(edge)) edge.paintEdgeLabel(g);			
+		if (drawEdgeWeights) {
+			for (Edge edge : getEdges()) {
+				if (shouldDraw(edge)) edge.paintEdgeLabel(g);			
+			}
 		}
 		
 		img = cutImage(img, 5);
@@ -278,8 +284,8 @@ public class NetListPanel extends JPanel implements MouseMotionListener, MouseLi
 		}
 		// Check whether to add new node
 		if (newVertex && vertexSelected(e.getX(), e.getY())==null) {
-			nl.addDefaultNode((int)(e.getX() / getZoom()) - Node.r, 
-						(int) (e.getY() / getZoom()) - Node.r);
+			nl.addDefaultNode((int)(e.getX() / getZoom()) - Node.getRadius(), 
+						(int) (e.getY() / getZoom()) - Node.getRadius());
 			nl.statusBar.setText(GraphView.STATUSBAR_DEFAULT);
 			repaint();
 			return;
@@ -472,16 +478,16 @@ public class NetListPanel extends JPanel implements MouseMotionListener, MouseLi
 		int grid = Configuration.getInstance().getGeneralConfig().getGridSize();
 		g.setColor(Color.LIGHT_GRAY);
 		if (grid>1) {
-			for(int x=(int)(Node.r*getZoom()); x < getWidth(); x += grid*getZoom()) {				
+			for(int x=(int)(Node.getRadius()*getZoom()); x < getWidth(); x += grid*getZoom()) {				
 				g.drawLine(x, 0, x, getHeight());	
 			}
-			for(int x=(int)(Node.r*getZoom()); x > 0; x -= grid*getZoom()) {				
+			for(int x=(int)(Node.getRadius()*getZoom()); x > 0; x -= grid*getZoom()) {				
 				g.drawLine(x, 0, x, getHeight());	
 			}
-			for(int y=(int)(Node.r*getZoom()); y < getHeight(); y += grid*getZoom()) {
+			for(int y=(int)(Node.getRadius()*getZoom()); y < getHeight(); y += grid*getZoom()) {
 				g.drawLine(0, y, getWidth(), y);
 			}
-			for(int y=(int)(Node.r*getZoom()); y > 0; y -= grid*getZoom()) {
+			for(int y=(int)(Node.getRadius()*getZoom()); y > 0; y -= grid*getZoom()) {
 				g.drawLine(0, y, getWidth(), y);
 			}
 		}

@@ -71,8 +71,7 @@
 #' code written in C. THIS CODE IS NOT FOR PRODUCTIVE USE YET!  If approxEps is
 #' \code{FALSE} and the graph contains epsilon edges, a warning is thrown and
 #' \code{useC} will be ignored.
-#' @param verbose Logical scalar. If \code{TRUE} verbose output is generated
-#' during sequentially rejection steps.
+#' @param verbose Logical scalar. If \code{TRUE} verbose output is generated.
 #' @param keepWeights Logical scalar. If \code{FALSE} the weight of a node
 #' without outgoing edges is set to 0 if it is removed.  Otherwise it keeps its
 #' weight.
@@ -96,7 +95,8 @@
 #' 
 #' Bretz F., Posch M., Glimm E., Klinglmueller F., Maurer W., Rohmeyer K.
 #' (2011): Graphical approaches for multiple endpoint problems using weighted
-#' Bonferroni, Simes or parametric tests - to appear.
+#' Bonferroni, Simes or parametric tests. Biometrical Journal 53 (6), pages 894-913, Wiley.
+#' \url{http://onlinelibrary.wiley.com/doi/10.1002/bimj.201000239/full}
 #' 
 #' Strassburger K., Bretz F.: Compatible simultaneous lower confidence bounds
 #' for the Holm procedure and other Bonferroni based closed tests. Statistics
@@ -272,7 +272,7 @@ gMCP <- function(graph, pvalues, test, correlation, alpha=0.05,
 			if (verbose) {
 				if (n==2) output <- paste(output, "Only two hypotheses remaining.", sep="\n")
 				if (n==1) output <- paste(output, "Only one hypothesis remaining.", sep="\n")
-				if (n==0) output <- paste(output, "Everything allready rejected.", sep="\n")
+				if (n==0) output <- paste(output, "Everything already rejected.", sep="\n")
 				if (!callFromGUI) cat(output,"\n")
 				attr(result, "output") <- output
 			}
@@ -309,7 +309,7 @@ gMCP <- function(graph, pvalues, test, correlation, alpha=0.05,
 						if (pvalues2[j]<=alpha*sum(weights[i, Jj])) {
 							result[i, n+1] <- 1
 							if (verbose) {
-								explanation[i] <- paste("Subset {",paste(J,collapse=","),"}: p_",j,"=", pvalues2[j],"<=a*(w_",paste(which(Jj),collapse ="+w_"),")\n     =",alpha,"*(",paste(weights[i, Jj],collapse ="+"),")=",alpha*sum(weights[i, Jj]),sep="")
+								explanation[i] <- paste("Subset {",paste(J,collapse=","),"}",ifelse(adjPValues,paste(" (padj: ",mJ,")",sep=""),""),": p_",j,"=", pvalues2[j],"<=a*(w_",paste(which(Jj),collapse ="+w_"),")\n     =",alpha,"*(",paste(weights[i, Jj],collapse ="+"),")=",alpha*sum(weights[i, Jj]),sep="")
 							}
 						}
 					}	

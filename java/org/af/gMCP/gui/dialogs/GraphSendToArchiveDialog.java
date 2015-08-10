@@ -67,7 +67,7 @@ public class GraphSendToArchiveDialog extends JDialog implements ActionListener 
 		c.ipadx=10; c.ipady=10;
 		c.weightx=1; c.weighty=0;
 
-		BufferedImage img = control.nl.getImage(1d);
+		BufferedImage img = control.nl.getImage(1d, false);
 		
 		if (MAXWIDTH/img.getWidth()<1 || MAXHEIGHT/img.getHeight()<1) {
 			if (MAXWIDTH/img.getWidth()>MAXHEIGHT/img.getHeight()) {
@@ -143,7 +143,7 @@ public class GraphSendToArchiveDialog extends JDialog implements ActionListener 
 			table.put("Email", jtEmail.getText());
 			table.put("Subject", "New graph from "+jtName.getText());			
 			File file = new File(Configuration.getInstance().getGeneralConfig().getTempDir(), "Graph"+(new Random()).nextInt()+".jpg");
-			control.saveGraphImage(file);
+			control.saveGraphImage(file, true, true, true);
 			files.put("Image", file);
 			files.put("Graph", ErrorDialogGMCP.makeLogFile("graph.txt", StringTools.collapseStringArray(RControl.getR().eval("gMCP:::getDebugInfo()").asRChar().getData())));
 			(new HTTPPoster()).post(urlString, table, files);

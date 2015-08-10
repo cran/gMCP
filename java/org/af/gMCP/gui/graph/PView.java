@@ -102,7 +102,7 @@ public class PView extends JPanel implements KeyListener, ActionListener {
     					"The Simes test requires certain assumptions\n"+
     					"(sufficient is for example independence or positive\n" +
     					"regression dependence) and it's the responsibility\n" +
-    					"of the user to check whether they are fullfilled.";
+    					"of the user to check whether they are fulfilled.";
     			JOptionPane.showMessageDialog(parent, new Object[] {message, tellMeAgain}, "Info", JOptionPane.INFORMATION_MESSAGE);
     			if (tellMeAgain.isSelected()) {
     				Configuration.getInstance().setClassProperty(this.getClass(), "showSimesInfo", "no");
@@ -118,7 +118,7 @@ public class PView extends JPanel implements KeyListener, ActionListener {
 			} else {				
 				String obj = jcbCorObject.getSelectedItem().toString();
 				String matrix = obj.endsWith("matrices found.")?null:obj;
-				MatrixCreationDialog mcd = new MatrixCreationDialog(parent, matrix, MatrixCreationDialog.getNames(parent.getGraphView().getNL().getNodes()));
+				MatrixCreationDialog mcd = new MatrixCreationDialog(parent, null, matrix, MatrixCreationDialog.getNames(parent.getGraphView().getNL().getNodes()));
 				refresh(false);
 				if (mcd.created==true) {
 					jrbRCorrelation.setSelected(true);
@@ -216,6 +216,28 @@ public class PView extends JPanel implements KeyListener, ActionListener {
 		param += ", upscale="+(Configuration.getInstance().getGeneralConfig().getUpscale()?"TRUE":"FALSE");
 		return param;
 	}
+	
+	public String getTest() {
+		String param = "\"Bonferroni\"";
+		if (jrbRCorrelation.isSelected()) {
+			param = "\"parametric\"";
+		} else if (jrbSimes.isSelected()) {
+			param = "\"Simes\"";
+		}
+		return param;
+	}
+	
+	public void setTest(String test) {
+		if (test.equals("Bonferroni")) {
+			this.jrbNoCorrelation.setSelected(true);
+		} else if (test.equals("parametric")) {
+			this.jrbRCorrelation.setSelected(true);
+		} else if (test.equals("Simes")) {
+			this.jrbSimes.setSelected(true);
+		} else {
+			throw new RuntimeException("Test '"+test+"' not recognized.");
+		}
+	}
 
 	public double getPValue(Node node) {
 		for (int i=panels.size()-1;i>=0;i--) {
@@ -226,7 +248,8 @@ public class PView extends JPanel implements KeyListener, ActionListener {
 		throw new RuntimeException("Something happend that should never happen. Please report!");
 	}
 
-	public String getPValuesString() {		
+	public String getPValuesString() {	
+		//Why can't we generally call 'savePValues();' here and when should we do this before calling getPValuesString()?
 		String s = "c(";
 		for (PPanel panel : panels) {		
 			s += panel.getP()+", ";
@@ -479,6 +502,7 @@ public class PView extends JPanel implements KeyListener, ActionListener {
 			}
 			text += Configuration.getInstance().getGeneralConfig().getDecFormat().format(weight)+"; ";
 		}
+		text = text.substring(0, text.length()-2);
 		statusLabel.setText(text);
 		subGraphLabel.setForeground(Color.BLACK);
 		subGraphLabel.setText("");
@@ -532,6 +556,11 @@ public class PView extends JPanel implements KeyListener, ActionListener {
 			weightLabel.setText("Weights");
 		}
 		setUp();		
+	}
+
+	public void setCorrelation(String correlation) {		
+		refresh(false);
+		jcbCorObject.setSelectedItem(correlation);
 	}
 
 	/*public String getAlpha() {

@@ -1,7 +1,7 @@
 package org.af.gMCP.gui.power;
 
+import java.awt.Component;
 import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
@@ -16,6 +16,8 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
+import org.af.commons.errorhandling.DefaultExceptionHandler;
+import org.af.commons.errorhandling.ErrorHandler;
 import org.af.commons.widgets.buttons.HorizontalButtonPane;
 import org.af.commons.widgets.buttons.OkCancelButtonPane;
 import org.af.gMCP.config.Configuration;
@@ -42,24 +44,17 @@ public class PowerDialog extends PDialog implements ActionListener {
 	 */
 	public PowerDialog(CreateGraphGUI parent) {
 		super(parent, "Power Simulation - specify probability distribution of test statistics", true);
-		setLocationRelativeTo(parent);
-		this.parent = parent;
-		nodes = parent.getGraphView().getNL().getNodes();
 		
 		config = new File(path, "gMCP-power-settings.xml");
 		
-		parent.getPView().getParameters();
-		GridBagConstraints c = getDefaultGridBagConstraints();
-		
-		getContentPane().setLayout(new GridBagLayout());
-		
 		pNCP = new ScenarioPanel(this);
-		tPanel.addTab("Noncentrality Parameter (NCP) Settings", pNCP);
+		tPanel.addTab("Noncentrality Parameter (NCP) Settings", (Component) pNCP);
 		cvPanel = new CVPanel(this);
 		tPanel.addTab("Correlation Matrix", cvPanel);
-		userDefinedFunctions = new UserDefinedPanel(nodes);
+		userDefinedFunctions = new UserDefinedPanel(this, nodes);
 		tPanel.addTab("User defined power function", userDefinedFunctions);
-		tPanel.addTab("Options", new PowerOptionsPanel(parent));
+		oPanel = new PowerOptionsPanel(parent);
+		tPanel.addTab("Options", oPanel);
 		Set<String> variables = parent.getGraphView().getNL().getAllVariables();
 		if (!Configuration.getInstance().getGeneralConfig().useEpsApprox())	{
 			variables.remove("ε");
@@ -72,7 +67,8 @@ public class PowerDialog extends PDialog implements ActionListener {
 		
 		c.weighty=0; c.gridy++; c.weightx=0; c.fill=GridBagConstraints.NONE;
 		c.anchor = GridBagConstraints.EAST;
-		HorizontalButtonPane bp = new OkCancelButtonPane();
+		
+		HorizontalButtonPane bp = new HorizontalButtonPane(new String[] {"Help", "Ok", "Cancel"}, new String[] {"help", HorizontalButtonPane.OK_CMD, HorizontalButtonPane.CANCEL_CMD});
 		getContentPane().add(bp, c);
 		bp.addActionListener(this);		
 		
@@ -100,23 +96,22 @@ public class PowerDialog extends PDialog implements ActionListener {
 		
 	} 
 	
-	String rCommand = "";
-	
 	public void actionPerformed(ActionEvent e) {
 
-		String weights = parent.getGraphView().getNL().getGraphName() + "@weights";
 		double alpha;
 		try {
 			alpha = parent.getPView().getTotalAlpha();
 		} catch (Exception e1) {
 			return;
 		}
-		String G = parent.getGraphView().getNL().getGraphName() + "@m";
 
 		// TODO: Do we still need sometimes something as parse2numeric? I guess yes.
 		//RControl.getR().eval(parent.getGraphView().getNL().getGraphName()+"<-gMCP:::parse2numeric("+parent.getGraphView().getNL().getGraphName()+")");
 
 		if (e.getActionCommand().equals(HorizontalButtonPane.OK_CMD)) {
+			
+			// If there is still some user-defined power function in the jtUserDefined JTextField, this will add it to the list: 
+			userDefinedFunctions.actionPerformed(null);
 			
 			if (RControl.getR().eval("any(is.na("+cvPanel.getSigma()+"))").asRLogical().getData()[0]) {
 				JOptionPane.showMessageDialog(this, "Correlation matrix for simulation can not contain NAs.", "No NAs allowed", JOptionPane.ERROR_MESSAGE);
@@ -126,11 +121,11 @@ public class PowerDialog extends PDialog implements ActionListener {
 			
 			SettingsToXML.saveSettingsToXML(config, this);
 
-			rCommand = "gMCP:::calcMultiPower(weights="+weights+", alpha="+alpha+", G="+G+pNCP.getNCPString()
+			rCommand = "gMCP:::calcMultiPower(graph="+parent.getGraphView().getNL().getGraphName()+", alpha="+alpha+", ncpL="+pNCP.getNCPString()
 					+ ","+"corr.sim = " + cvPanel.getSigma() //diag(length(mean)),corr = NULL,"+
 					+ cvPanel.getMatrixForParametricTest()
-					+ userDefinedFunctions.getUserDefined()
-					+ ", nSim = "+Configuration.getInstance().getGeneralConfig().getNumberOfSimulations()
+					+ ", f = "+userDefinedFunctions.getUserDefined()
+					+ ", n.sim = "+Configuration.getInstance().getGeneralConfig().getNumberOfSimulations()
 					+ ", type = \""+Configuration.getInstance().getGeneralConfig().getTypeOfRandom()+"\""
 					+ getVariables()
 					+ ")";				
@@ -140,22 +135,12 @@ public class PowerDialog extends PDialog implements ActionListener {
 
 				@Override
 				protected Void doInBackground() throws Exception {					
-					try {
+					try {						
 						RControl.setSeed();
 						String result = RControl.getR().eval(rCommand).asRChar().getData()[0];
 						new TextFileViewer(parent, "Power results", result, true);
-					} catch (Exception e) {
-						String message = e.getMessage();
-						JOptionPane.showMessageDialog(parent, "R call produced an error:\n\n"+message+"\nWe will open a window with R code to reproduce this error for investigation.", "Error in R Call", JOptionPane.ERROR_MESSAGE);
-						JDialog d = new JDialog(parent, "R Error", true);
-						d.add(
-								new TextFileViewer(parent, "R Objects", "The following R code produced the following error:\n\n" +message+
-										rCommand, true)
-								);
-						d.pack();
-						d.setSize(800, 600);
-						d.setVisible(true);
-						e.printStackTrace();						
+					} catch (Exception e) {						
+						ErrorHandler.getInstance().makeErrDialog(e.getMessage(), e, false);
 					} finally {
 						parent.glassPane.stop();
 					}
@@ -164,7 +149,21 @@ public class PowerDialog extends PDialog implements ActionListener {
 			};
 			worker.execute();				
 		}
-		dispose();
+		if (e.getActionCommand().equals("help")) {
+			if (tPanel.getSelectedComponent()==pNCP) {
+				parent.openHelp("ncps");
+			} else if (tPanel.getSelectedComponent()==cvPanel) {
+				parent.openHelp("cormat2");
+			} else if (tPanel.getSelectedComponent()==oPanel) {
+				parent.openHelp("optNumeric");
+			} else if (tPanel.getSelectedComponent()==userDefinedFunctions) {
+				parent.openHelp("udpf");
+			} else {
+				parent.openHelp("power");
+			}
+		} else {		
+			dispose();
+		}
 	}
 
 	public JPanel getVariablePanel(Set<String> v) {

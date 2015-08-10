@@ -11,6 +11,9 @@ setMethod("initialize", "graphMCP",
 			if (length(weights)) {			
 				checkValidWeights(weights)
 			}			
+      if (is.null(rownames(m))) {
+        rownames(m) <- paste("H", 1:dim(m)[1], sep="")
+      }
 			colnames(m) <- rownames(m)
 			.Object@m <- m
 			names(weights) <- rownames(m)
@@ -271,6 +274,9 @@ setMethod("show", "graphMCP",
 				}
 			}
 			if (!printEdge) cat("No edges.\n")
+			#if (!is.null(attr(object, "pvalues"))) { # TODO Do we want to have more output here?
+			#  cat("\nAttached p-values: ", attr(object, "pvalues"), "\n")
+			#}
 			#cat(paste("\nalpha=",paste(format(getWeights(object), digits=4 ,drop0trailing=TRUE),collapse="+"),"=",sum(getWeights(object)),"\n", sep=""))
 			cat("\n")
 		}

@@ -22,7 +22,6 @@ import javax.swing.JToggleButton;
 import javax.swing.filechooser.FileFilter;
 
 import org.af.commons.errorhandling.ErrorHandler;
-import org.af.commons.tools.OSTools;
 import org.af.commons.widgets.DesktopPaneBG;
 import org.af.gMCP.config.Configuration;
 import org.af.gMCP.gui.CreateGraphGUI;
@@ -31,14 +30,13 @@ import org.af.gMCP.gui.ReproducableLog;
 import org.af.gMCP.gui.datatable.DataFramePanel;
 import org.af.gMCP.gui.dialogs.AdjustedPValueDialog;
 import org.af.gMCP.gui.dialogs.DialogConfIntEstVar;
+import org.af.gMCP.gui.dialogs.GraphSaveDialog;
 import org.af.gMCP.gui.dialogs.RejectedDialog;
 import org.af.gMCP.gui.dialogs.VariableNameDialog;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.xmlbeans.impl.xb.xmlconfig.ConfigDocument.Config;
 import org.jdesktop.swingworker.SwingWorker;
-import org.mutoss.gui.TransferableImage;
 
 public class GraphView extends JPanel implements ActionListener {
 
@@ -453,8 +451,8 @@ public class GraphView extends JPanel implements ActionListener {
 		return 	parent.getDView();	
 	}
 	
-	public void saveGraphImage(File file) {
-		BufferedImage img = getNL().getImage(Configuration.getInstance().getGeneralConfig().getExportZoom());
+	public void saveGraphImage(File file, boolean drawHypNames, boolean drawHypWeights, boolean drawEdgeWeights) {
+		BufferedImage img = getNL().getImage(Configuration.getInstance().getGeneralConfig().getExportZoom(), Configuration.getInstance().getGeneralConfig().getColoredImages(), drawHypNames, drawHypWeights, drawEdgeWeights);
 		try {
 			ImageIO.write(img, "png", file);
 		} catch( Exception ex ) {
@@ -481,9 +479,10 @@ public class GraphView extends JPanel implements ActionListener {
             	f = new File(f.getAbsolutePath()+".RData");
             }
             try {
-            	VariableNameDialog vnd = new VariableNameDialog(getGraphGUI(), getGraphName());            	
+            	GraphSaveDialog vnd = new GraphSaveDialog(this, getGraphName());            	
             	String name = vnd.getName();
-            	name = getNL().saveGraph(name, false, true); 
+            	// Save graph (globally).
+            	name = getNL().saveGraph(name, false, false, vnd.attachPValues(), vnd.attachCorrMat()); 
             	String filename = f.getAbsolutePath().replaceAll("\\\\", "\\\\\\\\");            	
             	RControl.getR().eval("save("+name+", file=\""+filename+"\")");        		
             	JOptionPane.showMessageDialog(getMainFrame(), "Exported graph to R object '"+name+"' and saved this to \n'" + f.getAbsolutePath() + "'.", "Saved graph", JOptionPane.INFORMATION_MESSAGE);
@@ -509,29 +508,6 @@ public class GraphView extends JPanel implements ActionListener {
 					"Error loading values from R", JOptionPane.ERROR_MESSAGE);
 		}		
 	}
-
-	public void copyGraphToClipboard() {
-		if (OSTools.isLinux() && !Configuration.getInstance().getClassProperty(this.getClass(), "showClipboardInfo", "yes").equals("no")) {
-			String jsv = System.getProperty("java.specification.version");
-			if (jsv.equals("1.5") || jsv.equals("1.6")) {
-				String message = "An old bug from 2007 that is widely known but never\n" +
-						"fixed by Sun/Oracle in Java will most likely prevent this\n" +
-						"feature to work on a Linux machine.\n" +
-						"We are sorry…";
-				JCheckBox tellMeAgain = new JCheckBox("Don't show me this info again.");			
-				JOptionPane.showMessageDialog(parent, new Object[] {message, tellMeAgain}, "Will most likely not work under Linux", JOptionPane.WARNING_MESSAGE);
-				if (tellMeAgain.isSelected()) {
-					Configuration.getInstance().setClassProperty(this.getClass(), "showClipboardInfo", "no");
-				}
-			}
-		}
-		if (getNL().getNodes().size()==0) {
-    		JOptionPane.showMessageDialog(getMainFrame(), "Graph is empty - nothing copied to clipboard.", "Empty graph", JOptionPane.ERROR_MESSAGE);
-    		return;
-    	}
-		TransferableImage.copyImageToClipboard(getNL().getImage(Configuration.getInstance().getGeneralConfig().getExportZoom()));
-	}
-	
 	
 	public boolean isResultUpToDate() {
 		return resultUpToDate;

@@ -27,12 +27,13 @@ import org.af.commons.logging.LoggingSystem;
 import org.af.commons.logging.widgets.DetailsDialog;
 import org.af.commons.tools.OSTools;
 import org.af.gMCP.config.Configuration;
+import org.af.gMCP.gui.dialogs.GraphSaveDialog;
 import org.af.gMCP.gui.dialogs.GraphSendToArchiveDialog;
+import org.af.gMCP.gui.dialogs.ImageExportDialog;
 import org.af.gMCP.gui.dialogs.ParameterDialog;
 import org.af.gMCP.gui.dialogs.RObjectLoadingDialog;
 import org.af.gMCP.gui.dialogs.RearrangeNodesDialog;
 import org.af.gMCP.gui.dialogs.TextFileViewer;
-import org.af.gMCP.gui.dialogs.VariableNameDialog;
 import org.af.gMCP.gui.graph.GraphView;
 import org.af.gMCP.gui.graph.WrongInputException;
 import org.af.gMCP.gui.options.OptionsDialog;
@@ -89,11 +90,11 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
 		menu.setMnemonic(KeyEvent.VK_A);
 
 		menu.add(makeMenuItem("Graph analysis", "graphAnalysis"));
-		//if (Configuration.getInstance().getGeneralConfig().experimentalFeatures()) {
 		menu.addSeparator();
-		menu.add(makeMenuItem("Power analysis (still experimental)", "powerAnalysis"));		
-		//menu.add(makeMenuItem("Sample size calculation (still experimental)", "samplesize"));
-		//}
+		menu.add(makeMenuItem("Power analysis (still experimental)", "powerAnalysis"));
+		if (Configuration.getInstance().getGeneralConfig().experimentalFeatures()) {
+			menu.add(makeMenuItem("Sample size calculation (still experimental)", "samplesize"));
+		}
 
 		add(menu);
 
@@ -105,7 +106,7 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
 		menu.add(makeMenuItem("About", "showAbout", KeyEvent.VK_B));         
 		menu.add(makeMenuItem("Introduction to gMCP", "showAppHelp", KeyEvent.VK_I));
 		menu.add(makeMenuItem("Weighted parametric tests defined by graphs", "showParametric", KeyEvent.VK_P));
-		menu.add(makeMenuItem("gMCP R Online Reference manual", "showManual", KeyEvent.VK_M));
+		//menu.add(makeMenuItem("gMCP R Online Reference manual", "showManual", KeyEvent.VK_M));
 		menu.add(makeMenuItem("Paper about gMCP in the Biometrical Journal", "showPaper1", KeyEvent.VK_P));
 		menu.add(makeMenuItem("References", "showReferences", KeyEvent.VK_R));
 		//menu.add(makeMenuItem("Theoretical Background", "showAppHelp"));
@@ -179,7 +180,7 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
 		extraMenu.add(makeMenuItem("Options", "showOptions", KeyEvent.VK_O));
 		extraMenu.add(makeMenuItem("Set all options back to default", "clearOptions", KeyEvent.VK_C));
 		extraMenu.addSeparator();
-		extraMenu.add(makeMenuItem("Change Layout of graph", "changeGraphLayout", KeyEvent.VK_G));
+		extraMenu.add(makeMenuItem("Change layout of graph", "changeGraphLayout", KeyEvent.VK_G));
 		extraMenu.add(makeMenuItem("Set variables to specific real values", "replaceVariables", KeyEvent.VK_V));
 		extraMenu.addSeparator();
 		extraMenu.add(makeMenuItem("Log", "showLog", KeyEvent.VK_L));
@@ -305,15 +306,20 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
         		JOptionPane.showMessageDialog(control.getMainFrame(), "Will not save empty graph.", "Saving to R failed.", JOptionPane.ERROR_MESSAGE);
         		return;
         	}
-        	VariableNameDialog vnd = new VariableNameDialog(control.getGraphGUI(), control.getGraphName());
-        	String name = control.getNL().saveGraph(vnd.getName(), true, true);        	    	
+        	GraphSaveDialog vnd = new GraphSaveDialog(control, control.getGraphName());            	
+        	String name = vnd.getName();
+        	// Save graph (globally).
+        	name = control.getNL().saveGraph(name, false, true, vnd.attachPValues(), vnd.attachCorrMat());
         	Configuration.getInstance().getGeneralConfig().addGraph("R Object: "+name);
         	createLastUsed();
-        	control.isGraphSaved = true;
-        } else if (e.getActionCommand().equals("copy graph to clipboard")) {       	
-        	control.copyGraphToClipboard();
-        } else if (e.getActionCommand().equals("export graph image")) {       	
-        	saveGraphImage();
+        } else if (e.getActionCommand().equals("copy graph to clipboard")) {    
+        	new ImageExportDialog(control.getMainFrame(), false);
+        } else if (e.getActionCommand().equals("export graph image")) {
+    		if (control.getNL().getNodes().size()==0) {
+        		JOptionPane.showMessageDialog(control.getMainFrame(), "Will not save empty graph.", "Empty graph", JOptionPane.ERROR_MESSAGE);
+        		return;
+        	}
+        	new ImageExportDialog(control.getMainFrame(), true);
         } else if (e.getActionCommand().equals("export graph latex")) {       	
         	exportLaTeXGraph();
         } else if (e.getActionCommand().equals("show graph latex")) {       	
@@ -493,7 +499,7 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
 		new GraphSendToArchiveDialog(control.getMainFrame(), control);		
 	}
 
-	private void showURL(String url) {
+	public void showURL(String url) {
 		try {	
 			Method main = Class.forName("java.awt.Desktop").getDeclaredMethod("getDesktop");
 			Object obj = main.invoke(new Object[0]);
@@ -523,6 +529,7 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
 				JOptionPane.showMessageDialog(control.getMainFrame(), "Please open and read the following file:\n"+f.getAbsolutePath(), "Could not copy file.", JOptionPane.WARNING_MESSAGE);
 			}
 		}		
+		showFile(f);
 	}
 	
 	public void showFile(File f) {
@@ -736,36 +743,6 @@ public class MenuBarMGraph extends JMenuBar implements ActionListener {
         }
 	}
 	*/
-
-	/**
-	 * Opens a JFilechooser and saves the graph as an PNG image to the selected file.
-	 */
-	private void saveGraphImage() {
-		if (control.getNL().getNodes().size()==0) {
-    		JOptionPane.showMessageDialog(control.getMainFrame(), "Will not save empty graph.", "Empty graph", JOptionPane.ERROR_MESSAGE);
-    		return;
-    	}
-		JFileChooser fc = new JFileChooser(Configuration.getInstance().getClassProperty(this.getClass(), "ImageDirectory"));		
-        fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
-        fc.setDialogType(JFileChooser.SAVE_DIALOG);
-        fc.setFileFilter(new FileFilter() {
-			public boolean accept(File f) {
-				if (f.isDirectory()) return true;
-				return f.getName().toLowerCase().endsWith(".png");
-			}
-			public String getDescription () { return "PNG image files"; }  
-		});
-        int returnVal = fc.showOpenDialog(this);
-        if (returnVal == JFileChooser.APPROVE_OPTION) {
-            File f = fc.getSelectedFile();
-            Configuration.getInstance().setClassProperty(this.getClass(), "ImageDirectory", f.getParent());
-            if (!f.getName().toLowerCase().endsWith(".png")) {
-            	f = new File(f.getAbsolutePath()+".png");
-            }
-            control.saveGraphImage(f);
-            showFile(f);
-        }		
-	}
 	
 	/**
 	 * Opens a JFileChooser and loads a graph from an RData file.

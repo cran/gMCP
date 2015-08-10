@@ -11,6 +11,8 @@ import java.text.DecimalFormat;
 import java.util.List;
 import java.util.Vector;
 
+import javax.swing.JOptionPane;
+
 import org.af.commons.tools.StringTools;
 import org.af.gMCP.config.Configuration;
 import org.af.gMCP.gui.RControl;
@@ -27,7 +29,7 @@ public class Node {
 	
 	static DecimalFormat format = new DecimalFormat("#.####");
 	static DecimalFormat formatSmall = new DecimalFormat("#.###E0");
-	public static int r = 25;	
+	private static int r = 25;	
 	private Color color = Color.WHITE;
 	TeXIcon iconName;
 	List<TeXIcon> iconWeightScaledDown;
@@ -47,9 +49,9 @@ public class Node {
 	private List<String> stringW = new Vector<String>();	
 	private List<Double> weight = new Vector<Double>();
 
-	int x;
+	int x, y;
 	
-	int y;
+	int mx, my;
 	
 	public Node(String name, int x, int y, double[] alpha, NetList vs) {
 		this.nl = vs;
@@ -85,17 +87,16 @@ public class Node {
 				* (x / nl.getZoom() - this.x - r)
 				+ (y / nl.getZoom() - this.y - r)
 				* (y / nl.getZoom() - this.y - r) <= (r * r));
-	}
-	
+	}	
 
 	public boolean containsYou(int[] start, int[] end) {
 		return Math.min(start[0], end[0])/ nl.getZoom()<=x+r && Math.max(start[0], end[0])/ nl.getZoom()>=x-r
 				&& Math.min(start[1], end[1])/ nl.getZoom()<=y+r && Math.max(start[1], end[1])/ nl.getZoom()>=y-r; 
 	}
 
-	public static int getRadius() { return r; }
-	
-	public static void setRadius(int radius) { r = radius; }
+	//TODO Unify the following functions:
+	public static int getRadius() { return r; }	
+	static void setRadius(int r) {  Node.r = r; }	
 
 	public boolean isRejectable() {
 		return rejectable && !rejected;
@@ -111,26 +112,33 @@ public class Node {
 	public int[] offset(int x2, int y2) {
 		return new int[] {(int) (x* nl.getZoom())-x2, (int) (y* nl.getZoom())-y2};
 	}
-
+	
 	/**
 	 * Draws the node.
 	 * @param g Graphs object for drawing
 	 * @param layer Layer to draw. Will be 'null' if all layers should be drawn. Starts with 0 (not 1).
 	 */
-	public void paintYou(Graphics g, Integer layer) {
-		if (rejected && !Configuration.getInstance().getGeneralConfig().showRejected()) return;
+	public void paintYou(Graphics g, Integer layer, boolean color) {
+		paintYou(g, layer, color, true, true);
+	}
+	
+	public void paintYou(Graphics g, Integer layer, boolean color,				
+				boolean drawHypNames, boolean drawHypWeights) {
+			if (rejected && !Configuration.getInstance().getGeneralConfig().showRejected()) return;
 		Graphics2D g2d = (Graphics2D) g;
 		g2d.setFont(new Font("Arial", Font.PLAIN, (int) (12 * nl.getZoom())));		
 		FontRenderContext frc = g2d.getFontRenderContext();		
 		Rectangle2D rc;
-		g2d.setColor(getColor());
-		// if (this.fix) {	g2d.setColor(new Color(50, 255, 50)); }		
 		Ellipse2D e = new Ellipse2D.Double();
-		e.setFrame(x * nl.getZoom(), 
-				y * nl.getZoom(), 
-				r * 2 * nl.getZoom(), 
-				r * 2 * nl.getZoom());
-		g2d.fill(e);
+		if(color) {
+			g2d.setColor(getColor());		
+			// if (this.fix) {	g2d.setColor(new Color(50, 255, 50)); }		
+			e.setFrame(x * nl.getZoom(), 
+					y * nl.getZoom(), 
+					r * 2 * nl.getZoom(), 
+					r * 2 * nl.getZoom());
+			g2d.fill(e);
+		}
 		g2d.setColor(new Color(0, 0, 0));
 		e.setFrame(x * nl.getZoom(), 
 				y * nl.getZoom(), 
@@ -141,9 +149,11 @@ public class Node {
 		if (!Configuration.getInstance().getGeneralConfig().useJLaTeXMath()) {			
 
 			rc = g2d.getFont().getStringBounds(name, frc);
-			g2d.drawString(name, 
-					(float) ((x + r) * nl.getZoom() - rc.getWidth() / 2), 
-					(float) ((y + r - 0.25*r) * nl.getZoom())); // +rc.getHeight()/2));
+			if (drawHypNames) {
+				g2d.drawString(name, 
+						(float) ((x + r) * nl.getZoom() - rc.getWidth() / 2), 
+						(float) ((y + r - 0.25*r) * nl.getZoom())); // +rc.getHeight()/2));
+			}
 
 			//TODO Color for different weights:
 			String wStr;
@@ -153,9 +163,11 @@ public class Node {
 				wStr = stringW.get(layer);
 			}
 			rc = g2d.getFont().getStringBounds(wStr, frc);
-			g2d.drawString(wStr,
-					(float) ((x + r) * nl.getZoom() - rc.getWidth() / 2),
-					(float) ((y + 1.5 * r) * nl.getZoom())); 
+			if (drawHypWeights) {
+				g2d.drawString(wStr,
+						(float) ((x + r) * nl.getZoom() - rc.getWidth() / 2),
+						(float) ((y + 1.5 * r) * nl.getZoom()));
+			}
 		} else {		
 			if (lastFontSize != (int) (14 * nl.getZoom())) {
 				lastFontSize = (int) (14 * nl.getZoom());
@@ -163,9 +175,11 @@ public class Node {
 				TeXFormula formula = new TeXFormula("\\mathbf{"+name+"}");
 				iconName = formula.createTeXIcon(TeXConstants.ALIGN_CENTER, lastFontSize);
 			}
-			iconName.paintIcon(LaTeXTool.panel, g2d,
-					(int) ((x + r) * nl.getZoom() - iconName.getIconWidth() / 2), 
-					(int) ((y + r - 0.6*r) * nl.getZoom()));	
+			if (drawHypNames) {
+				iconName.paintIcon(LaTeXTool.panel, g2d,
+						(int) ((x + r) * nl.getZoom() - iconName.getIconWidth() / 2), 
+						(int) ((y + r - 0.6*r) * nl.getZoom()));
+			}
 
 			List<TeXIcon> tmpIconWeight;
 			if (layer==null) {
@@ -175,12 +189,14 @@ public class Node {
 				tmpIconWeight.add(iconWeight.get(layer));
 			}			
 			int offset = (int)(-((tmpIconWeight.size()-1)/2.0)*10);
-			for (TeXIcon icon : tmpIconWeight) {				
-				//TODO Color and correct x coordinates:
-				icon.paintIcon(LaTeXTool.panel, g2d,
-						(int) ((x + r + offset) * nl.getZoom() - icon.getIconWidth() / 2), 
-						(int) ((y + 1.1 * r) * nl.getZoom()));
-				offset+=10;
+			if (drawHypWeights) {
+				for (TeXIcon icon : tmpIconWeight) {				
+					//TODO Color and correct x coordinates:
+					icon.paintIcon(LaTeXTool.panel, g2d,
+							(int) ((x + r + offset) * nl.getZoom() - icon.getIconWidth() / 2), 
+							(int) ((y + 1.1 * r) * nl.getZoom()));
+					offset+=10;
+				}
 			}
 		}
 		
@@ -227,7 +243,13 @@ public class Node {
 	
 	public void setName(String name) {
 		this.name = name;	
-		TeXFormula formula = new TeXFormula("\\mathbf{"+name+"}"); 
+		TeXFormula formula;
+		try {
+			formula = new TeXFormula("\\mathbf{"+LaTeXTool.sanitize(name)+"}");
+		} catch(Exception e) {
+			JOptionPane.showMessageDialog(nl, "The name for the node could not be parsed in LaTeX:\n"+e.getMessage()+"\n\nDisable JLaTeXMath in the options, if you want to use simple text labels.");
+			formula = new TeXFormula("Syntax error");
+		}
 		iconName = formula.createTeXIcon(TeXConstants.ALIGN_CENTER, (int) (14 * nl.getZoom()));
 		nl.graphHasChanged();
 	}
@@ -288,14 +310,21 @@ public class Node {
 		int grid = Configuration.getInstance().getGeneralConfig().getGridSize();
 		x = ((x+ (int)(0.5*grid)) / grid)*grid;
 		this.x = x;
+		this.mx = x + r;
 	}
 
 	public void setY(int y) {
 		int grid = Configuration.getInstance().getGeneralConfig().getGridSize();
 		y = ((y+ (int)(0.5*grid)) / grid)*grid;
 		this.y = y;
+		this.my = y + r;
 	}
 
+	public void reCenter() {
+		this.x = mx - r;
+		this.y = my - r;
+	}
+	
 	public String toString() {		
 		return name+" (w: "+getWS()+")";
 	}
@@ -309,6 +338,11 @@ public class Node {
 		stringW.remove(layer);	
 		// Force recalculation of TeXItems:
 		lastFontSize = 0;		
+	}
+
+	//TODO Remove this method and check whether color should always be true.
+	public void paintYou(Graphics g, Integer layer) {
+		paintYou(g, layer, true);		
 	}
 
 }

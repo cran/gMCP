@@ -104,6 +104,7 @@ public class LaTeXTool {
 		System.out.println(StringToLaTeX("3E-6"));
 		System.out.println(StringToLaTeX("(1+2ε)/3"));
 		System.out.println(LaTeX2UTF("2*\\nu=\\epsilon"));
+		System.out.println(sanitize("Special characters: {,},_,^,%,&,$."));
 	}
 	
 	public static final String[] greekLaTeX = {
@@ -141,6 +142,17 @@ public class LaTeXTool {
 			s = s.replaceAll(""+greek[i], greekLaTeX[i]);
 		}
 		return s;
+	}
+
+	//TODO If the character is already escaped, this might cause problems... Therefore check for escape sequence?
+	public static String sanitize(String latex) {		
+		//latex = latex.replaceAll("\\}", "\\}");
+		//latex = latex.replaceAll("\\{", "\\{");		
+		//latex = latex.replaceAll("\\^", "\\\\^");
+		latex = latex.replaceAll("\\%", "\\\\%");
+		latex = latex.replaceAll("\\&", "\\\\&");
+		latex = latex.replaceAll("\\$", "\\\\\\$");		
+		return latex;
 	}
 
 }

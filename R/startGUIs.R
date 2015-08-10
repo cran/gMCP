@@ -88,9 +88,9 @@ graphGUI <- function(graph="createdGraph", pvalues=numeric(0), grid=0, debug=FAL
 #' Starts a graphical user interface for the correlation matrices.
 #' 
 #' 
-#' @param n Square root of the dimension of the \eqn{n\times n}{nxn}-Matrix.
-#' @param matrix Matrix of dimension \eqn{n\times n}{nxn} to start with.
-#' @param names Row and column names.
+#' @param n Square root of the dimension of the quadratic \eqn{n\times n}{nxn}-Matrix.
+#' @param matrix Variable name of matrix of dimension \eqn{n\times n}{nxn} to start with.
+#' @param names Row and column names. (Default will be H1,H2,\ldots,Hn.)
 #' @param envir Environment where the object \var{matrix} is located and/or it
 #' should be saved (default is the global environment).
 #' @return The function itself returns NULL.  But with the dialog a symmetric
@@ -100,22 +100,37 @@ graphGUI <- function(graph="createdGraph", pvalues=numeric(0), grid=0, debug=FAL
 #' @keywords misc graphs
 #' @examples
 #' 
-#' 
 #' \dontrun{
-#' corMatWizard(5)
+#' corMatWizard(5) # is equivalent to
+#' corMatWizard(matrix=diag(5))
+#' corMatWizard(names=c("H1", "H2", "H3", E1", "E2"))
 #' C <- cor(matrix(rnorm(100),10), matrix(rnorm(100),10))
-#' corMatWizard(matrix="C")
+#' corMatWizard(matrix="C") # or
+#' corMatWizard(matrix=C) 
 #' }
 #' 
-#' 
 #' @export corMatWizard
-corMatWizard <- function(n=dim(matrix)[1], matrix=paste("diag(",n,")"), names=paste("H",1:n,sep=""), envir=globalenv()) {
-	if (!is.character(matrix)) {
-		warning("Please specify the matrix name as character.")
-		stack <- sys.calls()
-		stack.fun <- Filter(function(.) .[[1]] == as.name("corMatWizard"), stack)
-		matrix <- make.names(deparse(stack.fun[[1]][[2]]))
-		warning(paste("We guess you wanted to call corMatWizard(matrix=\"",matrix,"\")",sep=""))
-	}
-	invisible(.jnew("org/af/gMCP/gui/dialogs/MatrixCreationDialog", matrix, names))
+corMatWizard <- function(n, matrix, names, envir=globalenv()) {  
+  if (missing(n) && missing(matrix) && missing(names)) stop("Please specify matrix or dimension.")
+  if (!missing(n) && (is.matrix(n) && length(n)>1)) stop("The parameter 'n' should be a single integer number.")
+  if (!missing(matrix)) {
+    if (!is.character(matrix) || is.matrix(matrix)) {  	
+      stack <- sys.calls()
+      stack.fun <- Filter(function(.) .[[1]] == as.name("corMatWizard"), stack)
+      mname <- deparse(stack.fun[[1]][[2]])    
+    }  else {
+      mname <- matrix
+      matrix <- get(mname, envir=envir)
+    }
+  } else {
+    mname <- "corMat"
+    if (!missing(n)) {
+      matrix <- diag(n)
+    } else {
+      matrix <- diag(length(names))
+    }
+  }
+  n <- dim(matrix)[1]  
+  if (missing(names)) names <- paste("H",1:n,sep="")
+	invisible(.jnew("org/af/gMCP/gui/dialogs/MatrixCreationDialog", as.character(matrix), mname, names))
 }

@@ -442,7 +442,7 @@ fallback <- function(weights) {
 	nodeY <- rep(100, n)
 	graph@nodeAttr$X <- nodeX
 	graph@nodeAttr$Y <- nodeY		
-	attr(graph, "description") <- paste("Graph representing the fixed sequence test", 
+	attr(graph, "description") <- paste("Graph representing the fallback (a fixed sequence Bonferroni) procedure", 
 			"",
 			"Literature: Wiens B.L.: A fixed sequence Bonferroni procedure for testing multiple endpoints. Pharmaceutical Statistics 2003; 2: 211-215.",
 			"",
@@ -591,10 +591,10 @@ HungEtWang2010 <- function(nu, tau, omega) {
 	graph@nodeAttr$Y <- nodeY	
 	attr(graph, "description") <- paste("Graph representing the procedure from Hung and Wang (2010)",
 			"",
-			"H_{1,NI} : Non-inferiority of the primary endpoint",
-			"H_{1,S}  : Superiority of the primary endpoint",
-			"H_{2,NI} : Non-inferiority of the secondary endpoint",
-			"H_{2,S}  : Superiority of the secondary endpoint",
+			"$H_{1,NI}$ : Non-inferiority of the primary endpoint",
+			"$H_{1,S}$  : Superiority of the primary endpoint",
+			"$H_{2,NI}$ : Non-inferiority of the secondary endpoint",
+			"$H_{2,S}$  : Superiority of the secondary endpoint",
 			"",
 			"Literature: Hung H.M.J., Wang S.-J. (2010). Challenges to multiple testing in clinical trials. Biometrical Journal 52, 747-756.", sep="\n")
   variables <- list()
@@ -962,9 +962,9 @@ WangTing2014 <- function(nu, tau) {
   edgeAttr(graph, "H2", "H5", "labelY") <- 275
   
   attr(graph, "description") <- paste("Graph from Wang and Ting 2014",
-                                      "With \u03BD=1, \u2CA7=0.5 graph from figure 3,",
-                                      "with \u03BD=1, \u2CA7=\u03B5 graph from figure 4 and",
-                                      "with \u03BD=\u03B5, \u2CA7=\u03B5 graph from figure 5.",
+                                      "With \\nu=1, \\tau=0.5 graph from figure 3,",
+                                      "with \\nu=1, \\tau=\\epsilon graph from figure 4 and",
+                                      "with \\nu=\\epsilon, \\tau=\\epsilon graph from figure 5.",
                                       "",
                                       "Literature: Wang, B., Ting, N. (2014). An Application of Graphical Approach to Construct Multiple Testing Procedures in a Hypothetical Phase III Design. Frontiers in public health, 1 (75).",
                                       "URL: http://journal.frontiersin.org/Journal/10.3389/fpubh.2013.00075/full", sep="\n")

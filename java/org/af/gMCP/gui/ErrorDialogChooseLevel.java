@@ -1,86 +1,57 @@
 package org.af.gMCP.gui;
 
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.util.List;
+import java.util.Vector;
 
-import javax.swing.JCheckBox;
-import javax.swing.JComboBox;
-import javax.swing.JDialog;
-import javax.swing.JFrame;
-import javax.swing.JTextArea;
-
+import org.af.commons.errorhandling.ErrorHandler;
+import org.af.commons.logging.ApplicationLog;
+import org.af.commons.logging.LoggingSystem;
+import org.af.commons.tools.StringTools;
 import org.af.gMCP.config.Configuration;
 
-import com.jgoodies.forms.layout.CellConstraints;
-import com.jgoodies.forms.layout.FormLayout;
+public class ErrorDialogChooseLevel extends ErrorDialogChooseLevelBase {
 
-public class ErrorDialogChooseLevel extends JDialog implements ActionListener {
-
-	String[] reportLevels = new String[] {
-			"Send no error report.",
-			"Minimal: Just send the stack trace + version + OS type",
-			"Default: Send the most important information",
-			"Maximal: Includes more information about the system"
-	};
+	public ErrorDialogChooseLevel(String msg, Object e, boolean fatal) {	
+		super(msg, e, fatal);
+	}
 	
-	protected JComboBox jcbReportLevel;
-	protected JCheckBox jcbScreenshot = new JCheckBox("Send screenshot of GUI");	
+	public String getSubjectShort() {
+		return "gMCP "+Configuration.getInstance().getGeneralConfig().getVersionNumber()+
+		" (R "+Configuration.getInstance().getGeneralConfig().getRVersionNumber()+") " +
+		"bug report from "+System.getProperty("user.name", "<unknown user name>")+
+		" on "+System.getProperty("os.name", "<unknown OS>");
+	}
 	
-	public ErrorDialogChooseLevel(JFrame parent) {
-		super(parent, "Select information", true);
-		setLocationRelativeTo(parent);
 
-		String cols = "5dlu, pref, 5dlu, fill:pref:grow, 5dlu";
-		String rows = "5dlu, pref, 5dlu, pref, 5dlu, pref, 5dlu, pref, 5dlu, pref, 5dlu, pref, 5dlu";
-
-		FormLayout layout = new FormLayout(cols, rows);
-		getContentPane().setLayout(layout);
-		CellConstraints cc = new CellConstraints();
+	protected String getErrorReport(int level) {	
 		
-		jcbReportLevel = new JComboBox(reportLevels);
-
-	    int rLevel;
-	    try {
-	    	rLevel = Integer.parseInt(Configuration.getInstance().getClassProperty(this.getClass(), "reportLevel", "2"));
-	    } catch (Exception e) {
-	    	rLevel = 2;
-	    }
-	    jcbReportLevel.setSelectedIndex(rLevel);
-	    
-		int row = 2;
+		if (level==0) return "Please reconsider reporting this error.";
+		String text = subjectShort +" : "+  message +"\n"+ getSep("R Error Message") +getRErrorMessage() +getSep("R TraceBack")+getTraceBack()+"\n" + getSep("Java Stacktrace") +stacktrace;  			
+    			//(message.length()<40?message:message.substring(0, 37)+"...");
+		if (level==1) return text;
 		
-		JTextArea jlabel = new JTextArea("We are sorry that an error occurred.\n" +
-				"Please give us details about this error so that we can fix it.");
-		jlabel.setOpaque(false);
-		jlabel.setEditable(false);
+		List<String> rhistory = new Vector<String>();
+		// We copy the history, to avoid a ConcurrentModificationException when there are still R commands executed.
+		for (int i=0; i < RControl.getR().getHistory().size(); i++) {
+			rhistory.add(RControl.getR().getHistory().get(i));
+		}
 		
-		getContentPane().add(jlabel, cc.xyw(2, row, 3));
+		text += getSep("R Session Info")+getRSessionInfo() +getSep("Graph Info")+getGraph() +getSep("R GUI History")+StringTools.collapseStringList(rhistory,"\n");
+		if (level==2) return text;
 		
-		row += 2;		
-		
-		getContentPane().add(jcbReportLevel, cc.xyw(2, row, 3));
-
-		jlabel = new JTextArea("The following information will be send to us:");
-		jlabel.setOpaque(false);
-		jlabel.setEditable(false);
-		
-		getContentPane().add(jlabel, cc.xyw(2, row, 3));
-		
-		row += 2;		
-
-		
-		
-		row += 2; 
-		
-		getContentPane().add(jcbScreenshot, cc.xyw(2, row, 3));
-		
-		pack();
-		
-		setVisible(true);
+		text += getSep("System Info")+getSystemInfo()+getSep("R Options")+getROptions();
+		return text;
+	}
+	
+	private String getGraph() {
+    	return StringTools.collapseStringArray(RControl.getR().eval("gMCP:::getDebugInfo()").asRChar().getData());
 	}
 
-	public void actionPerformed(ActionEvent e) {
-		Configuration.getInstance().setClassProperty(this.getClass(), "reportLevel", ""+jcbReportLevel.getSelectedIndex());
-	
+	public static void main(String[] args) {
+		LoggingSystem.init("/org/af/gMCP/gui/commons-logging.properties", false, true,	new ApplicationLog());
+		ErrorHandler.init("rohmeyer@small-projects.de", "http://www.algorithm-forge.com/report/bugreport.php", true, true, ErrorDialogChooseLevel.class);
+		RControl.getRControl(true).getR().eval("plot(z=1:100)");		
+		throw new RuntimeException("This is a test.");
+		//ErrorHandler.getInstance().makeErrDialog("Report Error");
 	}
 }

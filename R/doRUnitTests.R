@@ -34,7 +34,7 @@
 #' 
 #' 
 #' \dontrun{
-#' unitTestsForGMCP()
+#' unitTestsGMCP()
 #' unitTestsGMCP(extended=TRUE, java=TRUE, interactive=TRUE, outputPath="~/RUnitTests")
 #' 
 #' }
@@ -43,7 +43,7 @@
 #' @export unitTestsGMCP
 unitTestsGMCP <- function(extended=FALSE, java=FALSE, interactive=FALSE, junitLibrary, outputPath) {
   # Adapted and extended from the code from http://rwiki.sciviews.org/doku.php?id=developers:runit
-	if(!require("RUnit", quietly=TRUE)) {
+	if(!requireNamespace("RUnit", quietly=TRUE)) {
 		stop("Please install package RUnit to run the unit tests.")
 	}
 	if (extended) Sys.setenv(GMCP_UNIT_TESTS=paste(Sys.getenv("GMCP_UNIT_TESTS"),"extended"), sep=",")
@@ -72,9 +72,11 @@ unitTestsGMCP <- function(extended=FALSE, java=FALSE, interactive=FALSE, junitLi
 	## --- Testing ---
   
 	# Yes, these functions always exist, since we stopped if RUnit could not be required:
-	defineTestSuite <- get("defineTestSuite")
-	runTestSuite <- get("runTestSuite")
-	printTextProtocol <- get("printTextProtocol")
+	defineTestSuite <- get("defineTestSuite", envir = loadNamespace("RUnit"))
+	runTestSuite <- get("runTestSuite", envir = loadNamespace("RUnit"))
+	printTextProtocol <- get("printTextProtocol", envir = loadNamespace("RUnit"))
+	checkEquals <-  get("checkEquals", envir = loadNamespace("RUnit"))
+	checkTrue <-  get("checkTrue", envir = loadNamespace("RUnit"))
 	
 	## Define tests
 	testSuite <- defineTestSuite(name=paste(pkg, "unit testing"), dirs=path)

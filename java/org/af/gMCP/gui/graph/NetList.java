@@ -229,8 +229,14 @@ public class NetList extends JTabbedPane implements ChangeListener, AnnotationPa
 		return ".tmpGraph";
 	}
 	
-	public BufferedImage getImage(Double d) {
-		return nlp.get(getSelectedIndex()).getImage(d);
+	public BufferedImage getImage(Double d, boolean color) {
+		return nlp.get(getSelectedIndex()).getImage(d, color, true, true, true);
+	}
+	
+
+	public BufferedImage getImage(double d, boolean color,
+			boolean drawHypNames, boolean drawHypWeights, boolean drawEdgeWeights) {
+		return nlp.get(getSelectedIndex()).getImage(d, color, drawHypNames, drawHypWeights, drawEdgeWeights);
 	}
 
 	public String getLaTeX() {
@@ -310,6 +316,12 @@ public class NetList extends JTabbedPane implements ChangeListener, AnnotationPa
 			control.getDView().setDescription(graph.getDescription());
 		} else {
 			control.getDView().setDescription("");
+		}
+		if (graph.test!=null) {
+			control.getPView().setTest(graph.test);
+			if (graph.corMatName!=null) {
+				control.getPView().setCorrelation(graph.corMatName);
+			}
 		}
 		return graph;
 	}
@@ -438,6 +450,24 @@ public class NetList extends JTabbedPane implements ChangeListener, AnnotationPa
 		control.getPView().savePValues();
 	}
 	
+	public String saveGraph(String graphName, boolean verbose, boolean global, boolean addPValues, boolean addCorrelation) {
+		String finalGraphName = saveGraph(graphName, verbose, new Hashtable<String,Double>(), global);
+		if (addCorrelation) {
+			String test = control.getPView().getTest();
+			RControl.getR().evalVoid("attr("+finalGraphName+", \"test\") <- "+ test, global);
+			if (test.equals("\"parametric\"")) {
+				String correlation = control.getPView().jcbCorObject.getSelectedItem().toString();
+				RControl.getR().evalVoid("attr("+finalGraphName+", \"corMatName\") <- '"+ correlation+"'", global);
+				RControl.getR().evalVoid("attr("+finalGraphName+", \"corMat\") <- "+ correlation, global);
+			}
+		}
+		if (addPValues) {
+			String pvals = control.getPView().getPValuesString();
+			RControl.getR().evalVoid("attr("+finalGraphName+", \"pvalues\") <- "+ pvals, global);
+		}
+		return finalGraphName;
+	}
+	
 	public String saveGraph(String graphName, boolean verbose, boolean global) {
 		return saveGraph(graphName, verbose, new Hashtable<String,Double>(), global);
 	}
@@ -473,8 +503,7 @@ public class NetList extends JTabbedPane implements ChangeListener, AnnotationPa
 			RControl.getR().evalVoid(graphName+" <- new(\"entangledMCP\", subgraphs=list("+graphs+"), weights=c("+weights+"))");
 			if (global) RControl.getR().evalVoidInGlobalEnv(graphName+" <- get("+graphName+", envir=gMCP:::gMCPenv)");
 		}
-		RControl.getR().evalVoid("attr("+graphName+", \"description\") <- \""+ control.getDView().getDescription()+"\"", global);
-		RControl.getR().evalVoid("attr("+graphName+", \"pvalues\") <- "+ control.getPView().getPValuesString(), global);
+		RControl.getR().evalVoid("attr("+graphName+", \"description\") <- \""+ control.getDView().getDescription()+"\"", global);		
 		if (verbose && !graphName.equals(graphNameOld)) { JOptionPane.showMessageDialog(this, "The graph as been exported to R under ther variable name:\n\n"+graphName, "Saved as \""+graphName+"\"", JOptionPane.INFORMATION_MESSAGE); }
 		return graphName;
 	}
@@ -735,6 +764,13 @@ public class NetList extends JTabbedPane implements ChangeListener, AnnotationPa
 
 	public int getLayer() {
 		return layer;
+	}
+
+	public void setRadius(int r) {
+		Node.setRadius(r);
+		for (Node n : nodes) {
+			n.reCenter();
+		}
 	}
 
 }

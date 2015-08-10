@@ -19,7 +19,7 @@ import org.w3c.dom.NodeList;
 import com.jgoodies.forms.layout.CellConstraints;
 import com.jgoodies.forms.layout.FormLayout;
 
-public class ScenarioPanel extends JPanel implements ActionListener {
+public class ScenarioPanel extends JPanel implements ActionListener, ScenarioPanelInterface {
 	List<Scenario> sc = new Vector<Scenario>();
 	JButton addScenario = new JButton("Add scenario");
 	JButton rmScenario = new JButton("Remove last scenario");
@@ -66,21 +66,22 @@ public class ScenarioPanel extends JPanel implements ActionListener {
 
 		int row = 2;
 
-		String cols = "5dlu, pref, 5dlu";
+		String cols = "5dlu, fill:pref:grow, 5dlu";
 		String rows = "5dlu, pref, 5dlu";
 		for (Node n : pd.getNodes()) {
-			cols += ", pref, 5dlu";
+			cols += ", fill:pref:grow, 5dlu";
 		}
 		for (Scenario s : sc) {
 			rows += ", pref, 5dlu";
 		}
+		cols += ", pref, 5dlu";
 
 		panel.setLayout(new FormLayout(cols, rows));
 
 		int col = 2;
 		panel.add(new JLabel("Scenario name"), cc.xy(col, row));
 
-		for (Node n : pd.getParent().getGraphView().getNL().getNodes()) {
+		for (Node n : pd.nodes) {
 			col += 2;
 			panel.add(new JLabel("NCP "+ LaTeXTool.LaTeX2UTF(n.getName())+"    "), cc.xy(col, row));
 		}
@@ -93,7 +94,7 @@ public class ScenarioPanel extends JPanel implements ActionListener {
 	}
 
 	public String getNCPString() {
-		String sList = ", list(";
+		String sList = "list(";
 		for (Scenario s : sc) {
 			sList += s.getNCPString()+", ";
 		}
@@ -144,6 +145,10 @@ public class ScenarioPanel extends JPanel implements ActionListener {
 		getMainPanel();
 		revalidate();
 		repaint();
+	}
+
+	public String getEffSizeString() {		
+		return null;
 	}	
 	
 }

@@ -8,11 +8,13 @@ import java.util.Vector;
 
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
+import javax.swing.JDialog;
 import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.text.BadLocationException;
 
 import org.af.gMCP.gui.graph.Node;
 import org.w3c.dom.Document;
@@ -24,6 +26,7 @@ import com.jgoodies.forms.layout.FormLayout;
 
 public class UserDefinedPanel extends JPanel implements ActionListener {
 	
+	private static final String K_OUT_OF_N = "k out of n";
 	List<JButton> buttons = new Vector<JButton>();
 	List<JButton> buttons2 = new Vector<JButton>();  
 	
@@ -31,16 +34,27 @@ public class UserDefinedPanel extends JPanel implements ActionListener {
 	JButton addAnother = new JButton("Add another power function");    
     JButton clearList = new JButton("Clear");
     
-	DefaultListModel listModel;
+	DefaultListModel<String> listModel;
     JList listUserDefined;
 
     JTextArea jta = new JTextArea();
     
     JButton loadUDPF = new JButton("Load");
     JButton saveUDPF = new JButton("Save");
-
+    
+    List<Node> nodes;
+    
+    JDialog parent;
+    boolean justOne;
 	
-	public UserDefinedPanel(List<Node> nodes) {		
+	public UserDefinedPanel(PDialog parent, Vector<Node> nodes) {
+		this(parent, nodes, false);
+	}
+    
+	public UserDefinedPanel(JDialog parent, List<Node> nodes, boolean justOne) {		
+		this.nodes = nodes;
+		this.parent = parent;
+		this.justOne = justOne;
 		
 		JButton b = new JButton("(");
 		b.setActionCommand("(");
@@ -61,6 +75,14 @@ public class UserDefinedPanel extends JPanel implements ActionListener {
 		b = new JButton("NOT");
 		b.setActionCommand("!");		
 		buttons.add(b);		
+		
+		b = new JButton("At least k out of n");
+		b.setActionCommand(K_OUT_OF_N);		
+		buttons.add(b);
+		
+		/*b = new JButton("Weighted mean");
+		b.setActionCommand("!");		
+		buttons.add(b);*/	
 		
 		for (int i=0; i<nodes.size(); i++) {
 			b = new JButton(nodes.get(i).getName());
@@ -92,10 +114,12 @@ public class UserDefinedPanel extends JPanel implements ActionListener {
 				"  (µ=difference of real mean and mean under null hypothesis, n=sample size, σ=standard deviation)\n"+
 				"- triangle(min, peak, max)\n"+
 				"- rnorm(1, mean=0.5, sd=1)\n"+*/
-				"Note that you can use all R commands, for example also\n"+
+				"(Negation (!) takes precedence over 'and' (&&), which takes precedence over 'or' (||).\n"+
+				"In doubt use brackets.)\n"+
+				"Note that you can use all R commands, for example\n"+
 				"any(x) to see whether any hypotheses was rejected or\n" +
-				"all(x[1:4]) to see whether all of the first four hypotheses were rejected.\n"+
-				"Hit return to add another power function.");
+				"all(x[1:4]) to see whether all of the first four hypotheses were rejected."+				
+				(justOne?"":"\nHit return to add another power function."));
 		
 
         String cols = "5dlu, fill:pref:grow, 5dlu, fill:pref:grow, 5dlu";
@@ -105,12 +129,16 @@ public class UserDefinedPanel extends JPanel implements ActionListener {
         CellConstraints cc = new CellConstraints();
 		
 		int row = 2;
-		
-		jtUserDefined.addActionListener(this);
-		add(jtUserDefined, cc.xy(2, row));
-		
-		addAnother.addActionListener(this);
-		add(addAnother, cc.xy(4, row));
+
+		if (justOne) { 
+			add(jtUserDefined, cc.xyw(2, row, 3));
+		} else {
+			jtUserDefined.addActionListener(this); // We really don't want the action listener in the other case.
+			add(jtUserDefined, cc.xy(2, row));	
+
+			addAnother.addActionListener(this);
+			add(addAnother, cc.xy(4, row));
+		}
 		
 		/*clearList.addActionListener(this);
 		mPanel.add(addAnother, cc.xy(4, row));*/		
@@ -120,14 +148,17 @@ public class UserDefinedPanel extends JPanel implements ActionListener {
 		listModel = new DefaultListModel();
 		listUserDefined = new JList(listModel);
 		
-		add(new JScrollPane(jta), cc.xywh(2, row, 1, 3));
-	
-		add(new JScrollPane(listUserDefined), cc.xy(4, row));
+		if (justOne) {
+			add(new JScrollPane(jta), cc.xywh(2, row, 3, 3));
+		} else {
+			add(new JScrollPane(jta), cc.xywh(2, row, 1, 3));
+			add(new JScrollPane(listUserDefined), cc.xy(4, row));
+		}		
 	
 		row +=2;
 		
 		clearList.addActionListener(this);
-		add(clearList, cc.xy(4, row));		
+		if (!justOne) add(clearList, cc.xy(4, row));		
 		//mPanel.add(saveUDPF, cc.xy(6, row));
 		
 		row +=2;		
@@ -139,35 +170,52 @@ public class UserDefinedPanel extends JPanel implements ActionListener {
 		add(new JScrollPane(opPanel), cc.xyw(2, row, 3));
 		
 	}
-	
+
 	/**
 	 * Constructs String that contains the parameter f for user defined
 	 * functions used by calcPower and extractPower
-	 * @return String that contains the parameter f for user defined
+	 * @return If justOne==false: String that contains the parameter f for user defined
 	 * functions used by calcPower and extractPower. Either empty or
 	 * of the form ", f=list(...)".
+	 * Otherwise if justOne==true: Body of the function, e.g. x[1] && x[2]  
+	 * @param single 
 	 */
-	String getUserDefined() {
-		if (listModel.getSize()==0) return "";
-		String s = ", f=list(";
+	public String getUserDefined() {
+		if (justOne) {
+			/*if (listModel.getSize()==1) {
+				return ""+listModel.getElementAt(0);
+			}*/
+			return jtUserDefined.getText();			
+		}
+		//if (listModel.getSize()==0) return "list()";
+		String s = "list(";
 		for (int i=0; i<listModel.getSize(); i++) {
-			s +="userDefined"+i+"=function(x) {"+listModel.get(i)+"}";
+			s +="'"+listModel.get(i)+"'=function(x) {"+listModel.get(i)+"}";
 			if (i!=listModel.getSize()-1) s+= ",";
 		}		
 		return s + ")";
 	}
 
 	public void actionPerformed(ActionEvent e) {
-		if (buttons.contains(e.getSource()) || buttons2.contains(e.getSource())) {
-			jtUserDefined.setText(jtUserDefined.getText()+" "+((JButton)e.getSource()).getActionCommand());
+		if (e!=null && (buttons.contains(e.getSource()) || buttons2.contains(e.getSource()))) {
+			String command = ((JButton)e.getSource()).getActionCommand();
+			if (command.equals(K_OUT_OF_N)) {
+				KoutofNDialog koon = new KoutofNDialog(parent, nodes);				
+				command = koon.getCommand();
+			} 
+			try {
+				jtUserDefined.getDocument().insertString(jtUserDefined.getCaretPosition(), command, null);
+			} catch (BadLocationException e1) {					
+				jtUserDefined.setText(jtUserDefined.getText()+" "+command);
+			}
 			return;
 		}
-		if (e.getSource() == clearList) {
+		if (e!=null && e.getSource() == clearList) {
 			listModel.removeAllElements();
 			return;
 		}	
 		if (jtUserDefined.getText().length()>0) {
-			listModel.insertElementAt(jtUserDefined.getText(), 0);
+			listModel.addElement(jtUserDefined.getText());
 			//listUserDefined.ensureIndexIsVisible(0);
 			jtUserDefined.setText("");
 		}
@@ -191,6 +239,8 @@ public class UserDefinedPanel extends JPanel implements ActionListener {
 			i--;
 		}			
 	}
+
+	
 
 	
 	    

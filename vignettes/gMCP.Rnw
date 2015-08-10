@@ -1,6 +1,8 @@
-\documentclass[a4paper, 10pt]{article}
+\documentclass[a4paper, 10pt]{report}
 \usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
 \usepackage{url}
+\usepackage{caption}
 
 \usepackage{graphicx}
 \usepackage{tikz}
@@ -44,6 +46,7 @@
 \newcommand{\NN}{\ensuremath{\mathbb{N}_0}\xspace}
 \newcommand{\N}{\ensuremath{\mathbb{N}}\xspace}
 \newcommand{\sF}{\ensuremath{\mathcal{F}}\xspace}
+\newcommand{\sN}{\ensuremath{\mathcal{N}}\xspace}
 \newcommand{\Pot}{\ensuremath{\mathfrak{Pot}}\xspace}
 \newcommand{\kronecker}{\raisebox{1pt}{\ensuremath{\:\otimes\:}}}
 
@@ -66,17 +69,28 @@
 % \VignetteIndexEntry{A Graphical Approach to Weighted Multiple Test Procedures}
 % \VignetteDepends{coin}
 
+\begin{titlepage}
+\begin{center}
+\vspace*{2cm}
+{\LARGE gMCP - an R package for a graphical approach to weighted multiple test procedures}\\[4cm]
+\includegraphics[width=0.95\textwidth]{pictures/entangled.png}\\[0.4cm]
+%\vspace*{2cm}
+%
+%Attention: The following command does only work in git repositories!
+%, \Sexpr{system("git rev-list HEAD --count", intern=TRUE)}th git commit, SHA-1 hash:\\
+%\texttt{\Sexpr{system("git rev-parse HEAD", intern=TRUE)}}
+%\includegraphics[width=0.95\textwidth]{pictures/GeneratedRCode.png}
+Kornelius Rohmeyer\\ V\Sexpr{packageVersion("gMCP")}\\\today
+\end{center}
+\end{titlepage}
+
 \title{gMCP - an R package for a graphical approach to weighted multiple test procedures} 
 
 \author{Kornelius Rohmeyer}
 
-\maketitle\thispagestyle{empty}\vspace*{1cm}
+%\maketitle\thispagestyle{empty}\vspace*{1cm}
 
-\begin{center}
-  \includegraphics[width=0.95\textwidth]{pictures/entangled.png}\\[0.4cm]
-  %\vspace*{2cm}
-  %\includegraphics[width=0.95\textwidth]{pictures/GeneratedRCode.png}
-\end{center}
+
 
 \newpage
 
@@ -91,6 +105,8 @@ if (exists("opts_chunk")) {
   opts_chunk$set(autodep=TRUE)
 }
 library(gMCP, quietly=TRUE)
+# knitr has to be loaded for 'set_parent' and CRAN checks.
+library(knitr)
 options(width=140)
 options(digits=4)
 gMCPReport <- function(...) {invisible(NULL)}
@@ -101,7 +117,7 @@ graphGUI <- function(...) {invisible(NULL)}
 
 \newpage
 
-\section{Introduction}
+\chapter{Introduction}
 
 This package provides functions and graphical user interfaces for
 graph based multiple test procedures. By defining weighted directed graphs one
@@ -118,7 +134,7 @@ objects and methods can be used.
 %Please note that this is still an early release and the API will most
 %likely still change in future versions.
 
-\subsection{Installation}
+\section{Installation}
 
 If you don't already have R (\cite{R}) on your system, you can download a bundled
 version of R and gMCP from \url{http://www.algorithm-forge.com/gMCP/bundle/}.
@@ -137,7 +153,7 @@ an email at
 \href{mailto:help@small-projects.de}{\texttt{help@small-projects.de}}.
 We are eager to help and to learn about existing problems. 
 
-\subsection{Basic Theoretical Background}
+\section{Basic Theoretical Background}
 
 Graph based multiple test procedures are closed test procedures, i.e.\ for a
 family $\{H_i\;|\; i\in I\}$, $I=\{1,\ldots,n\}$ of elementary hypotheses each
@@ -175,7 +191,7 @@ that is freely available as an OnlineOpen Article.
 \end{algorithmic}
 \end{algorithm}
 
-\subsection{Example and diving in}
+\section{Example and diving in}
 
 Let's start with a well-known procedure and see how it fits into this
 graphical approach to weighted multiple test procedures: The
@@ -184,11 +200,11 @@ Bonferroni-Holm-Procedure from \cite{Holm79}.
 \begin{Theorem}[Bonferroni-Holm-Procedure]\index{Bonferroni-Holm-Procedure} 
 Let $T_1, \ldots, T_m$
 be test statistics for $m\in\N$ null hypotheses $H_1, \ldots, H_m$ and
-$p_1, \ldots, p_m$ the associated p-values. Then the following test
+$p_1, \ldots, p_m$ the associated $p$-values. Then the following test
 will control the familywise error rate at level $\alpha\in]0,1[$ in
     the strong sense:
 
-Denote the ordered p-values by $p^{(1)}<p^{(2)}<\ldots<p^{(m)}$ 
+Denote the ordered $p$-values by $p^{(1)}<p^{(2)}<\ldots<p^{(m)}$ 
 and the corresponding hypotheses by $H^{(1)},H^{(2)},\ldots, H^{(m)}$.
 
 Reject $H^{(1)},H^{(2)},\ldots, H^{(j)}$ such that 
@@ -210,7 +226,7 @@ cat(graph2latex(graph, scale=0.7, labelTikZ="near start,fill=blue!20", scaleText
     Bonferroni-Holm-Procedure for three hypotheses.}
 \end{figure}
 
-A null hypothesis can be rejected, when the p-value is less than the
+A null hypothesis can be rejected, when the $p$-value is less than the
 alpha level of the corresponding node.  In this case the graph will be
 updated and the alpha level of this node is passed according to the
 edge weights.
@@ -224,7 +240,7 @@ edge weights.
   but since most readers are already familiar with this procedure,
   for a first introduction of gMCP, we stick to this simple example.  
   
-  Let $p_1=0.01$, $p_2=0.07$ and $p_3=0.02$ be three p-values and
+  Let $p_1=0.01$, $p_2=0.07$ and $p_3=0.02$ be three $p$-values and
   $\alpha=0.05$.  In the first step $H_1$ can be rejected since
   $p_1<\alpha/3$.  The updated graph can be seen in figure
   \ref{fig:exampleHolmP} and now also $H_3$ can be rejected since
@@ -245,7 +261,7 @@ graph <- rejectNode(graph, "H3")
 cat(graph2latex(graph, scale=0.7, nodeTikZ="minimum size=1.2cm", scaleText=FALSE))
 @
   \caption{\label{fig:exampleHolmP} Example showing how two
-    null hypotheses can be rejected with p-values $p_1=0.01$,
+    null hypotheses can be rejected with $p$-values $p_1=0.01$,
     $p_2=0.07$ and $p_3=0.02$.}
 \end{figure}
 
@@ -258,7 +274,7 @@ graphGUI()
 
 The GUI seen in Figure \ref{fig:fullGUI} is shown and we select from the
 menu "\emph{Example graphs}" the entry "\emph{Bonferroni-Holm Test}".
-We enter the three p-values in the respective fields on the right
+We enter the three $p$-values in the respective fields on the right
 side.  By clicking on the button with the green arrow we start the
 test procedure and can sequentially reject all three hypotheses.
 
@@ -270,7 +286,7 @@ graph <- BonferroniHolm(3)
 gMCP(graph, pvalues=c(0.01,0.07,0.02), alpha=0.05)
 @
 
-\section{Creating Weighted Graphs}
+\chapter{Creating Weighted Graphs}
 
 In the first step a graph that describes the multiple test procedures
 must be created.
@@ -284,7 +300,7 @@ cat(graph2latex(graph, scale=0.7, scaleText=FALSE))
   \caption{\label{fig:exampleGraphBretz} Example graph from \cite{bretz2011test} that we will create in this vignette.}
 \end{figure}
 
-\subsection{Using R}
+\section{Using R}
 
 The most convenient way to create a graph in R is to use the functions
 \texttt{matrix2graph}\index{matrix2graph} and
@@ -354,7 +370,7 @@ edgeAttr(graph, "H11", "H21", "labelX") <- 200
 edgeAttr(graph, "H11", "H21", "labelY") <- 80
 @
 
-\subsection{Using the GUI}
+\section{Using the GUI}\hypertarget{maingui}{}
 
 The creation of \texttt{graphMCP} objects as seen in the last section 
 with basic R commands is very straight forward,
@@ -376,7 +392,7 @@ graphGUI("graph")
 \begin{figure}[ht]
   \centering    
   \includegraphics[width=0.95\textwidth]{pictures/FullFeaturedGUI.png}      
-  \caption{\label{fig:fullGUI} The graphical user interface allows testing, calculation of confidence intervals and adjusted p-values.}
+  \caption{\label{fig:fullGUI} The graphical user interface allows testing, calculation of confidence intervals and adjusted $p$-values.}
 \end{figure}
 
 Let's take a look at the icon panel:
@@ -399,7 +415,7 @@ graphs the ability to zoom in and out is usefull.
 procedure / goes back to the graph modification.
 
 \includegraphics[width=0.5cm]{pictures/adjPval.png} Calculates the
-adjusted p-values.
+adjusted $p$-values.
 
 \includegraphics[width=0.5cm]{pictures/confint2.png} Calculates
 simultaneous confidence intervals.
@@ -419,12 +435,12 @@ reproduce results.
   \caption{\label{fig:guircode} R Code generated and shown by the GUI to reproduce the results.}
 \end{figure}
 
-\section{The sequentially rejective MTP}
+\chapter{The sequentially rejective MTP}
 
 For a full description of the sequentially rejective multiple testing
 procedure take a look at \cite{bretzEtAl2009graphical}. 
 
-\subsection{Using R}
+\section{Using R}
 
 You can either specify each rejection step yourself or simply use the 
 method \texttt{gMCP}:
@@ -459,9 +475,9 @@ full report of the testing procedure:
 gMCPReport(result, "Report.tex")
 @
 
-\subsubsection{Adjusted p-values and simultaneous confidence intervals}\index{adjusted p-values}\index{simultaneous confidence intervals}
+\subsubsection{Adjusted $p$-values and simultaneous confidence intervals}\index{adjusted $p$-values}\index{simultaneous confidence intervals}
 
-Also adjusted p-values and simultaneous confidence intervals can be computed.
+Also adjusted $p$-values and simultaneous confidence intervals can be computed.
 
 <<include=FALSE>>=
 d1 <- c(1.68005156523844, 1.95566697423700, 0.00137860945822299, 0.660052238622464, 
@@ -497,7 +513,7 @@ $s_1=\Sexpr{format(s[1])}$,
 $s_2=\Sexpr{format(s[2])}$ and
 $s_3=\Sexpr{format(s[3])}$ the t-statistics
 $\Sexpr{format(st[1])}$, $\Sexpr{format(st[2])}$ and
-$\Sexpr{format(st[3])}$ and the corresponding p-values $\Sexpr{format(pval[1])}$, 
+$\Sexpr{format(st[3])}$ and the corresponding $p$-values $\Sexpr{format(pval[1])}$, 
 $\Sexpr{format(pval[2])}$ and
 $\Sexpr{format(pval[3])}$.  We want to adjust for multiple testing
 by using the Bonferroni-Holm-Procedure with $\alpha=0.025$.
@@ -521,7 +537,7 @@ simConfint(BonferroniHolm(3), pvalues=pval,
 		confint="t", df=9, estimates=est, alpha=0.025, alternative="greater")
 @
 
-\subsection{Using the GUI}
+\section{Using the GUI}
 
 \begin{figure}[ht]
   \centering    
@@ -536,7 +552,7 @@ Use the following two buttons:
 
 See \cite{Bretz11}.
 
-\section{Weighted parametric and Simes
+\chapter{Weighted parametric and Simes
 tests}\index{Simes-Procedure}\index{parametric test} 
 
 \begin{figure}[ht]
@@ -545,7 +561,7 @@ tests}\index{Simes-Procedure}\index{parametric test}
   \caption{\label{fig:correlated} You can also specify a correlation between the tests.}
 \end{figure}
 
-In the lower right panel with p-values, it is also possible to specify a known
+In the lower right panel with $p$-values, it is also possible to specify a known
 correlation between the original test statistics (see figure
 \ref{fig:correlated}). Either you can perform a Simes test or a weighted parametric
 tests as described in \cite{Bretz11}. For the later it is assumed that
@@ -553,11 +569,11 @@ under the global null hypothesis $(\Phi^{-1}(1-p_1),\ldots,\Phi^{-1}(1-p_m))$
 follow a multivariate normal distribution with correlation matrix $\Sigma$ where
 $\Phi^{-1}$ denotes the inverse of the standard normal
 distribution function. For example, this is the case if $p_1,\ldots,
-  p_m$ are the raw p-values from one-sided $z$-tests for each of the
+  p_m$ are the raw $p$-values from one-sided $z$-tests for each of the
 elementary hypotheses where the correlation between z-test statistics
 is generated by an overlap in the observations (e.g. comparison with a
 common control, group-sequential analyses etc.). An application of the
-transformation $\Phi^{-1}(1-p_i)$ to raw p-values from a two-sided
+transformation $\Phi^{-1}(1-p_i)$ to raw $p$-values from a two-sided
 test will not in general lead to a multivariate normal
 distribution.
 
@@ -565,7 +581,7 @@ For further information please take a look at the vignette
 "\href{http://cran.r-project.org/web/packages/gMCP/vignettes/parametric.pdf}{Weighted
 parametric tests defined by graphs}".
 
-\subsection{Correlation matrix creation}\index{correlation matrix}
+\section{Correlation matrix creation}\index{correlation matrix}
 
 The GUI features a dialog for easy creation of correlation matrices (see figure \ref{fig:createCM1}).
 
@@ -595,7 +611,7 @@ calling the function \texttt{corMatWizard}.
 %  \caption{\label{fig:createCM3} You can configure many things in the option dialog.}
 %\end{figure}
 
-\section{Epsilon edges}\index{epsilon edges}
+\chapter{Epsilon edges}\index{epsilon edges}
 
 %\begin{Def}
   %Convergence in distribution
@@ -659,7 +675,7 @@ substituteEps(graph, eps=0.001)
 gMCP(graph, pvalues=c(0.02, 0.04, 0.01, 0.02), eps=0.001)
 @
 
-\section{Entangled graphs}\index{entangled graphs}\index{graphs!entangled}
+\chapter{Entangled graphs}\index{entangled graphs}\index{graphs!entangled}
 
 As a new feature we support entangled graphs (see
 \cite{maurer2013memory}), which allow us to describe an even bigger
@@ -746,9 +762,203 @@ graph <- new("entangledMCP", subgraphs=list(subgraph1, subgraph2), weights=weigh
   \caption{\label{entagledgraph} Entangled graph from Maurer et Bretz}
 \end{figure}
 
-\section{Power Simulations}\index{power simulation}
+\chapter{Power Simulations}\index{power simulation}\hypertarget{power}{}
 
-\subsection{Using the R command line}
+The underlying distribution of test statistics in power simulations is assumed to be multivariate normal in the following with the exception of section \ref{sec:non-normal} "Simulation for Non-normal Distributions".
+
+\section{Power Analysis}
+
+For the \emph{"Options"} tab see subsection \ref{ssec:optNumeric}. The other tabs are described in the now following sections.
+
+\subsection{Noncentrality Parameter (NCP) Settings}\hypertarget{ncps}{}
+
+The noncentrality parameter (NCP) of a $Z$-statistic
+
+\[Z=\frac{\frac1n\sum_{i=1}^nX_i-\mu_0}{\sigma_X}\sqrt{n},\quad\text{with } X_1,\ldots,X_n \text{ i.i.d. }\sN(\mu_X, \sigma_X)\]
+
+is 
+
+\[\text{NCP}=\frac{\mu_X-\mu_0}{\sigma_X}\sqrt{n}.\]
+
+%\subsubsection{Example Binary Endpoint}
+
+\subsection{Correlation matrices}\hypertarget{cormat2}{}\label{ssec:cormat2}
+
+In the correlation matrix tab you will see the correlation matrix used for the generation of the test statistics and - if the parametric test was chosen - for the test.
+If the correlation matrix for the parametric test contains \texttt{NA} values, a second matrix is displayed (as can be seen in figure \ref{fig:cormat2}) were the user
+should specify the unknown values for the simulation.
+
+\begin{figure}[ht]
+  \centering    
+  \includegraphics[width=0.8\textwidth]{pictures/corMat2.png}      
+  \caption{\label{fig:cormat2} Correlation matrices for test and simulation}
+\end{figure}
+
+\subsection{User defined power functions}\hypertarget{udpf}{}\label{ssec:udpf}
+
+The user often is interested in certain combinations of rejections, for example
+that for one treatment the null hypotheses regarding both end points can be rejected.
+
+The tab \emph{"User defined power functions"} allows for exactly this kind of probability calculations.
+Use the R syntax and "\texttt{x[i]}" to specify the proposition that hypothesis $i$ can be rejected.
+Negation (!) takes precedence over the logical conjunction ('and', \&\&), which takes precedence over the logical disjunction ('or', ||), but in doubt use brackets.
+Note that you can use all R commands, for example \texttt{any(x)} to see whether any hypotheses was rejected or \texttt{all(x[1:3])} to see whether all of the first three hypotheses were rejected.
+
+You even can use weight function, but then the result can no longer be interpreted as a probability.
+
+
+
+\begin{figure}[ht]
+  \centering    
+  \includegraphics[width=0.8\textwidth]{pictures/udpf2.png}      
+  \caption{\label{fig:udpf2} User defined power functions.}
+\end{figure}
+
+For example in figure \ref{fig:udpf2} we define three power functions:
+
+\begin{itemize}
+\item \texttt{x[1]\&\&x[3]} - Efficacy for treatment 1 can be shown for both endpoints.
+\item \texttt{x[2]\&\&x[4]} - Efficacy for treatment 2 can be shown for both endpoints.
+\item \texttt{(x[1]\&\&x[3]) || (x[2]\&\&x[4])} - For at least one treatment efficacy can be shown for both endpoints. (We could have written this as \texttt{x[1] \&\& x[3]||x[2] \&\& x[4]},
+but this could easily be misread as the rejection of H1 and H4 and at least one rejection of H2 or H3.)
+
+\end{itemize}
+
+
+\commentout{
+\section{Sample Size Calculations}
+
+For the \emph{"Options"} tab see subsection \ref{ssec:optNumeric} and for the \emph{"Correlation"} tab see subsection \ref{ssec:cormat2}.
+
+\subsection{Randomization}\hypertarget{randomization}{}
+
+\begin{figure}[ht]
+  \centering    
+  \includegraphics[width=0.8\textwidth]{pictures/arm.png}      
+  \caption{\label{fig:arm} Randomization table}
+\end{figure}
+
+The first tab of the sample size dialog contains the randomization table (see figure \ref{fig:arm}). 
+In this table the different arms are specified. 
+In our example there is a control group and two treatment arms with a lose and a high dose.
+
+For each hypothesis you can select either a single arm (for a one sample test) or as in our example two arms which are compared.
+In our example $H1$ compares high vs.\ control for endpoint E1, $H2$ compares high vs.\ control for endpoint E2, $H3$ compares low vs.\ control for endpoint E1, and $H4$ compares low vs.\ control for endpoint E2.
+
+Although it would be better for power considerations to assign a higher sample size to control (since it is envolved in all comparisons), 
+in this example twice as many subjects are treated with the low dose and four times as many with the high dose. %TODO: Variable Ratios?
+%TODO: Ratios < 1 in example? 
+%TODO: Better example?
+
+In the following let $A_i$ be the sample sizes ratio of arm $i$ to the first arm (with $A_1$ equal to 1) and 
+\[r_i=\frac{A_i}{\sum_{j=1}^n{A_j}},\; 1\leq i\leq n,\] 
+%$n$ the number of elementary hypotheses ($n=4$ in our example).
+the randomization proportion of arm $i$ to the overall sample size.
+
+\subsection{Standardized Effect Size}\hypertarget{ses}{}
+
+For a one sample test with effect size $\mu_i$ with sample size $N\cdot r_i$ and \emph{within-subpopulation standard deviation} $\sigma$ we would have a non-centrality parameter
+\[\text{NCP}=\frac{\mu_i}{\sigma}\cdot\sqrt{N\cdot r_i}\text{ and a standardized effect size }\text{ES}=\frac{\mu_i}{\sigma}.\]
+
+For the two sample tests in our example comparing arm $i$ and $j$ the non-centrality parameter is given by
+\[\frac{\mu_i-\mu_j}{\sigma}\cdot
+%/\sqrt{\frac{1}{N}\left(\frac{1}{r_i}+\frac{1}{r_j}\right)}=
+\sqrt{\frac{N\cdot r_i\cdot r_j}{r_i+r_j}}
+\text{ and a standardized effect size }\text{ES}=\frac{\mu_i-\mu_j}{\sigma}.\]
+
+\subsection{Power Requirements}\hypertarget{powerreq}{}
+
+\begin{figure}[ht]
+  \centering    
+  \includegraphics[width=0.8\textwidth]{pictures/power_requirements.png}      
+  \caption{\label{powerReq} ...}
+\end{figure}
+
+\begin{figure}[ht]
+  \centering    
+  \includegraphics[width=0.8\textwidth]{pictures/udpf.png}      
+  \caption{\label{udpf} ...}
+\end{figure}
+
+
+\subsection{Search and accuracy}
+
+Each simulation step for sample size $N$ generates a $B(p_N, n)$ distributed value 
+%estimate for the power $p_N$ 
+%(if pseudo random numbers are used).
+
+}
+
+\section{Simulation for Non-normal Distributions}\label{sec:non-normal}\index{non-normal distribution}\index{distribution!non-normal}
+
+If the underlying distribution of the test statistics is not multivariate normal, 
+but test statistics can be simulated and $p$-values generated, one can still use function \texttt{graphTest}.
+
+For example let's take a look at correlated binary data.
+We assume we have $n_1=20$ observations for two binary endpoints and two treatments, where the resulting binomial distributions are not well approximated by the normal distribution.
+Further we assume a correlation of 0.3 between different endpoints and 0.5 between treatments, i.e.\ the following correlation matrix with $H_1$ and $H_2$ denoting the null hypotheses that under treatment 1 and 2 we see the problematic outcome with probability not less than the known probability of $p_0=0.5$ in an untreated group. The hypotheses $H_3$ and $H_4$ denote the same for the secondary endpoint.
+
+% H1: Treatment 1, annualized relapse rate
+% H2: Treatment 2, annualized relapse rate
+% H3: Treatment 1, number of lesions in the brain
+% H4: Treatment 2, number of lesions in the brain
+
+<<eval=TRUE, tidy=FALSE>>=
+
+cr <- rbind(H1=c(1   , 0.5 , 0.3 , 0.15),
+            H2=c(0.5 , 1   , 0.15, 0.3 ),
+            H3=c(0.3 , 0.15, 1   , 0.5 ),
+            H4=c(0.15, 0.3 , 0.5 , 1   ))
+
+@
+
+We simulate $n_2=1000$ times $p$-values with function \texttt{rmvbin} from package \texttt{bindata} (\cite{bindata2012}):
+
+<<eval=FALSE>>=
+
+library(bindata)
+
+n1 <- 20
+n2 <- 1e4
+  
+pvals <- t(replicate(n2, 
+                     sapply(colSums(rmvbin(n1, margprob = c(0.35, 0.4, 0.25, 0.3), bincorr = cr)), 
+                            function(x, ...) {binom.test(x, ...)$p.value}, n=n1, alternative="less")
+                     ))
+
+@
+
+<<appendices, child='childs/pvals.Rnw'>>=
+@
+
+And then apply function \texttt{graphtest}\index{graphtest} and \texttt{extractPower}\index{extractPower}:
+
+<<eval=TRUE>>=
+
+g <- generalSuccessive(gamma=0, delta=0)
+out <- graphTest(pvalues=pvals, graph = g)
+extractPower(out)
+
+@
+
+\commentout{
+
+<<eval=FALSE>>=
+# Other example:
+
+library(copula)
+cop <- mvdc(normalCopula(0.75, dim=4), c("norm", "norm", "exp", "exp"), list(list(mean=0.5), list(mean=1), list(rate = 2), list(rate = 3)))
+x <- rMvdc(250, cop)
+# ...
+
+# Boot example?
+# Permutation test example?
+# 
+@
+
+}
+
+\section{Using the R command line}
 
 <<echo=TRUE, tidy=FALSE>>=
 
@@ -772,13 +982,7 @@ cat(graph2latex(generalSuccessive(), scale=0.7, scaleText=FALSE))
   \caption{\label{powergraph} Graph from Bretz et al. (2009)}
 \end{figure}
 
-\begin{figure}[ht]
-  \centering    
-  \includegraphics[width=9cm]{pictures/power.png}      
-  \caption{\label{power} Local power and some (trivial) user defined power functions.}
-\end{figure}
-
-\subsection{Variable edge weights}\index{edge weights!variable}
+\section{Variable edge weights}\index{edge weights!variable}
 
 Apart from latin letters the following greek letters can be used to
 name a variable\footnote{Note that omicron is not allowed since it can
@@ -811,9 +1015,11 @@ graph <- generalSuccessive()
 graph
 @
 
-\section{Options and Import/Export}
+\chapter{Options and Import/Export}\hypertarget{options}{}
 
-\subsection{Options}\index{options}
+\section{Options}\index{options}
+
+\subsection{Visual}
 
 \begin{description}
   \item[Grid] For easier placement of nodes a grid can be used that aligns the
@@ -839,7 +1045,7 @@ graph
   \item[Colored image files and pdf reports] Colors are used to highlight
     different conditions in the graph like hypotheses that could be rejected.
     While these colors are helpful in the GUI, you perhaps prefer black and
-    white PNG image files and PDF reports.
+    white PNG image files and LaTeX/docx reports.
   \item[Show rejected nodes in GUI] When using the GUI to for stepwise rejection
     of hypotheses, this options determines whether rejected nodes should
     "disappear" or whether they remain on the screen and are only marked as
@@ -848,14 +1054,19 @@ graph
     library JLaTeXMath to render numbers, symbols and formulas in the
     GUI. The option is mainly provided in case that errors occur
     displaying the numbers and formulas.
-  \item[Show epsilon edges as dashed lines] You can set whether epsilon
-    edges should been shown as dashed or solid lines.
   \item[Show fractions instead of decimal numbers] Floating point numbers are used
     for all calculations and values like $1/3$ would be normally shown as
     $0.3333333$. When this option is active the method fractions from package
     MASS is used to display fractions whenever the floating point numbers are
     close to a fraction that looks right.  
-  \item[Use epsilon approximation] In this version this value can not be
+  \item[Show epsilon edges as dashed lines] You can set whether epsilon
+    edges should been shown as dashed or solid lines.
+\end{description}
+
+\subsection{Numeric}\label{ssec:optNumeric}\hypertarget{optNumeric}{}
+
+\begin{description}
+  \item[Use epsilon approximation] In this version this option can not be
     changed. No calculations with infinitesimal small values are done but
     instead the epsilon is approximated by a small real number.
   \item[Epsilon] The small real value that should be used to approximate
@@ -870,7 +1081,7 @@ graph
 %  description, we sometimes try to display fractions instead of floating point
 %  numbers. This option will assure that the shown fraction does not
 %  differ in more than the specified value from the floating point number.
-  \item[Verbose output of algorithms] If checked the selected the algorithms produce a
+  \item[Verbose output of algorithms] If selected the algorithms produce a
   verbose output that is shown in the GUI. For example the Simes test specifies
   for each intersection of elementar hypotheses whether and why it could be
   rejected.
@@ -880,15 +1091,24 @@ graph
   numbers for power calculations. The quasirandom option uses a randomized
   Lattice rule, and should be more efficient than the pseudorandom option that
   uses ordinary (pseudo) random numbers.
-  \item[Check online for updates] On start-up gMCP can check automatically
-    whether a new version of gMCP is available. Only your version of R (like
-    2.13.1), the version of gMCP (like 0.7-5) and a random number (to
-    distinguish different requests) are transmitted.
   \item[Weights of subgraphs are upscaled to 1] If '\emph{No}' is selected then 
     for each intersection of hypotheses (i.e. each subgraph)
     a weighted test is performed at the possibly reduced level alpha of $\text{sum}(w)*alpha$,
     where $\text{sum}(w)$ is the sum of all node weights in this subset
     If '\emph{Yes}' is selected all weights are upscaled, so that $\text{sum}(w)=1$.
+  \item[Use random number seed] If selected a user specified seed is used to set the 
+  random number generator state to the specified value. This way all 
+  calculations involving random numbers give a reproducable result.
+  \item[Random number seed] Integer seed value to use for random number generation.
+\end{description}  
+  
+\subsection{Miscellaneous}  
+  
+\begin{description}  
+  \item[Check online for updates] On start-up gMCP can check automatically
+    whether a new version of gMCP is available. Only your version of R (like
+    3.2.1), the version of gMCP (like 0.8-7) and a random number (to
+    distinguish different requests) are transmitted.
   \item[Export images with transparent background] If checked the background of
     exported PNG graphics will be transparent. Otherwise the graphs are
     displayed on a white background.
@@ -898,7 +1118,11 @@ graph
     are considered "anchored" and will stay with the edge weight label at the
     same position.
   \item[Automatically enter the editing mode, whenever a table cell
-    gets the focus] 
+    gets the focus] People are used to different behaviour of tables (mostly
+    depending on which spreadsheet applications they use regularly). If this
+    option is set to true it is easy to change the values of the cells but
+    navigating with arrow keys is hard since in the editing mode the right and
+    left key will move the cursor only in the currently selected cell.
   \item[Enable highly experimental feature]\label{experimentalFeatures} The gMCP
     GUI often contains new features that are not that well tested. If you want
     to use or take a look at them, activate this option. But be prepared that
@@ -907,25 +1131,31 @@ graph
     the result dialog does not only show the pure results, but also R code to 
     reproduce these results in R. If you are not interested in this feature
     you can disable it here.
+  \item[Save config files] Many settings and options are automatically saved and 
+    restored between different gMCP sessions (using Java's Properties API). 
+    But more complicated settings (e.g. for power or sample size calculations) need 
+    to be saved as files. This can also be done automatically, but the user must 
+    first agree that non-temporary files are created and has to specify the 
+    directory, where these files should be placed.
 \end{description}
 
-\subsubsection{Privacy}
+% We don't need the following section any more, since both tasks are pretty well (i.e. better) described in the respective dialogs in the GUI.
+%\subsubsection{Privacy}
+%
+%The GUI always asks before sending data to our server. It will do so to
+%\begin{enumerate}
+%  \item check whether a new version of gMCP exists,  
+%  \item send bug reports if an error occurs.
+%\end{enumerate}
+%
+%Only in the last case of a bug report some information about your
+%computer is collected that can be reviewed by the user before sending
+%the bug report. 
+%If you do not agree with sending this data, simply
+%don't send a problematic bug report or if you never want to send bug
+%reports, disable the option in the options menu.
 
-The GUI always asks before sending data to our server. It will do so to
-\begin{enumerate}
-  \item check whether a new version of gMCP exists,  
-%  \item send a wishlist if the user chooses to,
-  \item submit/load a graph to the online archive 
-  \item send bug reports if an error occurs.
-\end{enumerate}
-
-Only in the last case of a bug report some information about your
-computer is collected that can be reviewed by the user before sending
-the bug report. If you do not agree with sending this data, simply
-don't send a problematic bug report or if you never want to send bug
-reports, disable the option in the options menu.
-
-\subsection{Import/Exports}\index{import}\index{export}
+\section{Import/Exports}\index{import}\index{export}
 
 This subsection is work in progress, but fortunately the menu entries
 in figure \ref{fig:fileMenu} should be fairly self-explanatory.
@@ -936,16 +1166,38 @@ in figure \ref{fig:fileMenu} should be fairly self-explanatory.
   \caption{\label{fig:fileMenu} Import and export of graphs.}
 \end{figure}
 
-You can export graphs to png files. The background of these png files
-will be made transparent, so that they will fit into whichever
-document you insert them.  Note that some image viewers visualize
+\subsection{PNG Image Export}
+
+You can export graphs to PNG files with the dialog shown in figure \ref{fig:exportPNG}.
+
+\begin{figure}[ht]
+  \centering    
+  \includegraphics[width=10cm]{pictures/exportPNG}      
+  \caption{\label{fig:exportPNG} Export options for PNG image files.}
+\end{figure}
+
+The background of these png files can (and normally should) be made transparent, 
+so that they will fit into whichever
+document you insert them. Note that some image viewers visualize
 transparency with a checkerboard pattern. In some Windows application
 the transparent background may be wrongly shown as black - if this
 happens or you generally prefer a non-transparent white background,
-you can toggle the option "\emph{Export images with transparent 
-background}" in the options dialog.
+you can toggle the option \emph{"transparent 
+background"}.
 
-Since version 0.8-7 gMCP also can create word documents (Office Open XML / docx).
+Further you can choose between an black and white or colored graph.
+
+The options \emph{"draw names of hypotheses"}, \emph{"draw weights of hypotheses"} and 
+\emph{"draw weights of edges"} should be self-explanatory. Also the live preview at left
+side of the options shows their effects when selected/deselected.
+
+The node radius can be changed, which is especially useful if you disable the previous 
+options and add all labels by yourself afterwards (which might have a different size).
+
+\subsection{Word Docx Reports}
+
+Since version 0.8-7 gMCP also can create word documents (Office Open XML / docx) 
+with an example page seen in figure \ref{fig:wordexample}.
 
 \begin{figure}[ht]
   \centering    
@@ -953,7 +1205,7 @@ Since version 0.8-7 gMCP also can create word documents (Office Open XML / docx)
   \caption{\label{fig:wordexample} Example Word export - first page.}
 \end{figure}
 
-\subsection{Important TikZ commands for optimizing the reports}\index{graph2latex}\index{TikZ}
+\section{Important TikZ commands for optimizing the reports}\index{graph2latex}\index{TikZ}
 A clear automatic placement of edges and weight labels without
 overlapping is a very difficult task and for complicated graphs the
 \texttt{gMCP} package will often fail to accomplish this
@@ -965,9 +1217,9 @@ the graph seen in the GUI.
 
 PGF/TikZ is very useful \LaTeX-package, we recommend it for many
 purposes and it's totally worth reading its 560 pages manual
-(\cite{TikZ}), but if you don't have the time right now, we will give
-you short overview of the most important commands for our kind of
-graphs so that you can easily adapt the output from
+(\cite{TikZ}), but if you don't have the time right now, we understand and therefore will give
+you a short overview of the most important commands for our kind of
+graphs, so that you can easily adapt the output from
 \texttt{graph2latex}.
 
 You also perhaps want to use an TikZ editor with a preview pane like qtikz
@@ -1027,14 +1279,14 @@ A powerful feature is the use of styles, since this will effect all
 objects of a given class. But for this please take a look directly at
 the TikZ manual (\cite{TikZ}).
 
-\section{Case Studies}\label{sec:caseStudies}
+\chapter{Case Studies}\label{sec:caseStudies}
 
 This section is work in progress.
 
-\subsection{Identifying effective and/or safe doses by stepwise confidence intervals for ratios}
+\section{Identifying effective and/or safe doses by stepwise confidence intervals for ratios}
 In this subsection we show how to use gMCP to reproduce the results of the paper from \cite{bretz2003identifying} with the same title.
 
-\subsection{Testing strategies in multi-dose experiments including active control}
+\section{Testing strategies in multi-dose experiments including active control}
 
 \cite{bauer1998testing}
 
@@ -1074,7 +1326,7 @@ boxplot(micronuclei~group, data=hydroquinone)
 
 \begin{appendix} 
 
-\section{Appendix - Example graphs}\label{sec:exampleGraphs}
+\chapter{Appendix - Example graphs}\label{sec:exampleGraphs}
 
 <<echo=FALSE, results='asis'>>=
 
@@ -1082,42 +1334,64 @@ graphs <- list(BonferroniHolm(4),
                parallelGatekeeping(),
                improvedParallelGatekeeping(),
                BretzEtAl2011(),
-               #HungEtWang2010(),
-               #HuqueAloshEtBhore2011(),
+               HungEtWang2010(),
+               HuqueAloshEtBhore2011(),
                HommelEtAl2007(),
                HommelEtAl2007Simple(),
                MaurerEtAl1995(),
                improvedFallbackI(weights=rep(1/3, 3)),
                improvedFallbackII(weights=rep(1/3, 3)),
-               cycleGraph(nodes=paste("H",1:4,sep=""), weights=rep(1/4, 4)),
+               #cycleGraph(nodes=paste("H",1:4,sep=""), weights=rep(1/4, 4)),
                fixedSequence(5),
                fallback(weights=rep(1/4, 4)),
-               #generalSuccessive(weights = c(1/2, 1/2)),
+               generalSuccessive(weights = c(1/2, 1/2)),
                simpleSuccessiveI(),
                simpleSuccessiveII(),
-               #truncatedHolm(),
+               truncatedHolm(),
                BauerEtAl2001(),
                BretzEtAl2009a(),
                BretzEtAl2009b(),
                BretzEtAl2009c(),
-               FerberTimeDose2011(times=5, doses=3, w=1/2)
-               #Ferber2011(),
+               FerberTimeDose2011(times=5, doses=3, w=1/2),
+               Ferber2011(),
+               WangTing2014()
                #Entangled1Maurer2012(),
-               #Entangled2Maurer2012(),
+               #Entangled2Maurer2012()
 )
+
+make.url <- function (x) {
+    return(gsub("(https?://[^ ]+)", "\\\\url{\\1}", x))
+}
+
+texify <- function(x, linebreak="\n\n") {
+  x <- make.url(x)
+  x <- gsub(linebreak, "\\\\\\\\\n", x)
+  x <- gsub("&", "\\\\&", x)
+  x <- gsub("\\\\epsilon", "$\\\\epsilon$", x)
+  x <- gsub("\\\\tau", "$\\\\tau$", x)
+  x <- gsub("\\\\nu", "$\\\\nu$", x)
+  return(x)
+}
+
+# first.line("a\nb\nc")
+first.line <- function(x) {
+  return(strsplit(x, split="\n")[[1]][1])
+}
 
 count <-0
 for (g in graphs) {
-  cat(graph2latex(g, fig=TRUE, scaleText=TRUE, scale=0.7))
+  descr <- attr(g, "descr")
+  cat(graph2latex(g, fig=TRUE, scaleText=TRUE, scale=0.7, fig.caption=texify(descr, linebreak = "\n"), fig.caption.short=texify(first.line(descr))))
   count <- count + 1
   if(count%%6==0) cat("\\cleardoublepage\n")
 }
+
 
 @
 
 \cleardoublepage
 
-\section{Appendix - Multiple Testing Basics}
+\chapter{Appendix - Multiple Testing}
 
 Let $\Theta$ be a parameter space indexing a family of probabilities
 $\{P_\theta\;|\;\theta\in\Theta\}$ and $(\Omega, \sF, P_\theta)$ the
@@ -1143,7 +1417,7 @@ The family of hypotheses $\{H_i \;|\;i\in I\}$ is called
 
 This section is work in progress.
 
-%\subsection{Closed testing principle}\index{closed testing principle}
+%\section{Closed testing principle}\index{closed testing principle}
 \begin{Theorem}[Closed testing principle]\index{closed testing principle}
  \cite{marcus1976closed}
 \end{Theorem}
@@ -1160,7 +1434,7 @@ This section is work in progress.
   \cite{hochberg2009multiple} and \cite{gabriel1969simultaneous}.
 \end{Def}
 
-%\subsection{Partitioning principle}\index{partitioning principle}
+%\section{Partitioning principle}\index{partitioning principle}
 
 \begin{Def}
 
@@ -1169,10 +1443,10 @@ This section is work in progress.
 \begin{Theorem}[Simes-Procedure]\index{Simes-Procedure} 
 Let $T_1, \ldots, T_m$
 be test statistics for $m\in\N$ null hypotheses $H_1, \ldots, H_m$ and
-$p_1, \ldots, p_m$ the associated p-values and $\alpha\in]0,1[$.
+$p_1, \ldots, p_m$ the associated $p$-values and $\alpha\in]0,1[$.
 %Then the following test will control the familywise error rate at level $\alpha\in]0,1[$ in the strong sense:
 
-Denote the ordered p-values by $p^{(1)}<p^{(2)}<\ldots<p^{(m)}$ 
+Denote the ordered $p$-values by $p^{(1)}<p^{(2)}<\ldots<p^{(m)}$ 
 and the corresponding hypotheses by $H^{(1)},H^{(2)},\ldots, H^{(m)}$.
 
 Reject $H_0$ if
@@ -1184,10 +1458,24 @@ For independent tests the FWER is controlled at level $\alpha$.
 \begin{Theorem}[Weighted Simes Procedure]\index{Weighted Simes Procedure} 
 Benjamini and Hochberg (1997)
 
-Let $\sum_{k=1}^m w_k = m$ and reject $H_0$ if
-\[p^{(j)}\leq\frac{\sum_{k=1}^jw_[{(k)}}{m}\cdot\alpha\quad\text{for some $1\leq j\leq m$}.\]
+Let $\sum_{k=1}^m w_k = 1$ and reject $H_0$ if
+\[p^{(j)}\leq\sum_{k=1}^jw_{(k)}\cdot\alpha\quad\text{for some $1\leq j\leq m$}.\]
 
 \end{Theorem}
+
+\begin{Theorem}[Trimmed weighted Simes test] 
+For two one-sided tests where the bivariate test statistic fulfills certain conditions, \cite{brannath2009trimmed} show that the following trimmed version of the weighted Simes test with weights $w_A, w_B$, $w_A+w_B=1$ is bounded by $\alpha$: 
+
+$H_0$: $H_A\cap H_B$ is rejected if
+\begin{itemize}
+\item $p_A \leq w_A\cdot\alpha$ and $p_B<1-w_B\cdot\alpha$ or
+\item $p_B \leq w_B\cdot\alpha_B$ and $p_A<1-w_A\cdot\alpha$ or
+\item $max(p_A, p_B)<\alpha$
+\end{itemize}
+\end{Theorem}
+\begin{Rem}
+It is not possible to calculate adjusted $p$-values for the timmed weighted Simes test, since for example with $w_A=w_B=0.5$, $p_A=0.01$, and $p_A=0.97$ the test does reject $H_0$ for $\alpha=0.05$ since $p_A \leq w_A\cdot\alpha=0.025$ and $p_B<1-w_B\cdot\alpha=0.975$, but not for $\alpha=0.1$ since $p_B>1-w_B\cdot\alpha$ in this case.
+\end{Rem}
 
 \begin{Theorem}[Hommel Procedure]\index{Hommel Procedure} 
 Hommel 1988
@@ -1197,10 +1485,10 @@ Hommel 1988
 Hochberg 1988
 \end{Theorem}
 
-Adjusted p-values form the Hochberg Procedure are greater as or equal
-to the Hommel-adjusted p-values.
+Adjusted $p$-values form the Hochberg Procedure are greater as or equal
+to the Hommel-adjusted $p$-values.
 
-\subsubsection*{Adjusted p-Values in the Simes Test}
+\subsubsection*{Adjusted $p$-Values in the Simes Test}\index{adjusted $p$-values!Simes test}%self derived, no source
 
 For each set $J\subset I$ we calculate
 \[m_J := \min\limits_{j\in J}\left(\frac{p_j}{\sum_{i\in J_j}w_i}\right),\quad J_j=\{k\in J\;|\; p_k\leq p_j\}.\]
@@ -1214,12 +1502,19 @@ The weighted Simes Test rejects $H_J$ iff $m_J\leq\alpha$.
 In a closed testing procedure a hypothesis $H_j$ is rejected iff $H_J$
 is rejected for each $J\subset I$ with $j\in J$.
 
-An adjusted p-pvalue $p'_j$ is defined as the minimal $\alpha$ so that
+An adjusted $p$-pvalue $p'_j$ is defined as the minimal $\alpha$ so that
 the test to global level $\alpha$ rejects $H_j$.
 
 Therefore $p'_j=\text{max}(m_J\;|\;j\in J)$.
 
-\section{Appendix - Graph Theory Basics}
+\section{Parametric Tests}
+
+For $p$-values with a known joint distribution the gMCP package provides weighted min-$p$ test, i.e.\ the intersection hypotheses $H_J$, $J\subseteq I$ is rejected if
+\[\exists j\in J:\quad p_j\leq c_Jw_j(J)\alpha,\]
+with $c_J$ the largest constant satisfying
+\[P_{H_J}\left(\bigcup_{j\in J}\{p_j\leq c_Jw_j(J)\alpha\}\right)\leq\alpha.\]
+
+\chapter{Appendix - Graph Theory Basics}
 
 When we talk about graphs in the context of gMCP we always mean finite,
 directed, weighted graphs with no self-loops and no parallel edges:
@@ -1228,7 +1523,7 @@ directed, weighted graphs with no self-loops and no parallel edges:
  In our context a (valid) \emph{graph} $G$ is a triple $G=(V,E,w)$
  of a non-empty, finite set $V$ of nodes together with the set of edges
  $E\subset (V\times V)\setminus\{(v,v)\;|\;v\in V\}$ and a mapping $w:\;V\cup
- E\rightarrow [0,1]$ that fullfills $\sum_{v\in V}w(v)\leq1$ and $w(e)>0$ for
+ E\rightarrow [0,1]$ that fulfills $\sum_{v\in V}w(v)\leq1$ and $w(e)>0$ for
  each edge $e\in E$.
 \end{Def}
 
@@ -1264,8 +1559,8 @@ This section is work in progress.
 \bibliography{literatur}
 
 \addcontentsline{toc}{section}{Table of Symbols}
-\section*{Table of Symbols}\footnotesize
-%\twocolumn[\section{Symbolverzeichnis}]
+\chapter*{Table of Symbols}\footnotesize
+%\twocolumn[\chapter{Symbolverzeichnis}]
 \begin{tabularx}{\textwidth}{lX}
 \multicolumn{2}{l}{\textbf{Sets}}\\
 \R& set of real numbers\\
