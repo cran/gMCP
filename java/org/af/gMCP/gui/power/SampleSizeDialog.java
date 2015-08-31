@@ -25,6 +25,7 @@ import org.af.gMCP.gui.CreateGraphGUI;
 import org.af.gMCP.gui.RControl;
 import org.af.gMCP.gui.dialogs.PowerOptionsPanel;
 import org.af.gMCP.gui.dialogs.TextFileViewer;
+import org.af.jhlir.call.RDataFrame;
 import org.jdesktop.swingworker.SwingWorker;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -148,7 +149,7 @@ public class SampleSizeDialog extends PDialog implements ActionListener {
 			}				
 
 			System.out.println("The following R will be executed:\n\n" + rCommand);	
-			rCommand = "paste(capture.output("+rCommand+"), collapse='\n')";					
+			//rCommand = "paste(capture.output("+rCommand+"), collapse='\n')";					
 			
 			parent.glassPane.start();
 			SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
@@ -156,20 +157,12 @@ public class SampleSizeDialog extends PDialog implements ActionListener {
 				@Override
 				protected Void doInBackground() throws Exception {					
 					try {
-						String result = RControl.getR().eval(rCommand).asRChar().getData()[0];
-						new TextFileViewer(parent, "Power results", result, true);
+						RControl.setSeed();
+						RDataFrame result = RControl.getR().eval(rCommand).asRDataFrame();
+						String[] colnames = new String[] {"Scenario", "PowerFunc", "target", "sampSize"};
+						new PowerResultDialog(parent, "SampleSize Results", result, colnames, rCommand, SampSizeResultTableModel.class);
 					} catch (Exception e) {
-						String message = e.getMessage();
-						JOptionPane.showMessageDialog(parent, "R call produced an error:\n\n"+message+"\nWe will open a window with R code to reproduce this error for investigation.", "Error in R Call", JOptionPane.ERROR_MESSAGE);
-						JDialog d = new JDialog(parent, "R Error", true);
-						d.add(
-								new TextFileViewer(parent, "R Objects", "The following R code produced the following error:\n\n" +message+
-										rCommand, true)
-								);
-						d.pack();
-						d.setSize(800, 600);
-						d.setVisible(true);
-						e.printStackTrace();						
+						ErrorHandler.getInstance().makeErrDialog(e.getMessage(), e, false);						
 					} finally {
 						parent.glassPane.stop();
 					}

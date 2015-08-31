@@ -46,13 +46,13 @@ public class Scenario implements NCPRequestor, ActionListener {
 			col += 2;
 			panel.add(jt, cc.xy(col, row));
 		}
-		col +=2;
+		//col +=2;
 		//panel.add(ncpc, cc.xy(col, row));
 		row +=2;
 	}
 	
 	public String getNCPString() {		
-		String s = "\""+scname.getText()+"\"=c(";
+		String s = "'"+scname.getText()+"'=c(";
 		for (JTextField jt : ncp) {		
 			s += jt.getText()+", ";
 		}

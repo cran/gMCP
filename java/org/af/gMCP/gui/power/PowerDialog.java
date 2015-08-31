@@ -5,39 +5,23 @@ import java.awt.GridBagConstraints;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
-import java.util.List;
 import java.util.Set;
-import java.util.Vector;
 
 import javax.swing.JCheckBox;
-import javax.swing.JDialog;
-import javax.swing.JLabel;
 import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JTextField;
 
-import org.af.commons.errorhandling.DefaultExceptionHandler;
 import org.af.commons.errorhandling.ErrorHandler;
 import org.af.commons.widgets.buttons.HorizontalButtonPane;
-import org.af.commons.widgets.buttons.OkCancelButtonPane;
 import org.af.gMCP.config.Configuration;
 import org.af.gMCP.gui.CreateGraphGUI;
 import org.af.gMCP.gui.RControl;
 import org.af.gMCP.gui.dialogs.PowerOptionsPanel;
-import org.af.gMCP.gui.dialogs.TextFileViewer;
-import org.af.gMCP.gui.graph.LaTeXTool;
+import org.af.gMCP.gui.options.OptionsDialog;
+import org.af.jhlir.call.RList;
 import org.jdesktop.swingworker.SwingWorker;
-
-import com.jgoodies.forms.layout.CellConstraints;
-import com.jgoodies.forms.layout.FormLayout;
 
 public class PowerDialog extends PDialog implements ActionListener {
 
-	/** Actually will only contain Strings and is created by Set<String>.toArray(). */
-	Object[] variables;
-	/** List of JTextFields to enter values for variables. */
-	List<JTextField> jtlVar = new Vector<JTextField>();
-	
 	/**
 	 * Constructor
 	 * @param parent Parent JFrame
@@ -60,7 +44,8 @@ public class PowerDialog extends PDialog implements ActionListener {
 			variables.remove("ε");
 		}
 		if (variables.size()>0) {
-			tPanel.addTab("Variables", getVariablePanel(variables));
+			vp = new VariablePanel(variables);
+			tPanel.addTab("Variables", vp);
 		}
 		
 		getContentPane().add(tPanel, c);
@@ -78,18 +63,27 @@ public class PowerDialog extends PDialog implements ActionListener {
 		
         pack();
         setLocationRelativeTo(parent);
+        setSize(Math.max(870, getWidth()), getHeight());
+        
+        int answer = JOptionPane.NO_OPTION;
         
 		if (tmp && !Configuration.getInstance().getClassProperty(this.getClass(), "tellAboutFiles", "yes").equals("no")) {
 			JCheckBox tellMeAgain = new JCheckBox("Don't show me this info again.");			
-			String message = "The settings in this dialog will be saved for further runs.\n" +
-					"If you want these settings to be automatically saved not only\n" +
-					"temporarily, but even between sessions, please specify a\n" +
-					"directory for saving these files in the options and reopen\n" +
-					"this dialog.";
-			JOptionPane.showMessageDialog(parent, new Object[] {message, tellMeAgain}, "Info", JOptionPane.INFORMATION_MESSAGE);
+			String message = "The settings in this dialog will be saved for further runs in this session.\n" +
+							 "If you want these settings to be automatically saved not only temporarily,\n" +
+							 "but even between sessions, please specify a directory for saving these\n" +
+							 "files in the options.\n" +
+							 "Do you want to open the options dialog now?";
+			answer = JOptionPane.showConfirmDialog(parent, new Object[] {message, tellMeAgain}, "Info", JOptionPane.YES_NO_OPTION);
 			if (tellMeAgain.isSelected()) {
 				Configuration.getInstance().setClassProperty(this.getClass(), "tellAboutFiles", "no");
 			}
+		}
+		
+		if (answer==JOptionPane.YES_OPTION) {
+			new OptionsDialog(parent, OptionsDialog.MISC);
+			dispose();
+			return;
 		}
         
         setVisible(true);
@@ -121,24 +115,28 @@ public class PowerDialog extends PDialog implements ActionListener {
 			
 			SettingsToXML.saveSettingsToXML(config, this);
 
+			createLongRCommand(alpha);
+			
 			rCommand = "gMCP:::calcMultiPower(graph="+parent.getGraphView().getNL().getGraphName()+", alpha="+alpha+", ncpL="+pNCP.getNCPString()
 					+ ","+"corr.sim = " + cvPanel.getSigma() //diag(length(mean)),corr = NULL,"+
 					+ cvPanel.getMatrixForParametricTest()
 					+ ", f = "+userDefinedFunctions.getUserDefined()
 					+ ", n.sim = "+Configuration.getInstance().getGeneralConfig().getNumberOfSimulations()
 					+ ", type = \""+Configuration.getInstance().getGeneralConfig().getTypeOfRandom()+"\""
-					+ getVariables()
+					+ ", upscale = "+(Configuration.getInstance().getGeneralConfig().getUpscale()?"TRUE":"FALSE")
+					+ getVariables(false)
+					+ ", digits=4"
 					+ ")";				
 
-			parent.glassPane.start();
+			parent.glassPane.start(); //TODO Why is the glasspane not shown?			
 			SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
 
 				@Override
 				protected Void doInBackground() throws Exception {					
-					try {						
+					try {
 						RControl.setSeed();
-						String result = RControl.getR().eval(rCommand).asRChar().getData()[0];
-						new TextFileViewer(parent, "Power results", result, true);
+						RList result = RControl.getR().eval(rCommand).asRList();
+						new PowerResultDialog(parent, "Power Results", result.get(0).asRDataFrame(), result.get(1).asRChar().getData(), longRCommand, PowerResultTableModel.class);
 					} catch (Exception e) {						
 						ErrorHandler.getInstance().makeErrDialog(e.getMessage(), e, false);
 					} finally {
@@ -166,53 +164,29 @@ public class PowerDialog extends PDialog implements ActionListener {
 		}
 	}
 
-	public JPanel getVariablePanel(Set<String> v) {
-		JPanel vPanel = new JPanel();		
-		variables = v.toArray();
-		
-        String cols = "5dlu, pref, 5dlu, fill:pref:grow, 5dlu";
-        String rows = "5dlu, pref, 5dlu";
-        
-        for (Object s : variables) {
-        	rows += ", pref, 5dlu";
-        }
-        
-        FormLayout layout = new FormLayout(cols, rows);
-        vPanel.setLayout(layout);
-        CellConstraints cc = new CellConstraints();
-
-        int row = 2;
-        
-        jtlVar = new Vector<JTextField>();
-        
-        for (Object s : variables) {        	
-        	JTextField jt = new JTextField("0");
-        	if (s.equals("ε")) {
-        		jt.setText(""+Configuration.getInstance().getGeneralConfig().getEpsilon());
-        	} else {
-        		jt.setText(""+Configuration.getInstance().getGeneralConfig().getVariable(s.toString()));
-        	}
-        	vPanel.add(new JLabel("Value for '"+s+"':"), cc.xy(2, row));
-        	vPanel.add(jt, cc.xy(4, row));
-        	jtlVar.add(jt);        	
-        	
-        	row += 2;
-        }
-        
-        return vPanel;
+	private String getVariables(boolean quote) {
+		if (vp==null) return "";
+		String q = "";
+		if (quote) q = "\"";		
+		return ", variables="+q+vp.getVariables()+q;
 	}
 
-	public String getVariables() {
-		if (jtlVar.size()>0) {
-			String s = ", variables=list("; 
-			for (int i=0; i<variables.length; i++) {
-				s = s + LaTeXTool.UTF2LaTeX(variables[i].toString().charAt(0))+" = "+ jtlVar.get(i).getText();
-				if (i!=variables.length-1) s = s + ", ";
-			}		
-			return s+")";
-		} else {
-			return "";
-		}
+	private void createLongRCommand(double alpha) {
+
+		longRCommand = "createCalcPowerCall(graph="+parent.getGraphView().getNL().getGraphName()+", alpha="+alpha+", ncpL=\""+pNCP.getNCPString()+"\""
+				+ ","+"corr.sim = " + cvPanel.getSigma() //diag(length(mean)),corr = NULL,"+
+				+ cvPanel.getMatrixForParametricTest()
+				+ ", f = \""+userDefinedFunctions.getUserDefined()+"\""
+				+ ", n.sim = "+Configuration.getInstance().getGeneralConfig().getNumberOfSimulations()
+				+ ", type = \""+Configuration.getInstance().getGeneralConfig().getTypeOfRandom()+"\""
+				+ ", upscale = "+(Configuration.getInstance().getGeneralConfig().getUpscale()?"TRUE":"FALSE")
+				+ getVariables(true)
+				+ ", digits=4"
+				+ ", seed="+Configuration.getInstance().getGeneralConfig().getSeed()
+				+ ")";		
+		
+		longRCommand = RControl.getR().eval(longRCommand).asRChar().getData()[0];
+		
 	}
 
 }

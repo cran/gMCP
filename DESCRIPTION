@@ -1,7 +1,7 @@
 Package: gMCP
 Type: Package
 Title: Graph Based Multiple Comparison Procedures
-Version: 0.8-9
+Version: 0.8-10
 Authors@R: c(person("Kornelius", "Rohmeyer", role = c("aut", "cre"),  email = "rohmeyer@small-projects.de"),
 	      person("Florian", "Klinglmueller", role = "aut", email = "float@lefant.net"))
 Maintainer: Kornelius Rohmeyer <rohmeyer@small-projects.de>
@@ -17,8 +17,8 @@ License: GPL (>= 2)
 URL: http://gsrmtp.r-forge.r-project.org/
 BugReports: https://github.com/kornl/gMCP/issues
 NeedsCompilation: yes
-Packaged: 2015-08-10 01:17:41 UTC; kornel
+Packaged: 2015-08-30 22:08:07 UTC; kornel
 Author: Kornelius Rohmeyer [aut, cre],
   Florian Klinglmueller [aut]
 Repository: CRAN
-Date/Publication: 2015-08-10 09:09:51
+Date/Publication: 2015-08-31 14:30:03

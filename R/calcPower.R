@@ -238,55 +238,75 @@ calcMultiPower <- function(weights, alpha, G, ncpL, muL, sigmaL, nL,
       attr(ncpL[[i]], "label") <- names(ncpL)[i]
     }
   }
+  if (length(f)>0) {
+    n <- names(f)
+    if (is.null(n) || all(is.na(n))) n <- paste("func", 1:length(f), sep="")
+    n[n=="" | is.na(n)] <- paste("func", 1:sum(n==""), sep="")
+    names(f) <- n
+  }
+  result <- data.frame(Scenario=character(0))
+  vnames <- c()
+  if (!is.null(variables)) {
+    vnames <- names(variables)
+    result <- cbind(result, as.data.frame(setNames(replicate(length(vnames), numeric(0), simplify = F), vnames)))
+  }
+  probs <- c(paste("LocalPower", names(weights)), "ExpRejections", "PowAtlst1", "RejectAll", names(f))
+  result <- cbind(result, as.data.frame(setNames(replicate(length(probs), numeric(0), simplify = F), probs)))
+  
 	sResult <- ""
 	g <- matrix2graph(G)
 	g <- setWeights(g, weights)
 	if (is.null(variables)) {
 		sResult <- paste(sResult, "Graph:",paste(capture.output(print(g)), collapse="\n"), sep="\n")
 		resultL <- calcPower(graph=g, alpha=alpha, mean = ncpL, corr.sim=corr.sim, corr.test=corr.test, n.sim=n.sim, type=type, f=f, upscale=upscale)
+		result <- addResult2DF(result, resultL, digits=digits)
 		sResult <- paste(sResult, resultL2Text(resultL, digits), sep="\n")
 	} else {
-		# For testing purposes: variables <- list(a=c(1,2), b=(3), x=c(2,3,4), d=c(1,2))
-		i <- rep(1, length(variables))
-		j <- 1
-		running <- TRUE
-		while (running) {
-			variablesII <- rep(0, length(variables))
-			for(k in 1:length(variables)) {
-				variablesII[k] <- variables[[k]][i[k]]
-			}
-			names(variablesII) <- names(variables)
-			GII <- replaceVariables(G, as.list(variablesII))
-			#print(GII)
-			#print(weights)
-			#print(alpha)
-			#print(ncpL)
-			additionalLabel <- paste(",", paste(paste(names(variables),"=",variablesII,sep=""), collapse=", "))
-			resultL <- calcPower(weights=weights, alpha=alpha, G=GII, mean = ncpL, corr.sim=corr.sim, corr.test=corr.test, n.sim=n.sim, type=type, f=f, upscale=upscale)
+	  graphs <- replaceVariables(graph, variables)
+	  if (!is.list(graphs)) graphs <- list(graphs)
+		for (GII in graphs) {
+			additionalLabel <- "" #paste(",", attr(GII, "label"))
+			variables <- attr(GII, "variables")
+			resultL <- calcPower(graph=GII, alpha=alpha, mean = ncpL, corr.sim=corr.sim, corr.test=corr.test, n.sim=n.sim, type=type, f=f, upscale=upscale)
+			result <- addResult2DF(result, resultL, additionalLabel=additionalLabel, digits=digits, variables=variables)
 			sResult <- paste(sResult, resultL2Text(resultL, digits, additionalLabel=additionalLabel), sep="\n")
-			# Going through all of the variable settings:
-			i[j] <- i[j] + 1
-			while (i[j]>length(variables[[j]]) && running) {
-				if (j<length(i)) {
-					j <- j + 1
-				} else {
-					running <- FALSE
-				}
-				i[j] <- i[j] + 1
-				for (k in 1:(j-1)) {
-					i[k] <- 1
-				}
-			}
 		}		
 	}	
-	return(sResult)
+	#return(sResult)
+	return(list(result, c("Scenario", vnames, probs)))
+	#return(paste(capture.output(print(result)), collapse="\n"))
+}
+
+addResult2DF <- function(resultM, resultL, additionalLabel="", digits, variables=NULL) {
+  resultRow <-  cbind( data.frame(Scenario=" "), as.data.frame(setNames(replicate(dim(resultM)[2]-1, 0, simplify = F), colnames(resultM)[-1])) )
+  
+  for(result in resultL) {
+    resultRow[1] <- paste(attr(result, "label"), additionalLabel, sep="")
+    skip <- 1
+    if (!is.null(variables)) {
+      for (i in 1:length(variables)) { 
+        resultRow[1+i] <- variables[i]
+      }
+      skip <- i+1
+    }
+    for (i in 1:length(result$LocalPower)) { 
+      resultRow[skip+i] <- result$LocalPower[i]
+    }
+    for (j in 2:length(result)) {
+      resultRow[skip+i+j-1] <- result[[j]]
+    }
+    resultRow[2:dim(resultRow)[2]] <- round(resultRow[2:dim(resultRow)[2]], digits)
+    
+    resultM <- rbind(resultM, resultRow)
+  }
+  return(resultM)
 }
 
 resultL2Text <- function(resultL, digits, additionalLabel="") {
 	sResult <- ""
 	for(result in resultL) {
 		label <- attr(result, "label")
-		title <- paste("Setting: ",label, additionalLabel, sep="")		
+		title <- paste("Setting: ", label, additionalLabel, sep="")		
 		sResult <- paste(sResult, title, paste(rep("=", nchar(title)),collapse=""), sep="\n")			
 		sResult <- paste(sResult, "Local Power:",paste(capture.output(print(round(result$LocalPower, digits))), collapse="\n"), sep="\n")
 		sResult <- paste(sResult, "\nExpected number of rejections:", round(result$ExpRejections, digits), sep="\n")
@@ -303,6 +323,63 @@ resultL2Text <- function(resultL, digits, additionalLabel="") {
 		sResult <- paste(sResult, "\n", sep="\n")		
 	}
 	return(sResult)
+}
+
+createCalcPowerCall <- function(alpha, ncpL, corr.sim = diag(length(ncpL[[1]])), corr.test = NULL,
+                                n.sim = 10000, type = c("quasirandom", "pseudorandom"),
+                                f="", digits=4, variables="", test, upscale=FALSE, graph, loop=TRUE, seed=1234) {	
+  command <- dputGraph(graph, "graph")
+  command <- paste(command, "\n", "ncpL <- ", ncpL,"\n", sep="")
+  command <- paste(command, "\n", "f <- ", f,"\n", sep="")
+  if (!missing(variables)) {
+    command <- paste(command, "\n", "variables <- ", variables,"\n", sep="")
+  }
+  if (!missing(corr.test)) {
+    command <- paste(command, "\n", dputMatrix(corr.test, name="corr.test", indent=TRUE),"\n", sep="")
+  }
+  if (!missing(corr.sim)) {
+    command <- paste(command, "\n", dputMatrix(corr.sim, name="corr.sim", indent=TRUE),"\n", sep="")
+  }
+  command <- paste(command, "set.seed(", seed ,")\n\n", sep="")
+  if (loop) {
+    command <- paste(command, "df <- c()\n", sep="")
+    if (!missing(variables)) {
+      command <- paste(command, "for (g in replaceVariables(graph, variables, list=TRUE)) {\n", sep="")
+    }
+    command <- paste(command, "  result <- calcPower(graph=g, mean=ncpL, f=f", sep="")
+  } else {
+    command <- paste(command, "gMCP:::calcMultiPower(graph=graph, ncpL=ncpL, f=f", sep="")
+    if (!missing(variables)) {
+      command <- paste(command, ", variables=variables", sep="")
+    }
+  }
+  if (!missing(test)) {
+    command <- paste(command, ", test=\"",test,"\"", sep="")
+  }
+  if (!missing(type)) {
+    command <- paste(command, ", type=\"",type,"\"", sep="")
+  }
+  if (upscale) {
+    command <- paste(command, ", upscale=TRUE", sep="")
+  }	
+  if (!missing(corr.test)) {
+    command <- paste(command, ", corr.test=corr.test", sep="")
+  }
+  if (!missing(corr.sim)) {
+    command <- paste(command, ", corr.sim=corr.sim", sep="")
+  }
+  
+  command <- paste(command, ", alpha=",dput2(alpha), sep="")
+  command <- paste(command, ", n.sim=",dput2(n.sim), sep="")
+  command <- paste(command, ")\n", sep="")
+  if (loop) {
+    command <- paste(command, "  df <- rbind(df, matrix(unlist(result), nrow=3, byrow=TRUE))\n", sep="")
+    if (!missing(variables)) {
+    command <- paste(command, "}\n", sep="")
+    }
+    command <- paste(command, "print(round(df,",digits,"))\n", sep="")
+  }
+  return(command)
 }
 
 #x <- calcMultiPower(weights=BonferroniHolm(3)@weights, alpha=0.05, G=BonferroniHolm(3)@m, muL=list(c(0,0,0),c(10,10,10),c(10,20,30)), sigmaL=list(c(1,1,1)), nL=list(c(10,10,10),c(20,20,20)), f=list(p1=function(x){x[1]&&x[2]}))

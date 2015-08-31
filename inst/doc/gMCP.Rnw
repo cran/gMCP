@@ -97,6 +97,8 @@ Kornelius Rohmeyer\\ V\Sexpr{packageVersion("gMCP")}\\\today
 \tableofcontents
 
 <<OptionsAndLibraries, include=FALSE, message=FALSE>>=
+# knitr has to be loaded for 'set_parent' and CRAN checks and also for opt_chunk during build process.
+library(knitr)
 if (exists("opts_chunk")) {
   opts_chunk$set(concordance=TRUE)
   opts_chunk$set(tidy.opts=list(keep.blank.line=FALSE, width.cutoff=95))
@@ -105,8 +107,6 @@ if (exists("opts_chunk")) {
   opts_chunk$set(autodep=TRUE)
 }
 library(gMCP, quietly=TRUE)
-# knitr has to be loaded for 'set_parent' and CRAN checks.
-library(knitr)
 options(width=140)
 options(digits=4)
 gMCPReport <- function(...) {invisible(NULL)}
@@ -804,7 +804,7 @@ Use the R syntax and "\texttt{x[i]}" to specify the proposition that hypothesis 
 Negation (!) takes precedence over the logical conjunction ('and', \&\&), which takes precedence over the logical disjunction ('or', ||), but in doubt use brackets.
 Note that you can use all R commands, for example \texttt{any(x)} to see whether any hypotheses was rejected or \texttt{all(x[1:3])} to see whether all of the first three hypotheses were rejected.
 
-You even can use weight function, but then the result can no longer be interpreted as a probability.
+You can also create weighted utility functions, where the result is then of course no longer a probability.
 
 
 
@@ -824,6 +824,11 @@ but this could easily be misread as the rejection of H1 and H4 and at least one 
 
 \end{itemize}
 
+\begin{figure}[ht]
+  \centering    
+  \includegraphics[width=0.8\textwidth]{pictures/PowerResults.png}      
+  \caption{\label{fig:powerresults} Power results}
+\end{figure}
 
 \commentout{
 \section{Sample Size Calculations}
@@ -928,15 +933,16 @@ pvals <- t(replicate(n2,
 
 @
 
-<<appendices, child='childs/pvals.Rnw'>>=
-@
-
 And then apply function \texttt{graphtest}\index{graphtest} and \texttt{extractPower}\index{extractPower}:
+
+<<include=FALSE>>=
+load("pvals.RData")
+@
 
 <<eval=TRUE>>=
 
-g <- generalSuccessive(gamma=0, delta=0)
-out <- graphTest(pvalues=pvals, graph = g)
+graph <- generalSuccessive(gamma=0, delta=0)
+out <- graphTest(pvalues=pvals, graph = graph)
 extractPower(out)
 
 @
@@ -1056,8 +1062,8 @@ graph
     displaying the numbers and formulas.
   \item[Show fractions instead of decimal numbers] Floating point numbers are used
     for all calculations and values like $1/3$ would be normally shown as
-    $0.3333333$. When this option is active the method fractions from package
-    MASS is used to display fractions whenever the floating point numbers are
+    $0.3333333$. When this option is active the method \texttt{fractions} from package
+    \texttt{MASS} is used to display fractions whenever the floating point numbers are
     close to a fraction that looks right.  
   \item[Show epsilon edges as dashed lines] You can set whether epsilon
     edges should been shown as dashed or solid lines.
@@ -1091,7 +1097,7 @@ graph
   numbers for power calculations. The quasirandom option uses a randomized
   Lattice rule, and should be more efficient than the pseudorandom option that
   uses ordinary (pseudo) random numbers.
-  \item[Weights of subgraphs are upscaled to 1] If '\emph{No}' is selected then 
+  \item[Weights of subgraphs are upscaled to 1] If \emph{'No'} is selected then 
     for each intersection of hypotheses (i.e. each subgraph)
     a weighted test is performed at the possibly reduced level alpha of $\text{sum}(w)*alpha$,
     where $\text{sum}(w)$ is the sum of all node weights in this subset
@@ -1429,6 +1435,8 @@ This section is work in progress.
 
   A multiple test procedure is called \emph{coherent}\index{coherence} if
   \[\forall J,\,J'\subset I:\; \left(\phi_J=0\text{ and }J'\subset J\;\Rightarrow\;\phi_{J'}=0\right).\]
+  
+  The closure principle is based on enforcing coherence.
 
   For further reading see
   \cite{hochberg2009multiple} and \cite{gabriel1969simultaneous}.

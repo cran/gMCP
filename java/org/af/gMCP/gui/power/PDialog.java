@@ -26,6 +26,7 @@ public class PDialog extends JDialog {
     ScenarioPanelInterface pNCP;    
     UserDefinedPanel userDefinedFunctions;
     CVPanel cvPanel;
+	VariablePanel vp = null;
     PowerOptionsPanel oPanel;
     
 	File config;
@@ -34,6 +35,7 @@ public class PDialog extends JDialog {
 	/** Are config files only saved temporarily? */
 	boolean tmp = false;
 	String rCommand = "";
+	String longRCommand = "";
 	
 	JTabbedPane tPanel = new JTabbedPane();
 	
@@ -79,6 +81,7 @@ public class PDialog extends JDialog {
 			cvPanel.loadConfig((Element) root.getChildNodes().item(1));
 		}
 		if (userDefinedFunctions!=null) userDefinedFunctions.loadConfig((Element) root.getChildNodes().item(2));
+		if (vp!=null) vp.loadConfig((Element) root.getChildNodes().item(3));
 	 }
 
 	public List<Element> getConfigurationNodes(Document document) {
@@ -86,6 +89,7 @@ public class PDialog extends JDialog {
 		v.add(pNCP.getConfigNode(document));
 		v.add(cvPanel.getConfigNode(document));
 		if (userDefinedFunctions!=null) v.add(userDefinedFunctions.getConfigNode(document));
+		if (vp!=null) v.add(vp.getConfigNode(document));
 		return v;
 	}
 	
