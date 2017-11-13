@@ -50,7 +50,9 @@
 #' 
 #' @export graphGUI
 graphGUI <- function(graph="createdGraph", pvalues=numeric(0), grid=0, debug=FALSE, experimentalFeatures=FALSE, envir=globalenv()) {
-	if (!is.character(graph)) {
+  if (!startGUI()) return(invisible(NULL))
+
+  if (!is.character(graph)) {
 		if ("graphMCP" %in% class(graph)) {
 			newGraphName <- "createdGraph"
 			i <- 2
@@ -65,7 +67,7 @@ graphGUI <- function(graph="createdGraph", pvalues=numeric(0), grid=0, debug=FAL
 			stack <- sys.calls()
 			stack.fun <- Filter(function(.) .[[1]] == as.name("graphGUI"), stack)
 			graph <- make.names(deparse(stack.fun[[1]][[2]]))
-			warning(paste("We guess you wanted to use graphGUI(\"",graph,"\")",sep=""))
+			warning(paste("We guess you wanted to use graphGUI(\"",graph,"\")", collapse=""))
 		}
 	} else {
 		if (exists(graph, envir=envir)) {
@@ -87,7 +89,6 @@ graphGUI <- function(graph="createdGraph", pvalues=numeric(0), grid=0, debug=FAL
 #' 
 #' Starts a graphical user interface for the correlation matrices.
 #' 
-#' 
 #' @param n Square root of the dimension of the quadratic \eqn{n\times n}{nxn}-Matrix.
 #' @param matrix Variable name of matrix of dimension \eqn{n\times n}{nxn} to start with.
 #' @param names Row and column names. (Default will be H1,H2,\ldots,Hn.)
@@ -99,11 +100,10 @@ graphGUI <- function(graph="createdGraph", pvalues=numeric(0), grid=0, debug=FAL
 #' @author Kornelius Rohmeyer \email{rohmeyer@@small-projects.de}
 #' @keywords misc graphs
 #' @examples
-#' 
 #' \dontrun{
 #' corMatWizard(5) # is equivalent to
 #' corMatWizard(matrix=diag(5))
-#' corMatWizard(names=c("H1", "H2", "H3", E1", "E2"))
+#' corMatWizard(names=c("H1", "H2", "H3", "E1", "E2"))
 #' C <- cor(matrix(rnorm(100),10), matrix(rnorm(100),10))
 #' corMatWizard(matrix="C") # or
 #' corMatWizard(matrix=C) 
@@ -111,6 +111,8 @@ graphGUI <- function(graph="createdGraph", pvalues=numeric(0), grid=0, debug=FAL
 #' 
 #' @export corMatWizard
 corMatWizard <- function(n, matrix, names, envir=globalenv()) {  
+  if (!startGUI()) return(invisible(NULL))
+  
   if (missing(n) && missing(matrix) && missing(names)) stop("Please specify matrix or dimension.")
   if (!missing(n) && (is.matrix(n) && length(n)>1)) stop("The parameter 'n' should be a single integer number.")
   if (!missing(matrix)) {
@@ -133,4 +135,33 @@ corMatWizard <- function(n, matrix, names, envir=globalenv()) {
   n <- dim(matrix)[1]  
   if (missing(names)) names <- paste("H",1:n,sep="")
 	invisible(.jnew("org/af/gMCP/gui/dialogs/MatrixCreationDialog", as.character(matrix), mname, names))
+}
+
+startGUI <- function() {
+  if (!"jri.jar" %in% tolower(sapply(.jclassPath(), function(x) {substring(x, first=nchar(x)-6)}))) {
+    warning(paste(c("JRI.jar seems to be missing from the classpath. ",
+                    "The graphical user interface will most likely not be available. ",
+                    "Compile R with shared library enabled (--enable-R-shlib option) ",
+                    "and reinstall rJava to use JRI functionality."), collapse="\n"))
+  }
+  java.info <- try(getJavaInfo(FALSE, FALSE, TRUE), silent=TRUE)
+  if (length(grep("-Xss1m", java.info))==0) {
+    warning(paste("JVM was already initialized with unknown memory settings:",strsplit(java.info, split="Input Arguments:")[1][[1]][2]))
+  }
+  
+  if ("tools:rstudio" %in% search()) {
+    if (interactive()) {
+      cat("Starting the graphical user interface from within RStudio may crash. \nPlease use R without RStudio for the GUI (all the other command line functions are fine).")
+      line <- "?"
+      while (!(tolower(line) %in% c("y","n") )) {
+        line <- readline("Do you want to start the GUI nevertheless? (y/n) ")
+      }
+      if (tolower(line)=="n") {
+        return(FALSE)
+      }
+    } else {
+      warning("Starting the graphical user interface from within RStudio may crash. \nPlease use R without RStudio for the GUI (all the other command line functions are fine).")
+    }
+  }
+  return(TRUE)
 }
