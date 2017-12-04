@@ -1,7 +1,7 @@
-d1b08c6798348ece7c55cab80cd5e524 *DESCRIPTION
+6073d9a9dc2f27881e1aebc2130b75d8 *DESCRIPTION
 a13312f9f09860b2134dff3cf8d1d3b3 *INSTALL
 0d3bd813fc2b09b058a6dbf2ec579819 *NAMESPACE
-168dfbaf0d02b474a7e31f33f0c4c19c *NEWS
+81192a3ba12be91bd97e9a8ccdca950f *NEWS
 64929d75537ba0434a56d70bf62fb348 *R/analysis.R
 1cbfd330ea4482310dadfa0320a117cd *R/calcPower.R
 695e310cf9667f02779ed2d74d5c4825 *R/closure.R
@@ -38,13 +38,13 @@ c58de4bebc682d4b1143d5ee738189a2 *R/sampSize.R
 925a0eb78eae741c729b99ab77bb8f99 *inst/References.html
 6eb67cd47aa93c67e70cd210eb058420 *inst/doc/AQuickStart.R
 66f1463dbf627e28244b643cfea714ef *inst/doc/AQuickStart.Rnw
-835beb8c1d0c650519fded81ced10a69 *inst/doc/AQuickStart.pdf
+f84883a7f85b76328f31c88df2b7dd68 *inst/doc/AQuickStart.pdf
 ef96081b9ff06eebd220e398f7da595b *inst/doc/gMCP.R
 414b8f9c526744b32eda3f409e23c3d5 *inst/doc/gMCP.Rnw
-caa732552711679c148e80e0aaa45d96 *inst/doc/gMCP.pdf
+1db01c5a42a8ffa33ad875e335de1ceb *inst/doc/gMCP.pdf
 a815f3be3962fe9a4eaaaab8abe976d6 *inst/doc/parametric.R
 f451428130b2123bcadd913b364854b6 *inst/doc/parametric.Rnw
-5aee044dfab28a22c198d38eea40499d *inst/doc/parametric.pdf
+5b8fea1c98734f92440ed34b8bde122f *inst/doc/parametric.pdf
 55cef02f41fc3c75bbc953068f3024b3 *inst/java/gsrmtp.jar
 4229f7041ade6fdb84a2593aae42f62b *inst/unitTests/runit.LaTeX.R
 ca884e95a4b28509b85b47a9d109b857 *inst/unitTests/runit.adjPValues.R
