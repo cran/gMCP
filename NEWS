@@ -1,5 +1,22 @@
-Changes in version 0.8-12 (??-??-2017)
+Changes in version 0.8-13 (11-12-2017)
 ======================================
+
+- Updated documentation.
+
+- Dontrun Java example for standard tests.
+
+
+Changes in version 0.8-12 (04-12-2017)
+======================================
+
+- Fixed warnings in .onLoad.
+
+- Added options to graph2latex. Especially fill colors can be set globally 
+  now by for example options(gMCP.fill.retain = "green!10").
+
+- Changed the RUnit log directory from the package directory to 
+  the working directory. (And no log is written during installation.)
+
 
 Changes in version 0.8-11 (13-11-2017)
 ======================================
@@ -9,6 +26,7 @@ Changes in version 0.8-11 (13-11-2017)
 - Native routine registration.
 
 - Java 9 compatibility.
+
 
 Changes in version 0.8-10 (31-08-2015)
 ======================================
@@ -31,6 +49,8 @@ Changes in version 0.8-10 (31-08-2015)
 - New function sampSize for sample size calculations (work in progress)
 
 - Graphical user interface for sample size calculations (work in progress)
+
+53 files changed, 780 insertions(+), 4699 deletions(-)
 
 
 Changes in version 0.8-9 (10-08-2015)

@@ -1,7 +1,7 @@
 Package: gMCP
 Type: Package
 Title: Graph Based Multiple Comparison Procedures
-Version: 0.8-12
+Version: 0.8-13
 Authors@R: c(person("Kornelius", "Rohmeyer", role = c("aut", "cre"),  email = "rohmeyer@small-projects.de"),
 	      person("Florian", "Klinglmueller", role = "aut", email = "float@lefant.net"))
 Maintainer: Kornelius Rohmeyer <rohmeyer@small-projects.de>
@@ -17,10 +17,10 @@ SystemRequirements: Java (>= 5.0)
 License: GPL (>= 2)
 URL: http://gsrmtp.r-forge.r-project.org/
 BugReports: https://github.com/kornl/gMCP/issues
-RoxygenNote: 5.0.1
+RoxygenNote: 6.0.1
 NeedsCompilation: yes
-Packaged: 2017-12-04 09:27:04 UTC; kornl
+Packaged: 2017-12-11 09:25:34 UTC; kornl
 Author: Kornelius Rohmeyer [aut, cre],
   Florian Klinglmueller [aut]
 Repository: CRAN
-Date/Publication: 2017-12-04 09:45:06 UTC
+Date/Publication: 2017-12-11 09:38:48 UTC
