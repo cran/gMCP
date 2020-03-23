@@ -1,7 +1,7 @@
 Package: gMCP
 Type: Package
 Title: Graph Based Multiple Comparison Procedures
-Version: 0.8-14
+Version: 0.8-15
 Authors@R: c(person("Kornelius", "Rohmeyer", role = c("aut", "cre"),  email = "rohmeyer@small-projects.de"),
 	      person("Florian", "Klinglmueller", role = "aut", email = "float@lefant.net"))
 Maintainer: Kornelius Rohmeyer <rohmeyer@small-projects.de>
@@ -27,8 +27,8 @@ Collate: 'analysis.R' 'calcPower.R' 'graphMCP.R' 'ci.R' 'closure.R'
         'plotCI.R' 'powerPlot.R' 'rqmvnorm.R' 'sampSize.R'
         'startGUIs.R' 'subVariables.R'
 NeedsCompilation: yes
-Packaged: 2018-07-09 12:23:56 UTC; kornl
+Packaged: 2020-03-22 17:50:13 UTC; kornel
 Author: Kornelius Rohmeyer [aut, cre],
   Florian Klinglmueller [aut]
 Repository: CRAN
-Date/Publication: 2018-07-09 13:20:03 UTC
+Date/Publication: 2020-03-23 17:20:14 UTC
