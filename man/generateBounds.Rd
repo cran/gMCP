@@ -4,8 +4,14 @@
 \alias{generateBounds}
 \title{generateBounds}
 \usage{
-generateBounds(g, w, cr, al = 0.05, hint = generateWeights(g, w),
-  upscale = FALSE)
+generateBounds(
+  g,
+  w,
+  cr,
+  al = 0.05,
+  hint = generateWeights(g, w),
+  upscale = FALSE
+)
 }
 \arguments{
 \item{g}{graph defined as a matrix, each element defines how much of the
@@ -109,7 +115,7 @@ Frank Bretz, Martin Posch, Ekkehard Glimm, Florian Klinglmueller, Willi
 Maurer, Kornelius Rohmeyer (2011): Graphical approaches for multiple
 comparison procedures using weighted Bonferroni, Simes or parametric tests.
 Biometrical Journal 53 (6), pages 894-913, Wiley.
-\url{http://onlinelibrary.wiley.com/doi/10.1002/bimj.201000239/full}
+\doi{10.1002/bimj.201000239}
 }
 \author{
 Florian Klinglmueller

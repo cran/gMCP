@@ -4,8 +4,17 @@
 \alias{gMCP.extended}
 \title{Graph based Multiple Comparison Procedures}
 \usage{
-gMCP.extended(graph, pvalues, test, alpha = 0.05, eps = 10^(-3),
-  upscale = FALSE, verbose = FALSE, adjPValues = TRUE, ...)
+gMCP.extended(
+  graph,
+  pvalues,
+  test,
+  alpha = 0.05,
+  eps = 10^(-3),
+  upscale = FALSE,
+  verbose = FALSE,
+  adjPValues = TRUE,
+  ...
+)
 }
 \arguments{
 \item{graph}{A graph of class \code{\link{graphMCP}}.}
@@ -80,12 +89,12 @@ gMCP(g3, pvalues=c(0.01, 0.02, 0.04, 0.04, 0.7), correlation=diag(5))
 Frank Bretz, Willi Maurer, Werner Brannath, Martin Posch: A
 graphical approach to sequentially rejective multiple test procedures.
 Statistics in Medicine 2009 vol. 28 issue 4 page 586-604.
-\url{http://www.meduniwien.ac.at/fwf_adaptive/papers/bretz_2009_22.pdf}
+\url{https://www.meduniwien.ac.at/fwf_adaptive/papers/bretz_2009_22.pdf}
 
 Bretz F., Posch M., Glimm E., Klinglmueller F., Maurer W., Rohmeyer K.
 (2011): Graphical approaches for multiple endpoint problems using weighted
 Bonferroni, Simes or parametric tests. Biometrical Journal 53 (6), pages 894-913, Wiley.
-\url{http://onlinelibrary.wiley.com/doi/10.1002/bimj.201000239/full}
+\doi{10.1002/bimj.201000239}
 
 Strassburger K., Bretz F.: Compatible simultaneous lower confidence bounds
 for the Holm procedure and other Bonferroni based closed tests. Statistics

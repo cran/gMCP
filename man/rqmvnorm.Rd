@@ -4,8 +4,12 @@
 \alias{rqmvnorm}
 \title{Random sample from the multivariate normal distribution}
 \usage{
-rqmvnorm(n, mean = rep(0, nrow(sigma)), sigma = diag(length(mean)),
-  type = c("quasirandom", "pseudorandom"))
+rqmvnorm(
+  n,
+  mean = rep(0, nrow(sigma)),
+  sigma = diag(length(mean)),
+  type = c("quasirandom", "pseudorandom")
+)
 }
 \arguments{
 \item{n}{Number of samples, when type = "quasirandom" is used this number is
@@ -43,6 +47,6 @@ Scientific Computing, 28, 2162-2188.
 \author{
 We thank Dr. Frances Kuo for the permission to use
 the generating vectors (order 2 lattice rule) obtained from her website
-\url{http://web.maths.unsw.edu.au/~fkuo/lattice/}.
+\url{https://web.maths.unsw.edu.au/~fkuo/lattice/}.
 }
 \keyword{distribution}

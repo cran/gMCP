@@ -289,7 +289,7 @@ getWeightStr <- function(graph, from, to, LaTeX=FALSE) {
 			return(getLaTeXFraction(weight))
 		} else {
       asNr <- try(eval(parse(text=weight), envir=NULL, enclos=NULL), silent=TRUE)
-		  if (!is.na(asNr) && !("try-error"%in%class(asNr))) {
+		  if (!is.na(asNr) && !(inherits(asNr, "try-error"))) {
 		    return(getLaTeXFraction(asNr))
 		  }
 		}
@@ -322,7 +322,7 @@ setMethod("simConfint", c("graphMCP"), function(object, pvalues, confint, altern
 			} else {
 				alpha <- getWeights(result)*alpha				
 			}
-			if (class(confint)=="function") {
+			if (inherits(confint,"function")) {
 				f <- function(node, alpha, rejected) {
 					if (rejected && alternative=="less") return(c(-Inf, mu))
 					if (rejected && alternative=="greater") return(c(mu, Inf))
@@ -342,12 +342,12 @@ setMethod("simConfint", c("graphMCP"), function(object, pvalues, confint, altern
 			if (alternative=="greater") {			
 				stderr <- abs(estimates/dist(1-pvalues))
 				lb <- estimates+dist(alpha)*stderr				
-				lb <- ifelse(getRejected(result), max(0,lb), lb) 
+				lb <- ifelse(getRejected(result), pmax(mu, lb), lb) 
 				ub <- rep(Inf,length(lb))
 			} else if (alternative=="less") {			
 				stderr <- abs(estimates/dist(pvalues))								 
 				ub <- estimates+dist(1-alpha)*stderr				
-				ub <- ifelse(getRejected(result), min(0,ub), ub)
+				ub <- ifelse(getRejected(result), pmin(mu, ub), ub)
 				lb <- rep(-Inf,length(ub))
 			} else {
 				stop("Specify alternative as \"less\" or \"greater\".")

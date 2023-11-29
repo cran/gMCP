@@ -20,7 +20,7 @@ parseEpsPolynom <- function(s) {
 	env <- new.env(parent = baseenv())
 	assign("epsilon", polynom(), envir=env)
 	p <- try(eval(parse(text=s), envir=env), silent = TRUE)
-	if (class(p)=="try-error") {
+	if (inherits(p, "try-error")) {
 		stop("String does not represent a polynom in epsilon.")
 	}
 	if(is.numeric(p)) {
@@ -104,7 +104,7 @@ requireLibrary <- function(package) {
 		answer <- readline(paste("Package ",package," is required - should we install it (y/n)? ", sep=""))
 		if (substr(answer, 1, 1) %in% c("y","Y")) {
 			if (package %in% c("graph", "Rgraphviz")) {	
-				source("http://www.bioconductor.org/biocLite.R")
+				source("https://www.bioconductor.org/biocLite.R")
 				biocLite <- get("biocLite", envir=globalenv())
 				biocLite(package)
 			} else {
@@ -133,7 +133,7 @@ getAvailableStandardDesigns <- function(n) {
 	for (design in possibleDesigns) {
 		for (i in 2:(2*n)) {
 			m <- try(contrMat(n=rep(10, i), type=design), silent = TRUE)
-			if (!("try-error" %in% class(m)) && dim(m)[1]==n) {
+			if (!(inherits(m, "try-error")) && dim(m)[1]==n) {
 				designs <- c(designs, design)
 				numberOfGroups <- c(numberOfGroups, i)
 			}
@@ -201,7 +201,7 @@ getNewestRVersion <- function() {
   # What about something like setInternet2(true)?
   warn <- getOption("warn")
   options(warn=-1)
-  line <- try(grep("R-[0-9.]+-win", readLines("http://cran.r-project.org/bin/windows/base/", warn=FALSE), value=TRUE), silent=TRUE)
+  line <- try(grep("R-[0-9.]+-win", readLines("https://cran.r-project.org/bin/windows/base/", warn=FALSE), value=TRUE), silent=TRUE)
   if("try-error"==class(line) || length(line)==0) {
     return("Unknown")
   }

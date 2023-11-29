@@ -4,8 +4,7 @@
 \alias{rejectNode}
 \title{Rejects a node/hypothesis and updates the graph accordingly.}
 \usage{
-rejectNode(graph, node, upscale = FALSE, verbose = FALSE,
-  keepWeights = FALSE)
+rejectNode(graph, node, upscale = FALSE, verbose = FALSE, keepWeights = FALSE)
 }
 \arguments{
 \item{graph}{A graph of class \code{\link{graphMCP}} or \code{\link{entangledMCP}}.}
@@ -43,7 +42,7 @@ rejectNode(g, "H1")
 Frank Bretz, Willi Maurer, Werner Brannath, Martin Posch: A
 graphical approach to sequentially rejective multiple test procedures.
 Statistics in Medicine 2009 vol. 28 issue 4 page 586-604.
-\url{http://www.meduniwien.ac.at/fwf_adaptive/papers/bretz_2009_22.pdf}
+\url{https://www.meduniwien.ac.at/fwf_adaptive/papers/bretz_2009_22.pdf}
 }
 \seealso{
 \code{\link{graphMCP}}

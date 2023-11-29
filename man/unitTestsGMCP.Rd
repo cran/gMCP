@@ -4,8 +4,13 @@
 \alias{unitTestsGMCP}
 \title{Run the R unit (and optional the JUnit) test suite for gMCP}
 \usage{
-unitTestsGMCP(extended = FALSE, java = FALSE, interactive = FALSE,
-  junitLibrary, outputPath)
+unitTestsGMCP(
+  extended = FALSE,
+  java = FALSE,
+  interactive = FALSE,
+  junitLibrary,
+  outputPath
+)
 }
 \arguments{
 \item{extended}{If \code{TRUE} (or if the environment variable
@@ -24,7 +29,7 @@ run.  The user have to look at results and answer questions.}
 
 \item{junitLibrary}{A character String specifying the path to a JUnit 4 jar
 file to run the JUnit tests.  You can download it from
-\url{http://www.junit.org/}.  Alternatively you can use the environment
+\url{https://junit.org/}.  Alternatively you can use the environment
 variable GMCP_JUNIT_LIBRARY to specify the path.}
 
 \item{outputPath}{During the RUnit tests files maybe produced at this
